@@ -253,6 +253,17 @@ table.ledger th{ font-family:var(--f-data); font-size:10px; letter-spacing:.12em
                  padding:6px 10px 9px; white-space:nowrap; }
 table.ledger td{ padding:9px 10px; border-top:1px solid var(--line); vertical-align:middle; }
 table.ledger tr.me td{ background:var(--acc-soft); }
+/* Horizontal scroll with shadows at the edges that fade out when you reach
+   them - a wide table on a phone otherwise just looks cut off, and nobody
+   swipes something they do not know is scrollable. */
+.scroller{
+  overflow-x:auto; -webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(to right, var(--bg) 40%, transparent) left / 26px 100% no-repeat local,
+    linear-gradient(to left, var(--bg) 40%, transparent) right / 26px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.6), transparent) left / 11px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.6), transparent) right / 11px 100% no-repeat scroll;
+}
 .bar-track{ height:7px; border-radius:99px; background:var(--line); overflow:hidden; min-width:70px; }
 .bar-track i{ display:block; height:100%; border-radius:99px; }
 
@@ -415,7 +426,66 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
   .glance{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   .lotrow{ grid-template-columns:118px 1fr; }
   .worked .wr{ grid-template-columns:1fr; gap:4px; }
-  .mast .name{ font-size:25px; }
+  .bay{ grid-template-columns:1fr; }
+  .mast .name{ font-size:29px; }
+}
+
+@media (max-width:640px){
+  /* The section heading is a flex row of title + rule + eyebrow, and the
+     eyebrow is nowrap, so on a phone it shoved the whole row past the viewport.
+     Drop the eyebrow to its own line instead. */
+  .bar{ flex-wrap:wrap; font-size:24px; gap:10px; }
+  .bar::after{ order:2; }
+  .bar .n{ order:3; flex-basis:100%; margin-left:0; white-space:normal;
+           line-height:1.4; letter-spacing:.1em; }
+
+  .mast{ gap:7px; flex-wrap:wrap; }
+  .mast .name{ font-size:26px; }
+  .mast .the{ font-size:19px; }
+  .mast .yr{ font-size:9.5px; letter-spacing:.1em; }
+
+  .glance{ gap:14px; }
+  .gl svg.liq{ max-width:132px; }
+  .gl .s{ font-size:12px; max-width:24ch; }
+
+  /* Seven tabs on one line at 375px. The two long labels are shortened rather
+     than the type squeezed to nothing - nth-child is coupled to TABS in app.py,
+     and tests/test_theme.py asserts the two stay in step. */
+  .stTabs [data-baseweb="tab-list"]{ gap:3px; }
+  .stTabs [data-baseweb="tab"]{ padding:6px 8px 4px; }
+  .stTabs [data-baseweb="tab"] p{ font-size:13px; letter-spacing:.02em; }
+  .stTabs [data-baseweb="tab"]:nth-child(4) p{ font-size:0; }
+  .stTabs [data-baseweb="tab"]:nth-child(4) p::after{ content:"Taxi"; font-size:13px; }
+  .stTabs [data-baseweb="tab"]:nth-child(5) p{ font-size:0; }
+  .stTabs [data-baseweb="tab"]:nth-child(5) p::after{ content:"Pot"; font-size:13px; }
+
+  .lotname{ font-size:12px; }
+  .lotname small{ font-size:9px; }
+  .rule{ padding:16px 15px; }
+  .rule p, .rule li{ font-size:14px; }
+  .card{ padding:15px 14px; }
+  .worked .wr{ padding:10px 13px; }
+  .worked .wr .v{ font-size:20px; }
+
+  /* The rulebook's first column is nowrap so labels stay on one line on a
+     desktop. On a phone "Taken in the veteran draft, still an NFL rookie" then
+     forces the table wider than the screen. Let it wrap here. */
+  .rule table td:first-child{ white-space:normal; width:auto; }
+  .rule table{ font-size:13px; table-layout:fixed; }
+  .rule table td, .rule table th{ padding:9px 8px; }
+  .rule table th:first-child{ width:44%; }
+
+  /* Same trick, same reason, on the section eyebrow and the ledger headers. */
+  table.ledger th{ white-space:normal; line-height:1.3; }
+  .toc a{ font-size:10px; padding:5px 9px; }
+}
+
+@media (max-width:380px){
+  /* Anything narrower than an iPhone SE. Keep the seven on one line. */
+  .stTabs [data-baseweb="tab"]{ padding:6px 6px 4px; }
+  .stTabs [data-baseweb="tab"] p,
+  .stTabs [data-baseweb="tab"]:nth-child(4) p::after,
+  .stTabs [data-baseweb="tab"]:nth-child(5) p::after{ font-size:10.5px; }
 }
 @media (prefers-reduced-motion:reduce){
   *{ transition:none !important; }

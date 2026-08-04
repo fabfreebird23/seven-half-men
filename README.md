@@ -219,6 +219,12 @@ confusing rule and prose was carrying all of it.
 Most of that is dark in year one — pips and the burn-down need a season, the
 board needs a draft. The bowls are the only one visible before week 1.
 
+On a phone all seven tabs stay on one line: the two long labels shorten to
+"Taxi" and "Pot" via `:nth-child` rather than the type squeezing to nothing.
+That couples the stylesheet to `TABS` order in `app.py`, so a test asserts the
+two stay in step — reorder the tabs without updating the CSS and it fails rather
+than silently relabelling the wrong one.
+
 Contrast is tested, not eyeballed. Every foreground/background pair the app puts
 text on is declared in `theme.TEXT_PAIRS` and asserted against WCAG AA in
 `tests/test_theme.py`. A second test walks every `var(--token)` in the stylesheet

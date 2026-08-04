@@ -186,7 +186,7 @@ def ledger_table(headers: List[str], rows: List[List[str]], me_row: int = None) 
     for i, r in enumerate(rows):
         cls = ' class="me"' if me_row is not None and i == me_row else ""
         body += "<tr%s>%s</tr>" % (cls, "".join("<td>%s</td>" % c for c in r))
-    st.markdown('<div style="overflow-x:auto"><table class="ledger"><thead><tr>%s</tr></thead>'
+    st.markdown('<div class="scroller"><table class="ledger"><thead><tr>%s</tr></thead>'
                 '<tbody>%s</tbody></table></div>' % (head, body), unsafe_allow_html=True)
 
 
