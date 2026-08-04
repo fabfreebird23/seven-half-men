@@ -1,0 +1,181 @@
+"""Draft history and the keeper ledger, rebuilt from Sleeper season by season.
+
+In year one this is nearly empty - that is the point. Everything downstream
+(what a player would cost you next year, whether he is rookie-keeper eligible,
+which year of his clock he is on) reads from here rather than guessing, so the
+same code works in 2026 and in 2033.
+
+Sleeper's own `is_keeper` flag is unreliable across seasons in the user's other
+leagues, so keeper years are counted from our own submitted ledger
+(storage.load) and only fall back to Sleeper's flag when we have nothing.
+"""
+from __future__ import annotations
+
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Set
+
+from . import config, sleeper, storage
+from .engine import rookie_draft_premium
+
+
+@dataclass
+class PlayerSeason:
+    season: int
+    owner_id: str
+    round: Optional[int]
+    pick_no: Optional[int]
+    draft_type: str          # rookie | veteran | first_season
+    was_rookie: bool         # an actual NFL rookie that season
+    kept: bool = False
+    rookie_kept: bool = False
+
+
+@dataclass
+class History:
+    seasons: List[int] = field(default_factory=list)
+    by_player: Dict[str, List[PlayerSeason]] = field(default_factory=lambda: defaultdict(list))
+    drafted_as_rookie: Dict[str, int] = field(default_factory=dict)   # pid -> season
+    rookie_draft_round: Dict[str, int] = field(default_factory=dict)  # pid -> round
+    ever_regular_keeper: Set[str] = field(default_factory=set)
+
+    # ---------------------------------------------------------------- queries
+    def latest(self, pid: str) -> Optional[PlayerSeason]:
+        rows = self.by_player.get(pid) or []
+        return max(rows, key=lambda r: r.season) if rows else None
+
+    def keeper_year(self, pid: str) -> int:
+        """How many seasons in a row this player has been kept as a REGULAR
+        keeper. 0 means the coming season would be his first."""
+        rows = sorted(self.by_player.get(pid) or [], key=lambda r: r.season)
+        streak = 0
+        for r in rows:
+            if r.kept and not r.rookie_kept:
+                streak += 1
+            elif r.rookie_kept:
+                continue          # rookie years don't advance the clock
+            else:
+                streak = 0
+        return streak
+
+    def peak_round(self, pid: str) -> Optional[int]:
+        """The most EXPENSIVE round ever paid for him - the franchise price."""
+        rounds = [r.round for r in self.by_player.get(pid) or [] if r.round]
+        return min(rounds) if rounds else None
+
+    def draft_round(self, pid: str) -> Optional[int]:
+        r = self.latest(pid)
+        return r.round if r else None
+
+    def _last_draft(self, pid: str) -> Optional[PlayerSeason]:
+        rows = [r for r in (self.by_player.get(pid) or []) if r.draft_type]
+        return max(rows, key=lambda r: r.season) if rows else None
+
+    def has_rookie_draft_provenance(self, pid: str) -> bool:
+        """Did he enter through the ROOKIE draft and not pass back through the
+        veteran pool since?
+
+        This is the predicate the R%d premium hangs off, and it is deliberately
+        about provenance rather than age. Do not reach for `years_exp == 0` here:
+        a player stashed two years on taxi and then promoted is no longer a
+        rookie by that field, but he still has no veteran draft round and still
+        prices at the premium. Pool passage is what resets it - once he has been
+        redrafted in the veteran draft he has a real round and the premium no
+        longer applies.
+        """ % rookie_draft_premium()
+        last = self._last_draft(pid)
+        return bool(last and last.draft_type == "rookie")
+
+    def keeper_anchor(self, pid: str) -> Optional[int]:
+        """The round the regular-keeper ladder computes from. None means the
+        caller should use the rookie-draft premium (see the flag above) or, for
+        an undrafted pickup, the last available round."""
+        if self.has_rookie_draft_provenance(pid):
+            return None
+        return self.draft_round(pid)
+
+    def is_rookie_keeper_eligible(self, pid: str) -> bool:
+        """Any NFL rookie you DRAFTED, in either draft. Not a waiver pickup, and
+        not once he has been traded or converted to a regular keeper.
+
+        Time on the taxi squad is deliberately not a factor. The rule turns on
+        having drafted him as a rookie and never stopped holding him, and a taxi
+        stint is still holding him - so promoting a stashed player off taxi, in
+        year one or year two, leaves the designation intact. He simply stops
+        being free and starts costing a rookie keeper slot.
+        """
+        if pid in self.ever_regular_keeper:
+            return False
+        return pid in self.drafted_as_rookie
+
+
+def _picks_for(draft: dict) -> List[dict]:
+    return sleeper.get_draft_picks(str(draft["draft_id"])) or []
+
+
+def _draft_kind(draft: dict, first_season: bool) -> str:
+    rounds = int((draft.get("settings") or {}).get("rounds") or 0)
+    if rounds and rounds <= config.rookie_rounds():
+        return "rookie"
+    return "first_season" if first_season else "veteran"
+
+
+def build(league_id: str = None) -> History:
+    league_id = league_id or config.league_id()
+    hist = History()
+    chain = sleeper.league_chain(league_id)
+    players = {}
+    try:
+        players = sleeper.get_players()
+    except Exception:
+        players = {}
+
+    for link in sorted(chain, key=lambda c: c["season"]):
+        season = int(link["season"])
+        hist.seasons.append(season)
+        first = config.is_first_season(season)
+        ledger = storage.load(season)          # our own submitted keepers
+        kept = set(ledger.get("kept", []))
+        rookie_kept = set(ledger.get("rookie_kept", []))
+
+        drafts = sleeper.get_drafts(link["league_id"]) or []
+        for d in drafts:
+            kind = _draft_kind(d, first)
+            for pick in _picks_for(d):
+                pid = str(pick.get("player_id") or "")
+                if not pid:
+                    continue
+                owner = str(pick.get("picked_by") or "")
+                rnd = pick.get("round")
+                meta = players.get(pid) or {}
+                was_rookie = _was_rookie(meta, season)
+                ps = PlayerSeason(season=season, owner_id=owner,
+                                  round=int(rnd) if rnd else None,
+                                  pick_no=pick.get("pick_no"), draft_type=kind,
+                                  was_rookie=was_rookie,
+                                  kept=pid in kept, rookie_kept=pid in rookie_kept)
+                hist.by_player[pid].append(ps)
+
+                if was_rookie and pid not in hist.drafted_as_rookie:
+                    hist.drafted_as_rookie[pid] = season
+                    if ps.round:
+                        hist.rookie_draft_round[pid] = ps.round
+                if ps.kept and not ps.rookie_kept:
+                    hist.ever_regular_keeper.add(pid)
+
+    return hist
+
+
+def _was_rookie(player_meta: dict, season: int) -> bool:
+    """An NFL rookie in `season`. Sleeper carries `years_exp` as of *now*, so we
+    back-date it against the current season rather than trusting it directly."""
+    if not player_meta:
+        return False
+    yrs = player_meta.get("years_exp")
+    if yrs is None:
+        return False
+    try:
+        yrs = int(yrs)
+    except (TypeError, ValueError):
+        return False
+    return (config.season() - season) == yrs

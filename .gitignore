@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
+data/cache_*.json
+data/players_nfl.json
+data/keepers_*.json.bak
+data/keepers_*.json.tmp
+.pytest_cache/

@@ -1,0 +1,126 @@
+# 7 1/2 Men — league configuration.
+# Everything the engine needs lives here; nothing is hardcoded in the modules.
+
+league:
+  id: "1388606375239643136"
+  name: "7 1/2 Men"
+  season: 2026
+  first_season: 2026          # no keepers exist before this
+  teams: 8
+  playoff_teams: 4
+  playoff_week_start: 14
+  regular_season_weeks: 14
+  chase_weeks: [15, 16, 17]   # consolation bracket
+
+drafts:
+  veteran_rounds: 14
+  veteran_rounds_first_season: 13   # 13 + 2 rookies = 15, one short of 14 active + 2 taxi,
+                                    # so year one still offers a promote-or-stash choice
+  rookie_rounds: 2
+  snake: true
+
+roster:
+  starters: [QB, RB, RB, WR, WR, TE, FLEX, FLEX, FLEX]
+  flex_positions: [RB, WR, TE]
+  bench: 5
+  ir: 1
+
+rules:
+  keepers:
+    total: 5
+    regular: 3
+    rookie: 2
+    max_years: 3              # a 4th year needs the franchise tag
+    year2_bump: 3             # year 2 costs your draft round minus 3
+    # A player who entered through the ROOKIE draft has no veteran draft round to
+    # price against. This is the stand-in, and in year one it is FLAT - no ADP
+    # option, no cheaper-of choice. From year two the normal ladder resumes with
+    # this as the anchor (5 -> 2 -> ADP). Most likely number to get tuned after a
+    # season, which is why it lives here.
+    rookie_draft_premium_round: 5
+    adp_discount: true        # years 1 and 2 may take ADP instead if it is cheaper
+    position_caps: {}         # none in this league
+    enforce_owned_picks: true
+    owned_pick_mode: bump     # move to the next-EARLIEST round you still own
+    price_travels_on_trade: true
+
+  rookie_keepers:
+    cost: last_rounds         # your last pick, then the one before it (R14, R13)
+    eligible_sources: [rookie_draft, veteran_draft]   # any NFL rookie you DRAFTED
+    exclude_sources: [waiver, free_agent, trade]
+    clock: none               # no 3-year wall
+    trade_converts_to: original_round   # traded -> regular keeper at his original
+                                        # draft round, three-year clock restarts at 1
+
+  franchise:
+    slots: 1
+    extra_years: 2            # years 4 and 5
+    price: peak               # frozen at the most EXPENSIVE (earliest) round ever paid
+    final_year: 6             # gone after year 5, no exceptions
+    locked_at_submission: true
+
+  taxi:
+    slots: 2
+    years: 2
+    source: rookie_draft      # that year's rookie draft only
+    startable: false
+    counts_against_bench: false
+    counts_against_keepers: false
+    promotion: permanent
+    # Promoting off taxi does NOT cost the rookie-keeper designation. He was an
+    # NFL rookie you drafted and you never stopped holding him, so the chain is
+    # unbroken - he just moves from costing nothing to costing a ROOKIE keeper
+    # slot at the last-round price, with no three-year clock.
+    #   any_year          promotion is free of the designation whenever it happens
+    #   second_year_only  only a year-2 promotion keeps it (the stricter reading)
+    promotion_keeps_rookie_status: any_year
+    in_season_adds: false
+    tradeable: true           # stays on taxi for the new team if they have a slot
+
+  faab:
+    budget: 100
+    pot_cap: 200
+    pot_to: chase_winner      # first $cap
+    overflow_to: champion     # everything above the cap
+    cut_lockout_days: 365     # can't re-add a player you cut for 12 months
+
+  lottery:
+    # Two drums, same shape, different basis.
+    rookie_basis: record      # regular-season record, worst first
+    veteran_basis: final      # final standing incl. the Chase bracket, worst first
+    weights: [24, 21, 18, 15, 10, 7, 3, 2]
+    weights_alt: [30, 22, 16, 12, 8, 6, 4, 2]   # the steeper spread, kept for comparison
+    champion_floor: true      # champion always takes the smallest weight
+    lottery_slots: 2          # how many selections the drum actually draws;
+                              # everyone after that falls in ball-weight order
+    # The repeat lock-out is PER DRUM and covers first choice only. Win first
+    # choice of the rookie draft and you cannot win it again next year - but you
+    # are still free to win first choice of the veteran draft, and vice versa.
+    no_repeat_top: 1
+    lockout_scope: per_drum   # per_drum | both_drums
+    no_sweep: true            # nobody wins first choice in both drums the SAME year
+    selection_order: true     # the drum picks an order, not a slot
+    randomize_first_season: true
+
+managers:
+  "334162589502144512": { name: "Josh Lavanchy",   team: "Bijan with the Wind",    handle: jlava22 }
+  "979455520442580992": { name: "Thad Harter",     team: "Beantown Hurt",          handle: thadharter }
+  "979400432114102272": { name: "Isiah Douglass",  team: "Amon-Ra Save Us",        handle: satsnotsacks }
+  "1254567796231114752": { name: "Devin Clifton",  team: "Taco Bandit",            handle: BrandonsAFraud }
+  "964703051971887104": { name: "Brandon Clifton", team: "Clayton's Kids",         handle: badlife }
+  "979382824706912256": { name: "Corey McKinney",  team: "The Whig Party",         handle: coreymckinney }
+  "980569987930804224": { name: "Lucas Hamilton",  team: "Maybe Later",            handle: lucashamilton4 }
+  "1001531274030305280": { name: "Clayton Hamilton", team: "My Nabers heard me cry", handle: claytonhamilton }
+
+me: "964703051971887104"   # whose team the "my" views default to
+
+theme:
+  default_palette: lights_off   # lights_off | newsprint
+
+# ADP providers. League-independent; the scrapers were carried over from the
+# kreeper-league tool rather than rewritten (they are generic).
+adp_sources:
+  espn: true
+  fantasypros: false      # put behind a registration wall in mid-2026
+  footballguys: true
+  sleeper: true           # Sleeper ADP via DraftSharks (PPR / 12-team board)
