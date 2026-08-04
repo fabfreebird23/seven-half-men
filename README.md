@@ -124,7 +124,7 @@ halfmen/
   storage.py           submitted slips (JSON per season, atomic writes)
   adp_board.py         consensus ADP -> a round in an 8-team draft
   rulebook.py          the league rulebook, rendered on the Rules page
-  theme.py             the two palettes, the type, the Streamlit chrome overrides
+  theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
 tests/                 113 tests
 scripts/refresh_adp.py daily consensus refresh
