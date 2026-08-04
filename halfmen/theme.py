@@ -379,6 +379,15 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 .stTabs [aria-selected="true"]{ background:var(--acc) !important; border-color:var(--acc) !important; }
 .stTabs [aria-selected="true"] p{ color:var(--acc-ink) !important; }
 
+/* team selector - a quiet control, right-aligned under the masthead */
+[data-testid="stSelectbox"]{ max-width:280px; margin-left:auto; }
+[data-testid="stSelectbox"] [data-baseweb="select"] > div{
+  background:var(--card) !important; border:1px solid var(--line) !important;
+  border-radius:99px !important; min-height:0; }
+[data-testid="stSelectbox"] [data-baseweb="select"] div[value],
+[data-testid="stSelectbox"] [data-baseweb="select"] span{
+  font-size:12.5px !important; font-weight:600; }
+
 [data-testid="stRadio"] > div{ justify-content:flex-end; }
 [data-testid="stRadio"] [role="radiogroup"]{
   flex-direction:row; gap:3px; background:var(--card); border:1px solid var(--line);
@@ -444,6 +453,7 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
   .mast .the{ font-size:19px; }
   .mast .yr{ font-size:9.5px; letter-spacing:.1em; }
 
+  [data-testid="stSelectbox"]{ max-width:none; margin:6px 0 0; }
   .glance{ gap:14px; }
   .gl svg.liq{ max-width:132px; }
   .gl .s{ font-size:12px; max-width:24ch; }

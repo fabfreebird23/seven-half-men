@@ -124,11 +124,19 @@ halfmen/
   storage.py           submitted slips (JSON per season, atomic writes)
   adp_board.py         consensus ADP -> a round in an 8-team draft
   rulebook.py          the league rulebook, rendered on the Rules page
+  valueboard.py        every roster priced for next year, plus the franchise tag
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
 tests/                 117 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
+
+## Who sees what
+
+Whose team the "your" views show comes from `?team=<sleeper_id>` in the URL,
+falling back to `me` in config. Each manager can bookmark their own, and a link
+pasted in the group chat opens on whatever the sender was looking at. The picker
+sits beside the masthead.
 
 ## Notes
 

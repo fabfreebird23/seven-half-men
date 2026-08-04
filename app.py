@@ -17,13 +17,25 @@ from typing import Dict, List, Optional
 import streamlit as st
 
 from halfmen import (adp_board, config, draftboard, engine, history, lottery,
-                     pot, rulebook, sleeper, storage, taxi, theme)
+                     pot, rulebook, sleeper, storage, taxi, theme, valueboard)
 
 st.set_page_config(page_title="7½ Men", page_icon="🏈", layout="wide")
 
 LG = config.league_id()
 SEASON = config.season()
-ME = config.me()
+DEFAULT_VIEW = config.me()
+
+
+def _viewer() -> str:
+    """Whose team the 'your' views show.
+
+    Lives in the query string rather than session state so a manager can
+    bookmark their own team and land on it, and so a link shared in the group
+    chat opens on whatever the sender was looking at.
+    """
+    want = st.query_params.get("team")
+    want = str(want[0] if isinstance(want, list) else want or "")
+    return want if want in config.managers() else DEFAULT_VIEW
 FIRST = config.is_first_season()
 # The full season a manager can spend FAAB across: regular season plus the
 # Chase bracket, since the bracket teams are still making claims.
@@ -113,7 +125,21 @@ lg = state["league"] or {}
 # No sidebar and one theme: the masthead sits alone at the top, the way the
 # Floodlight mock has it.
 theme.inject()
-theme.masthead("%d \u00b7 %s" % (SEASON, "season one" if FIRST else "offseason"))
+
+head_l, head_r = st.columns([3, 2])
+with head_l:
+    theme.masthead("%d \u00b7 %s" % (SEASON, "season one" if FIRST else "offseason"))
+with head_r:
+    _ids = owner_ids()
+    VIEW = _viewer()
+    _picked = st.selectbox(
+        "Viewing as", _ids, index=_ids.index(VIEW) if VIEW in _ids else 0,
+        format_func=lambda o: "%s \u00b7 %s" % (who(o), team_of(o)),
+        label_visibility="collapsed", key="viewer")
+    if _picked != VIEW:
+        st.query_params["team"] = _picked
+        st.rerun()
+    VIEW = _picked
 
 TABS = ["Home", "Rules", "Keepers", "Taxi Bay", "The Pot", "Draft", "Lottery"]
 tab_home, tab_rules, tab_keep, tab_taxi, tab_pot, tab_draft, tab_lot = st.tabs(TABS)
@@ -258,7 +284,7 @@ with tab_home:
             else '<span class="chip warn">pending</span>',
         ])
     ledger_table(["Owner", "Roster"], rows,
-                 me_row=owner_ids().index(ME) if ME in owner_ids() else None)
+                 me_row=owner_ids().index(VIEW) if VIEW in owner_ids() else None)
 
 
 
@@ -411,7 +437,7 @@ with tab_keep:
     theme.bar("Your slip", "%d regular · %d rookie · %d franchise" % (
         int(kr["regular"]), int(kr["rookie"]), int(config.franchise_rules()["slots"])))
     my_roster = next((r for r in (state["rosters"] or [])
-                      if str(r.get("owner_id")) == ME), None)
+                      if str(r.get("owner_id")) == VIEW), None)
     my_players = (my_roster or {}).get("players") or []
     if not my_players:
         st.markdown(
@@ -422,7 +448,7 @@ with tab_keep:
     else:
         pmap = players_map()
         hist = history.build(LG)
-        owned = owned_map().get(ME, Counter())
+        owned = owned_map().get(VIEW, Counter())
         prices = []
         for pid in my_players:
             meta = pmap.get(str(pid)) or {}
@@ -456,6 +482,115 @@ with tab_keep:
                         engine.total_surplus(slip)), unsafe_allow_html=True)
 
 
+    # ---------------------------------------------------------------- value board
+    theme.bar("Value board", "what everyone would cost to keep next year")
+    try:
+        hist_all = history.build(LG)
+        board = valueboard.rows(LG, SEASON, hist=hist_all)
+    except Exception:
+        hist_all, board = None, []
+
+    if board:
+        scope = st.radio("Scope", ["Whole league", "Just my team"],
+                         horizontal=True, label_visibility="collapsed", key="vb_scope")
+        shown = board if scope == "Whole league" else [
+            r for r in board if r["owner_id"] == VIEW]
+        rows_vb = []
+        for r in shown[:60]:
+            sur = r["surplus"]
+            chips = []
+            if r["kind"] == "rookie":
+                chips.append('<span class="chip mag">rookie</span>')
+            if r["from_rookie_draft"]:
+                chips.append('<span class="chip acc">R%d</span>' % engine.rookie_draft_premium())
+            if r["bumped"]:
+                chips.append('<span class="chip warn">bumped</span>')
+            if not r["eligible"]:
+                chips.append('<span class="chip bad">wall</span>')
+            rows_vb.append([
+                '<div style="font-weight:650">%s</div><div class="tiny">%s &#183; %s</div>' % (
+                    esc(r["name"]), esc(r["position"]), esc(team_of(r["owner_id"]))),
+                '<span class="mono">%s</span>' % ("R%d" % r["cost"] if r["cost"] else "&mdash;"),
+                '<span class="mono">%s</span>' % ("R%d" % r["adp"] if r["adp"] else "&mdash;"),
+                '<span class="surplus %s">%s</span>' % (
+                    theme.surplus_class(sur), theme.signed(sur)),
+                " ".join(chips),
+            ])
+        ledger_table(["Player", "Costs", "Market", "Surplus", ""], rows_vb)
+        st.markdown(
+            '<div class="tiny" style="margin-top:8px">Sorted by surplus, which is the only number '
+            'that decides whether a slot is worth spending. Prices include the bump, so they are '
+            'true in the context of the rest of that manager\'s slip rather than in isolation.'
+            '</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(
+            '<div class="banner"><b>Nobody is on a roster yet.</b> The moment the veteran draft '
+            'ends this fills with every player in the league, priced for whoever holds him and '
+            'sorted by surplus \u2014 which is the thing worth checking before you spend FAAB in '
+            'week 6, because a claim here is the first year of a three-year contract.</div>',
+            unsafe_allow_html=True)
+
+    if not FIRST or (state["rosters"] and any(r.get("players") for r in state["rosters"])):
+        theme.bar("Cheapest available", "unrostered, priced as if you claimed him today")
+        try:
+            fa = valueboard.free_agents(LG, limit=20, hist=hist_all)
+        except Exception:
+            fa = []
+        ledger_table(["Player", "Costs", "Market", "Surplus"], [[
+            '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
+                esc(f["name"]), esc(f["position"])),
+            '<span class="mono">R%d</span>' % f["cost"],
+            '<span class="mono">R%d</span>' % f["adp"],
+            '<span class="surplus %s">%s</span>' % (
+                theme.surplus_class(f["surplus"]), theme.signed(f["surplus"])),
+        ] for f in fa])
+        st.markdown(
+            '<div class="tiny" style="margin-top:8px">An undrafted pickup keeps at your last '
+            'available round, so a waiver find is among the cheapest keepers in the league. That '
+            'is worth knowing before the bidding starts, not after.</div>', unsafe_allow_html=True)
+
+    # ---------------------------------------------------------------- franchise
+    theme.bar("Franchise tag", "one player, years %d and %d, price frozen" % (
+        int(kr["max_years"]) + 1, int(kr["max_years"]) + int(config.franchise_rules()["extra_years"])))
+    try:
+        cands = valueboard.franchise_candidates(VIEW, LG, hist=hist_all)
+    except Exception:
+        cands = []
+    if cands:
+        best = cands[0]
+        st.markdown("".join(
+            '<div class="contract %s"><div class="who">'
+            '<div class="nm">%s <span class="tiny">%s</span></div>'
+            '<div class="meta">%s &#183; frozen at R%d &#183; market R%d</div>'
+            '<div class="tags2">%s<span class="chip">Freeze R%d</span>'
+            '<span class="chip">ADP R%d</span></div></div>'
+            '<div class="price"><div class="rd" style="color:%s">%s</div>'
+            '<div class="sub">rds over yr %d-%d</div></div></div>' % (
+                "fr" if c is best and c["banked"] > 0 else "",
+                esc(c["name"]), esc(c["position"]),
+                ("year %d \u2014 at the wall" % c["year"]) if c["at_the_wall"]
+                else "year %d \u2014 not eligible until year %d" % (
+                    c["year"], int(kr["max_years"]) + 1),
+                c["frozen"], c["adp"],
+                '<span class="chip solid">Tag this one</span>'
+                if c is best and c["banked"] > 0 and c["at_the_wall"] else "",
+                c["frozen"], c["adp"],
+                "var(--good)" if c["banked"] > 0 else "var(--dim)",
+                theme.signed(c["banked"]), int(kr["max_years"]) + 1,
+                int(kr["max_years"]) + int(config.franchise_rules()["extra_years"]))
+            for c in cands[:6]), unsafe_allow_html=True)
+    else:
+        st.markdown(
+            '<div class="banner"><b>Nobody is eligible, and nobody will be until %d.</b> The tag '
+            'only does anything for a player who has already been kept three times, so the first '
+            'real decision is four offseasons away. What it will rank then is which of your '
+            'year-four players banks the most, and the answer is counterintuitive: the freeze is '
+            'at the <em>most expensive</em> round you ever paid, so the tag is worth the most on a '
+            'late find whose market ran away from him and exactly nothing on a career '
+            'first-rounder.</div>' % (SEASON + int(kr["max_years"]) + 1),
+            unsafe_allow_html=True)
+
+
 # ---------------------------------------------------------------------------
 # TAXI BAY
 # ---------------------------------------------------------------------------
@@ -486,7 +621,7 @@ with tab_taxi:
         'not the player.</div>' % int(config.keeper_rules()["rookie"]),
         unsafe_allow_html=True)
 
-    mine = bays.get(ME) or taxi.Bay(owner_id=ME, pods=[])
+    mine = bays.get(VIEW) or taxi.Bay(owner_id=VIEW, pods=[])
     mine.incoming_picks = config.rookie_rounds()
     theme.bar("Your bay", "%d of %d filled \u00b7 %d rookie picks incoming" % (
         len(mine.pods), mine.slots, mine.incoming_picks))
@@ -535,7 +670,7 @@ with tab_taxi:
             else '<span class="chip good">room</span>',
         ])
     ledger_table(["Owner", "Slots", "Stashed", "Incoming picks", "Squeeze"], rows,
-                 me_row=owner_ids().index(ME) if ME in owner_ids() else None)
+                 me_row=owner_ids().index(VIEW) if VIEW in owner_ids() else None)
 
     # Sleeper's taxi_allow_vets only blocks veterans - it will let someone stash
     # a rookie they took in the VETERAN draft, which our rules do not allow.
@@ -667,11 +802,11 @@ with tab_pot:
         worst = max(settlement.bills, key=lambda b: b.owed).owner_id
         series = []
         for oid in owner_ids():
-            key = oid in (ME, worst)
+            key = oid in (VIEW, worst)
             series.append({
                 "name": who(oid).split(" ")[0] + " " + who(oid).split(" ")[-1][:1],
                 "values": curves.get(oid) or [0],
-                "colour": ("var(--acc)" if oid == ME else
+                "colour": ("var(--acc)" if oid == VIEW else
                            "var(--bad)" if oid == worst else "var(--dim)"),
                 "key": key})
         st.markdown('<div class="card">%s</div>' % theme.burndown(
@@ -761,6 +896,62 @@ with tab_draft:
         '<span><b style="background:var(--card2);border:1px solid var(--line2)"></b> Open</span>'
         '</div>', unsafe_allow_html=True)
 
+    # ------------------------------------------------- what a pick locks you into
+    theme.bar("What this pick locks you into", "the draft is where keeper value is made")
+    st.markdown(
+        '<div class="note" style="margin-bottom:12px">The draft is offline, so this is the bit '
+        'to have open next to the board. Pick the round you are about to spend and it shows the '
+        'contract you are signing: what he costs to hold each year, and what you bank if he turns '
+        'out better than where you took him.</div>', unsafe_allow_html=True)
+
+    pick_round = st.slider("Round", 1, config.veteran_rounds(), min(9, config.veteran_rounds()),
+                           key="draft_round")
+    path = contract_path(pick_round, None)
+    ladder = [
+        ("Year 1", path[0], "the round you took him, or his market \u2014 whichever is cheaper"),
+        ("Year 2", path[1], "R%d minus %d" % (pick_round, int(config.keeper_rules()["year2_bump"]))),
+        ("Year 3", "ADP", "the market, no choice \u2014 which is why it banks nothing"),
+        ("Year 4", "the wall", "gone unless he is your one franchise player"),
+    ]
+    st.markdown(
+        '<div class="worked"><div class="wh">If you take him in round %d</div>%s</div>' % (
+            pick_round, "".join(
+                '<div class="wr"><div class="l">%s</div><div class="v">%s</div>'
+                '<div class="d">%s</div></div>' % (
+                    lbl, ("R%d" % v) if isinstance(v, int) else v, note)
+                for lbl, v, note in ladder)), unsafe_allow_html=True)
+
+    lev = [(b, three_year_surplus(pick_round, b)) for b in (1, 2, 3, 5, 8)
+           if b < pick_round]
+    if lev:
+        st.markdown(
+            '<div class="card" style="margin-top:10px"><div class="eyebrow">If he outperforms</div>'
+            '<div class="glance" style="grid-template-columns:repeat(%d,minmax(0,1fr));gap:10px">'
+            '%s</div><div class="tiny" style="margin-top:10px">Rounds banked across the whole '
+            'three-year hold. This is the argument for spending a late pick on upside rather than '
+            'a safe floor: the same player is worth far more to hold if you found him late.</div>'
+            '</div>' % (len(lev), "".join(
+                '<div style="text-align:center"><div style="font-family:var(--f-display);'
+                'font-weight:800;font-size:30px;color:var(--acc)">%s</div>'
+                '<div class="tiny">becomes an R%d</div></div>' % (theme.signed(v), b)
+                for b, v in lev)), unsafe_allow_html=True)
+    else:
+        st.markdown(
+            '<div class="banner">A round-1 pick cannot outperform where you took him, so there is '
+            'no keeper value in it at all. That is not a bug in the maths \u2014 it is the whole '
+            'reason the early rounds are about winning now and the late rounds are about next '
+            'year.</div>', unsafe_allow_html=True)
+
+    here = adp_board.by_round().get(pick_round, [])[:12]
+    if here:
+        st.markdown(
+            '<div class="tiny" style="margin:12px 0 6px">Who the market has in round %d</div>'
+            '<div style="display:flex;gap:6px;flex-wrap:wrap">%s</div>' % (
+                pick_round, "".join(
+                    '<span class="chip">%s <span style="opacity:.6">%s</span></span>' % (
+                        esc(p["name"]), esc(p["position"])) for p in here)),
+            unsafe_allow_html=True)
+
     theme.bar("Draft capital", "which rounds each team actually holds")
     owned_by = draftboard.owned_rounds(LG, SEASON)
     keep_by = submitted_keepers()
@@ -838,8 +1029,8 @@ with tab_lot:
                             '<div style="display:flex;justify-content:space-between;padding:3px 0">'
                             '<span class="mono" style="color:var(--dim)">%d</span>'
                             '<span style="font-weight:%d;color:%s">%s</span></div>' % (
-                                i + 1, 700 if o == ME else 500,
-                                "var(--acc)" if o == ME else "var(--ink)", esc(who(o)))
+                                i + 1, 700 if o == VIEW else 500,
+                                "var(--acc)" if o == VIEW else "var(--ink)", esc(who(o)))
                             for i, o in enumerate(draw[key])), unsafe_allow_html=True)
             else:
                 st.markdown('<div class="banner">Nothing drawn yet. Pick a seed and hit the '
