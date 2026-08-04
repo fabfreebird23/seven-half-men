@@ -20,6 +20,7 @@ than a judgement call.
 """
 from __future__ import annotations
 
+import itertools
 from typing import Dict, List, Tuple
 
 import streamlit as st
@@ -187,12 +188,23 @@ h3.k{
 .chip.solid{ background:var(--acc2); color:var(--acc2-ink); border-color:var(--acc2); font-weight:600; }
 
 /* ---- glance rings --------------------------------------------------- */
-.glance{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
-.gl{ background:var(--card); border:1px solid var(--line); border-radius:var(--r);
-     padding:15px; display:flex; gap:14px; align-items:center; box-shadow:var(--shadow); }
-.gl .k{ font-family:var(--f-data); font-size:10px; letter-spacing:.13em; font-weight:500;
-        text-transform:uppercase; color:var(--dim); }
-.gl .s{ font-size:12.5px; color:var(--ink2); margin-top:4px; line-height:1.4; }
+.glance{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin:2px 0 6px; }
+.gl{ display:flex; flex-direction:column; align-items:center; gap:11px; }
+.gl svg.liq{ width:100%; max-width:168px; height:auto; display:block; }
+.gl .s{ font-size:13px; color:var(--ink2); line-height:1.4; text-align:center; max-width:22ch; }
+
+/* The surface: two travelling waves at different speeds and directions, plus a
+   slow bob. Three periods that do not divide into each other, so the loop is
+   long enough that the eye never catches it repeating. */
+svg.liq .wv{ will-change:transform; }
+svg.liq .bob{ transform:translateY(var(--sy,0px)); }
+svg.liq .front{ animation:liq-front 7s linear infinite; }
+svg.liq .back{ animation:liq-back 11s linear infinite; }
+svg.liq .bob{ animation:liq-bob 5.5s ease-in-out infinite; }
+@keyframes liq-front{ from{transform:translateX(0)} to{transform:translateX(-200px)} }
+@keyframes liq-back{ from{transform:translateX(0)} to{transform:translateX(200px)} }
+@keyframes liq-bob{ 0%,100%{transform:translateY(var(--sy,0px))}
+                    50%{transform:translateY(calc(var(--sy,0px) + 2.5px))} }
 
 /* ---- contract cards ------------------------------------------------- */
 .contract{ background:var(--card); border:1px solid var(--line); border-radius:var(--r);
@@ -362,7 +374,10 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
   .worked .wr{ grid-template-columns:1fr; gap:4px; }
   .mast .name{ font-size:25px; }
 }
-@media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+@media (prefers-reduced-motion:reduce){
+  *{ transition:none !important; }
+  svg.liq .wv, svg.liq .bob{ animation:none !important; }
+}
 </style>
 """
 
@@ -396,22 +411,81 @@ def bar(title: str, note: str = "") -> None:
                 unsafe_allow_html=True)
 
 
-def ring(pct: float, color: str, big: str, small: str = "") -> str:
+def _wave_d(amp: float, phase: float, second: float = 0.45) -> str:
+    """One seamless wave surface as an SVG path, in local coords where y=0 is
+    the still surface and +y is down into the liquid.
+
+    Two sine components at 200 and 100 units. Both divide the 200-unit loop
+    distance exactly, so translating the path by -200 lands it back on itself
+    and the CSS animation never shows a seam.
+    """
     import math
-    r = 30.0
-    circ = 2 * math.pi * r
-    off = circ * (1 - max(0.0, min(1.0, pct)))
+    pts = []
+    x = -200.0
+    while x <= 400.0:
+        y = (amp * math.sin(2 * math.pi * x / 200.0 + phase)
+             + amp * second * math.sin(2 * math.pi * x / 100.0 - phase * 1.7))
+        pts.append("%.1f,%.2f" % (x, y))
+        x += 8.0
+    return "M " + " L ".join(pts) + " L 400,420 L -200,420 Z"
+
+
+_WAVE_FRONT = _wave_d(6.5, 0.0)
+_WAVE_BACK = _wave_d(4.8, 2.1, second=0.3)
+
+# Streamlit renders every tab panel into the same document, so a per-call index
+# is not unique enough - two glance rows both numbering from zero would collide
+# and the second row would pick up the first row's gradients. This counter is
+# per script run, which is exactly the scope that matters.
+_UID = itertools.count()
+
+
+def liquid(pct: float, color: str, big: str, label: str = "", idx: int = None) -> str:
+    """A bowl of liquid that fills to a value and keeps moving.
+
+    The whoop app this borrows from runs a spring-damped surface sim per frame,
+    but Streamlit does not execute script tags in markdown, so this is the same
+    idea done entirely in CSS: two travelling waves at different speeds and
+    directions, plus a slow vertical bob. The beat between the three periods is
+    long enough that the surface never visibly repeats.
+    """
+    # The level is clamped short of full on purpose. A bowl filled to the brim
+    # has no surface, so it reads as a solid disc and the liquid is lost - and
+    # several of these metrics are 1.0 by construction. The number printed in
+    # the middle is the truth; the liquid is texture.
+    p = float(pct)
+    p = 0.0 if p <= 0.001 else max(0.10, min(0.93, p))
+    surface = 200.0 - 200.0 * p
+    uid = "lq%d" % (next(_UID) if idx is None else idx)
     return (
-        '<svg width="72" height="72" viewBox="0 0 74 74" aria-hidden="true">'
-        '<circle cx="37" cy="37" r="30" fill="none" stroke="var(--line)" stroke-width="6"/>'
-        '<circle cx="37" cy="37" r="30" fill="none" stroke="%s" stroke-width="6" '
-        'stroke-linecap="round" stroke-dasharray="%.1f" stroke-dashoffset="%.1f" '
-        'transform="rotate(-90 37 37)"/>'
-        '<text x="37" y="%d" text-anchor="middle" font-family="var(--f-display)" '
-        'font-weight="800" font-size="24" fill="var(--ink)">%s</text>%s</svg>'
-    ) % (color, circ, off, 35 if small else 43, big,
-         ('<text x="37" y="49" text-anchor="middle" font-family="var(--f-data)" '
-          'font-size="8.5" letter-spacing="0.6" fill="var(--dim)">%s</text>' % small) if small else "")
+      '<svg class="liq" viewBox="0 0 200 200" role="img" aria-label="%(label)s %(big)s">'
+      '<defs>'
+        '<clipPath id="c%(uid)s"><circle cx="100" cy="100" r="96"/></clipPath>'
+        '<linearGradient id="g%(uid)s" x1="0" y1="0" x2="0.3" y2="1">'
+          '<stop offset="0" stop-color="%(c)s" stop-opacity=".92"/>'
+          '<stop offset="1" stop-color="%(c)s" stop-opacity=".42"/>'
+        '</linearGradient>'
+      '</defs>'
+      '<circle cx="100" cy="100" r="96" fill="var(--card)"/>'
+      '<g clip-path="url(#c%(uid)s)">'
+        '<g class="bob" style="--sy:%(sy).1fpx">'
+          '<path class="wv back" d="%(back)s" fill="%(c)s" opacity=".30"/>'
+          '<path class="wv front" d="%(front)s" fill="url(#g%(uid)s)"/>'
+        '</g>'
+      '</g>'
+      '<circle cx="100" cy="100" r="96" fill="none" stroke="%(c)s" stroke-opacity=".45" '
+        'stroke-width="2"/>'
+      '%(lbl)s'
+      '<text x="100" y="%(by)d" text-anchor="middle" font-family="var(--f-display)" '
+        'font-weight="800" font-size="54" letter-spacing="0.5" fill="var(--ink)">%(big)s</text>'
+      '</svg>'
+    ) % {
+      "uid": uid, "c": color, "sy": surface, "back": _WAVE_BACK, "front": _WAVE_FRONT,
+      "big": big, "label": label, "by": 132 if label else 118,
+      "lbl": ('<text x="100" y="86" text-anchor="middle" font-family="var(--f-data)" '
+              'font-size="15" font-weight="500" letter-spacing="2.2" fill="var(--ink)" '
+              'opacity=".92">%s</text>' % label.upper()) if label else "",
+    }
 
 
 def pips(year: int, franchise: bool = False, rookie: bool = False) -> str:

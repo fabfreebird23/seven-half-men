@@ -90,3 +90,44 @@ def test_there_is_one_ground_and_it_is_dark():
     assert list(theme.PALETTES) == ["acid"]
     v = theme.palette_vars("acid")
     assert theme.contrast(v["--ink"], v["--bg"]) > 15, "near-black ground, bright ink"
+
+
+# ---------------------------------------------------------------- liquid
+
+def test_every_bowl_gets_its_own_gradient_ids():
+    """Streamlit renders all tab panels into one document, so ids that only
+    count within a single glance row collide across rows and the second row
+    inherits the first row's colours."""
+    import re
+    ids = [re.search(r'id="c(lq\d+)"', theme.liquid(0.5, "#fff", "1", "x")).group(1)
+           for _ in range(6)]
+    assert len(set(ids)) == 6
+
+
+def test_the_fill_level_never_reaches_the_brim():
+    """A bowl filled to the top has no surface, so it reads as a solid disc -
+    and several of these metrics are 1.0 by construction."""
+    import re
+    sy = lambda v: float(re.search(r"--sy:([-\d.]+)px", theme.liquid(v, "#fff", "1", "x")).group(1))
+    assert sy(1.0) > 0, "a full bowl still shows a meniscus"
+    assert sy(1.0) == sy(5.0), "out-of-range values clamp rather than overflow"
+    assert sy(0.0) == 200.0, "an empty bowl is genuinely empty"
+    assert sy(0.5) == 100.0, "mid-range is linear"
+
+
+def test_the_level_rides_a_custom_property_not_a_transform():
+    """CSS animations beat inline styles. If the level were set as an inline
+    transform the bob keyframes would clobber it and every bowl would animate
+    to the same height."""
+    svg = theme.liquid(0.5, "#fff", "1", "x")
+    assert "--sy:" in svg and "transform:translateY" not in svg
+
+
+def test_the_wave_loops_without_a_seam():
+    """Both sine components divide the 200-unit scroll distance, so translating
+    the path by -200 lands it back on itself."""
+    import re
+    d = theme._WAVE_FRONT
+    pts = dict((float(a), float(b)) for a, b in re.findall(r"(-?[\d.]+),(-?[\d.]+)", d))
+    for x in (0.0, 40.0, 96.0):
+        assert abs(pts[x] - pts[x + 200.0]) < 1e-6, "seam at x=%s" % x

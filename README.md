@@ -126,7 +126,7 @@ halfmen/
   rulebook.py          the league rulebook, rendered on the Rules page
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 113 tests
+tests/                 117 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 
@@ -182,6 +182,16 @@ There is deliberately **no light theme**. One ground tuned properly beats two
 half-tuned ones. `theme.PALETTES` is still a dict and `inject()` still takes a
 palette argument, so a light ground can be added later as one more entry without
 touching a single component.
+
+The glance gauges are **bowls of liquid**, not rings. The whoop app this borrows
+from runs a spring-damped surface sim per animation frame, but Streamlit does not
+execute script tags inside markdown, so `theme.liquid()` does the same idea in
+pure CSS: two travelling waves at different speeds and directions plus a slow
+bob, with periods that do not divide into each other so the loop never visibly
+repeats. The fill level rides a custom property rather than an inline transform,
+because CSS animations beat inline styles and the bob keyframes would otherwise
+flatten every bowl to the same height. It is clamped short of the brim on
+purpose — a bowl filled to the top has no surface and reads as a solid disc.
 
 Contrast is tested, not eyeballed. Every foreground/background pair the app puts
 text on is declared in `theme.TEXT_PAIRS` and asserted against WCAG AA in

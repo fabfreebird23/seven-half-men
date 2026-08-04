@@ -101,52 +101,14 @@ tab_home, tab_rules, tab_keep, tab_taxi, tab_pot, tab_draft, tab_lot = st.tabs(T
 # ---------------------------------------------------------------------------
 
 def glance(cards: List[dict]) -> None:
+    """A row of liquid bowls. Label and value live inside the bowl, the sentence
+    that explains them sits underneath."""
     cells = "".join(
-        '<div class="gl">%s<div><div class="k">%s</div><div class="s">%s</div></div></div>' % (
-            theme.ring(c["pct"], c["color"], c["big"], c.get("sub", "")),
-            esc(c["label"]), c.get("note", ""))
+        '<div class="gl">%s<div class="s">%s</div></div>' % (
+            theme.liquid(c["pct"], c["color"], c["big"], c.get("label", "")),
+            c.get("note", ""))
         for c in cards)
     st.markdown('<div class="glance">%s</div>' % cells, unsafe_allow_html=True)
-
-
-def contract_card(p: engine.Price, *, story: str = "", year_label: str = "") -> str:
-    cls = "wall" if not p.eligible else ("fr" if p.kind == "franchise"
-                                         else ("pick" if (p.surplus or 0) >= 3 else ""))
-    chips = []
-    if p.kind == "rookie":
-        chips.append('<span class="chip acc">Rookie keeper</span>')
-    elif p.kind == "franchise":
-        chips.append('<span class="chip solid">Franchise</span>')
-    elif not p.eligible:
-        chips.append('<span class="chip bad">Year %d — the wall</span>' % p.year)
-    else:
-        chips.append('<span class="chip">Year %d of %d</span>' % (
-            p.year, int(config.keeper_rules()["max_years"])))
-    if p.adp_round:
-        chips.append('<span class="chip">ADP R%d</span>' % p.adp_round)
-    if p.surplus is not None:
-        k = theme.surplus_class(p.surplus)
-        chips.append('<span class="chip %s">%s rd surplus</span>' % (
-            "good" if k == "p" else ("bad" if k == "n" else ""), theme.signed(p.surplus)))
-    if p.bumped:
-        chips.append('<span class="chip warn">bumped from R%d</span>' % p.base_round)
-    if p.from_rookie_draft:
-        chips.append('<span class="chip acc">rookie-draft R%d</span>' % engine.rookie_draft_premium())
-
-    price = ('<div class="rd">R%d</div><div class="sub">cost</div>' % p.final_round
-             if p.final_round else '<div class="rd">—</div><div class="sub">gone</div>')
-    return (
-        '<div class="contract %s"><div class="who">'
-        '<div class="nm">%s</div><div class="meta">%s%s</div>'
-        '<div style="margin-top:8px">%s</div>'
-        '<div class="tags2">%s</div>'
-        '%s</div><div class="price">%s</div></div>'
-    ) % (cls, esc(p.name), esc(p.position), " · " + esc(year_label) if year_label else "",
-         theme.pips(max(1, p.year), franchise=(p.kind == "franchise"),
-                    rookie=(p.kind == "rookie")),
-         "".join(chips),
-         '<div class="tiny" style="margin-top:7px">%s</div>' % story if story else "",
-         price)
 
 
 def ledger_table(headers: List[str], rows: List[List[str]], me_row: int = None) -> None:
@@ -205,16 +167,16 @@ with tab_home:
     theme.bar("The league", "%s · %s" % (esc(lg.get("name") or ""),
                                          esc((lg.get("status") or "").replace("_", " "))))
     glance([
-        {"pct": n_managers / 8.0, "color": "var(--acc)", "big": str(n_managers), "sub": "of 8",
-         "label": "Managers in", "note": "every seat filled"},
+        {"pct": n_managers / 8.0, "color": "var(--acc)", "big": str(n_managers),
+         "label": "Managers", "note": "all 8 seats filled"},
         {"pct": (filled / max(1, len(rosters))), "color": "var(--acc2)",
-         "big": str(filled), "sub": "rostered",
-         "label": "Rosters", "note": "fills at the draft"},
+         "big": str(filled),
+         "label": "Rosters", "note": "0 of 8 \u2014 they fill at the draft"},
         {"pct": min(1.0, adp_board.size() / 300.0), "color": "var(--acc2)",
-         "big": str(adp_board.size()), "sub": "players",
-         "label": "ADP board", "note": "consensus, refreshed daily"},
-        {"pct": 1.0, "color": "var(--good)", "big": str(config.veteran_rounds()), "sub": "rounds",
-         "label": "Vet draft", "note": "13 in year one so a rookie can be promoted"},
+         "big": str(adp_board.size()),
+         "label": "ADP board", "note": "players on the consensus board, refreshed daily"},
+        {"pct": 1.0, "color": "var(--good)", "big": str(config.veteran_rounds()),
+         "label": "Vet draft", "note": "rounds \u2014 13 in year one so a rookie can be promoted"},
     ])
 
     theme.bar("Who's in", "%d managers" % n_managers)
@@ -223,20 +185,12 @@ with tab_home:
         rows.append([
             '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
                 esc(who(oid)), esc(team_of(oid))),
-            '<span class="mono">%s</span>' % esc(config.manager(oid).get("handle", "")),
             '<span class="chip good">in</span>' if oid in {str(r.get("owner_id")) for r in rosters}
             else '<span class="chip warn">pending</span>',
         ])
-    ledger_table(["Owner", "Sleeper", "Roster"], rows,
+    ledger_table(["Owner", "Roster"], rows,
                  me_row=owner_ids().index(ME) if ME in owner_ids() else None)
 
-    theme.bar("The rules", "as the engine encodes them")
-    st.markdown('<div class="card">%s</div>' % "".join(
-        '<div style="padding:11px 0;border-top:%s">'
-        '<div style="font-weight:650;font-size:13.5px;margin-bottom:2px">%s</div>'
-        '<div class="tiny" style="font-size:12px">%s</div></div>' % (
-            "none" if i == 0 else "1px solid var(--line)", t, d)
-        for i, (t, d) in enumerate(RULES_LEDGER)), unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +220,14 @@ def render_block(kind, *rest) -> str:
 
 with tab_rules:
     secs = rulebook.sections()
+    theme.bar("The short version", "everything the engine enforces, in one screen")
+    st.markdown('<div class="card">%s</div>' % "".join(
+        '<div style="padding:11px 0;border-top:%s">'
+        '<div style="font-weight:650;font-size:13.5px;margin-bottom:2px">%s</div>'
+        '<div class="tiny" style="font-size:12.5px">%s</div></div>' % (
+            "none" if i == 0 else "1px solid var(--line)", t, d)
+        for i, (t, d) in enumerate(RULES_LEDGER)), unsafe_allow_html=True)
+    theme.bar("The long version", "%d sections" % len(secs))
     st.markdown(
         '<div class="banner">This is the rulebook. Everything here is what the dashboard '
         'actually enforces — the numbers are read out of the same config the engine runs on, so '
@@ -561,15 +523,15 @@ with tab_pot:
 
     if complete:
         glance([
-            {"pct": 1.0, "color": "var(--bad)", "big": "$%d" % settlement.total, "sub": "due",
+            {"pct": 1.0, "color": "var(--bad)", "big": "$%d" % settlement.total,
              "label": "Comes due", "note": "every unspent dollar, all 8 teams"},
             {"pct": settlement.to_chase / max(1, settlement.cap), "color": "var(--acc)",
-             "big": "$%d" % settlement.to_chase, "sub": "capped",
+             "big": "$%d" % settlement.to_chase,
              "label": "To the Chase winner", "note": "capped at $%d" % settlement.cap},
             {"pct": 1.0 if settlement.to_champion else 0.0, "color": "var(--acc2)",
-             "big": "$%d" % settlement.to_champion, "sub": "over",
+             "big": "$%d" % settlement.to_champion,
              "label": "To the champion", "note": "everything above the cap"},
-            {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]), "sub": "each",
+            {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
              "label": "Budget", "note": "spend it or owe it"},
         ])
     else:
@@ -577,14 +539,14 @@ with tab_pot:
         pool = int(fr["budget"]) * len(settlement.bills)
         glance([
             {"pct": spent_total / max(1, pool), "color": "var(--acc)",
-             "big": "$%d" % spent_total, "sub": "spent",
+             "big": "$%d" % spent_total,
              "label": "Burned so far", "note": "across all 8 teams"},
             {"pct": (pool - spent_total) / max(1, pool), "color": "var(--acc2)",
-             "big": "$%d" % (pool - spent_total), "sub": "left",
+             "big": "$%d" % (pool - spent_total),
              "label": "Still to spend", "note": "every dollar of it is owed if it sits there"},
-            {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]), "sub": "each",
+            {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
              "label": "Budget", "note": "spend it or owe it"},
-            {"pct": 1.0, "color": "var(--dim)", "big": "$%d" % settlement.cap, "sub": "cap",
+            {"pct": 1.0, "color": "var(--dim)", "big": "$%d" % settlement.cap,
              "label": "Pot cap", "note": "Chase winner first, champion takes the rest"},
         ])
         st.markdown(
