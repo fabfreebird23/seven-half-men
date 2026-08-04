@@ -215,13 +215,13 @@ with tab_home:
     glance([
         {"pct": n_managers / 8.0, "color": "var(--acc)", "big": str(n_managers),
          "label": "Managers", "note": "all 8 seats filled"},
-        {"pct": (filled / max(1, len(rosters))), "color": "var(--bad)",
+        {"pct": (filled / max(1, len(rosters))), "color": "var(--acc2)",
          "big": str(filled),
          "label": "Rosters", "note": "0 of 8 \u2014 they fill at the draft"},
-        {"pct": min(1.0, adp_board.size() / 300.0), "color": "var(--gold)",
+        {"pct": min(1.0, adp_board.size() / 300.0), "color": "var(--acc2)",
          "big": str(adp_board.size()),
          "label": "ADP board", "note": "players on the consensus board, refreshed daily"},
-        {"pct": 1.0, "color": "var(--acc2)", "big": str(config.veteran_rounds()),
+        {"pct": 1.0, "color": "var(--good)", "big": str(config.veteran_rounds()),
          "label": "Vet draft", "note": "rounds \u2014 13 in year one so a rookie can be promoted"},
     ])
 
@@ -577,7 +577,7 @@ with tab_pot:
             {"pct": 1.0 if settlement.to_champion else 0.0, "color": "var(--acc2)",
              "big": "$%d" % settlement.to_champion,
              "label": "To the champion", "note": "everything above the cap"},
-            {"pct": 1.0, "color": "var(--gold)", "big": "$%d" % int(fr["budget"]),
+            {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
              "label": "Budget", "note": "spend it or owe it"},
         ])
     else:
@@ -590,7 +590,7 @@ with tab_pot:
             {"pct": (pool - spent_total) / max(1, pool), "color": "var(--acc2)",
              "big": "$%d" % (pool - spent_total),
              "label": "Still to spend", "note": "every dollar of it is owed if it sits there"},
-            {"pct": 1.0, "color": "var(--gold)", "big": "$%d" % int(fr["budget"]),
+            {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
              "label": "Budget", "note": "spend it or owe it"},
             {"pct": 1.0, "color": "var(--dim)", "big": "$%d" % settlement.cap,
              "label": "Pot cap", "note": "Chase winner first, champion takes the rest"},
@@ -666,8 +666,8 @@ with tab_draft:
         '<div class="legend">'
         '<span><b style="background:var(--acc-soft);border:1px solid var(--acc)"></b> Keeper</span>'
         '<span><b style="background:var(--acc2-soft);border:1px solid var(--acc2)"></b> Rookie keeper</span>'
-        '<span><b style="background:var(--gold-soft);'
-        'border:1px solid var(--gold)"></b> Franchise</span>'
+        '<span><b style="background:color-mix(in srgb,var(--acc2) 30%,transparent);'
+        'border:1px solid var(--acc2)"></b> Franchise</span>'
         '<span><b style="background:color-mix(in srgb,var(--warn) 20%,transparent);'
         'border:1px dashed var(--warn)"></b> Traded</span>'
         '<span><b style="background:var(--card2);border:1px solid var(--line2)"></b> Open</span>'

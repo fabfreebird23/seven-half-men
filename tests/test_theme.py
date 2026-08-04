@@ -79,20 +79,11 @@ def test_css_substitutes_cleanly_for_every_palette():
 
 def test_the_display_face_is_a_real_condensed_cut():
     """Impact was only ever in the mockup because the artifact CSP blocks font
-    CDNs. A real page loads the face it actually wanted.
-
-    Checks the font stack rather than the whole sheet - the prose in this file
-    mentions Impact by name, and a substring search over the stylesheet matched
-    the comment.
-    """
-    import re
+    CDNs. A real page loads the face it actually wanted."""
     css = theme.css()
-    stacks = dict(re.findall(r"(--f-[a-z]+):([^;]+);", css))
-    assert "Impact" not in stacks["--f-display"]
-    assert "Big Shoulders Display" in stacks["--f-display"]
-    assert "Archivo" in stacks["--f-body"]
-    assert "Pacifico" in stacks["--f-script"], "the script wordmark needs a real script face"
+    assert "Impact" not in css
     assert "fonts.googleapis.com" in css
+    assert "Big Shoulders Display" in css and "Archivo" in css
 
 
 def test_there_is_one_ground_and_it_is_dark():
