@@ -124,9 +124,9 @@ halfmen/
   storage.py           submitted slips (JSON per season, atomic writes)
   adp_board.py         consensus ADP -> a round in an 8-team draft
   rulebook.py          the league rulebook, rendered on the Rules page
-  theme.py             the two palettes + the Streamlit chrome overrides
+  theme.py             the two palettes, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 84 tests
+tests/                 130 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 
@@ -165,3 +165,21 @@ the page changes with it.
 It is the reference document for the league — worked examples for the price
 ladder, the bump, and both the right and wrong franchise pick, plus an
 order-of-operations for the offseason.
+
+## Type and colour
+
+Archivo (variable width axis — the wide cut does display, the normal cut sets
+body) plus IBM Plex Mono for anything with digits in it, both from Google Fonts.
+The mockup used Impact only because it ran under an artifact CSP that blocks font
+CDNs; a real page has no such constraint.
+
+Both palettes are contrast-tested rather than eyeballed. Every foreground /
+background pair the app puts text on is declared in `theme.TEXT_PAIRS` and
+asserted against WCAG AA in `tests/test_theme.py`, for both palettes. Add a new
+coloured surface and you add its pair to that list, or the test catches it.
+Tightest current margin is 5.58:1 against a 4.5 floor.
+
+`streamlit` is **pinned** in requirements. The chrome overrides target Streamlit
+internals (`[data-baseweb="tab"]`, `[data-testid="stRadio"]`,
+`label:has(input:checked)`) and would silently render raw on a version that moves
+them.
