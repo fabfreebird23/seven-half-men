@@ -1,8 +1,11 @@
-"""Both palettes have to stay readable when you flip between them.
+"""The theme has to stay readable.
 
 Rather than eyeball it, every foreground/background pair the app actually puts
 text on is declared in theme.TEXT_PAIRS and checked against WCAG here. Add a new
 coloured surface and you add its pair to that list, or this catches it.
+
+There is one palette today. Everything here loops over PALETTES, so adding a
+light ground later gets the same audit for free.
 """
 from __future__ import annotations
 
@@ -42,9 +45,21 @@ def test_the_muted_tier_is_still_legible_in_both():
         assert theme.contrast(v["--dim"], v["--card"]) >= AA_NORMAL
 
 
-def test_both_palettes_define_the_same_tokens():
-    a, b = (set(theme.palette_vars(p)) for p in PALETTES)
-    assert a == b, "palettes drifted: %s" % (a ^ b)
+def test_all_palettes_define_the_same_tokens():
+    """Trivially true with one palette; the point is that a second ground added
+    later cannot ship missing a token the stylesheet references."""
+    sets = [set(theme.palette_vars(p)) for p in PALETTES]
+    for other in sets[1:]:
+        assert other == sets[0], "palettes drifted: %s" % (other ^ sets[0])
+
+
+def test_the_stylesheet_only_references_tokens_the_palette_defines():
+    import re
+    defined = set(theme.palette_vars(theme.DEFAULT)) | {
+        "--f-display", "--f-body", "--f-data", "--r", "--r-sm"}
+    used = set(re.findall(r"var\((--[a-z0-9-]+)\)", theme.css()))
+    missing = used - defined
+    assert not missing, "stylesheet uses undefined tokens: %s" % sorted(missing)
 
 
 def test_contrast_maths():
@@ -62,10 +77,16 @@ def test_css_substitutes_cleanly_for_every_palette():
         assert theme.palette_vars(pal)["--acc"] in out
 
 
-def test_the_display_face_is_not_a_condensed_fallback():
-    """Impact was only ever there because the mockup ran under a CSP that blocks
-    font CDNs. A real page loads a real face."""
-    css = theme.css("lights_off")
+def test_the_display_face_is_a_real_condensed_cut():
+    """Impact was only ever in the mockup because the artifact CSP blocks font
+    CDNs. A real page loads the face it actually wanted."""
+    css = theme.css()
     assert "Impact" not in css
     assert "fonts.googleapis.com" in css
-    assert "Archivo" in css
+    assert "Big Shoulders Display" in css and "Archivo" in css
+
+
+def test_there_is_one_ground_and_it_is_dark():
+    assert list(theme.PALETTES) == ["acid"]
+    v = theme.palette_vars("acid")
+    assert theme.contrast(v["--ink"], v["--bg"]) > 15, "near-black ground, bright ink"

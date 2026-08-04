@@ -87,18 +87,10 @@ def team_of(owner_id: str) -> str:
 state = league_state()
 lg = state["league"] or {}
 
-# The mock has no sidebar, so neither does this: the palette switcher sits
-# beside the masthead and everything else is a page.
-head_l, head_r = st.columns([3, 2])
-with head_l:
-    theme.masthead("%d %s" % (SEASON, "season one" if FIRST else "offseason"))
-with head_r:
-    choice = st.radio("Palette", [p["label"] for p in theme.PALETTES.values()],
-                      label_visibility="collapsed", horizontal=True,
-                      index=0 if config.palette() == "lights_off" else 1)
-    st.session_state["palette"] = "lights_off" if choice == "Lights Off" else "newsprint"
-
-theme.inject(st.session_state.get("palette"))
+# No sidebar and one theme: the masthead sits alone at the top, the way the
+# Floodlight mock has it.
+theme.inject()
+theme.masthead("%d \u00b7 %s" % (SEASON, "season one" if FIRST else "offseason"))
 
 TABS = ["Home", "Rules", "Keepers", "Taxi Bay", "The Pot", "Draft", "Lottery"]
 tab_home, tab_rules, tab_keep, tab_taxi, tab_pot, tab_draft, tab_lot = st.tabs(TABS)
@@ -218,7 +210,7 @@ with tab_home:
         {"pct": (filled / max(1, len(rosters))), "color": "var(--acc2)",
          "big": str(filled), "sub": "rostered",
          "label": "Rosters", "note": "fills at the draft"},
-        {"pct": min(1.0, adp_board.size() / 300.0), "color": "var(--gold)",
+        {"pct": min(1.0, adp_board.size() / 300.0), "color": "var(--acc2)",
          "big": str(adp_board.size()), "sub": "players",
          "label": "ADP board", "note": "consensus, refreshed daily"},
         {"pct": 1.0, "color": "var(--good)", "big": str(config.veteran_rounds()), "sub": "rounds",
@@ -577,7 +569,7 @@ with tab_pot:
             {"pct": 1.0 if settlement.to_champion else 0.0, "color": "var(--acc2)",
              "big": "$%d" % settlement.to_champion, "sub": "over",
              "label": "To the champion", "note": "everything above the cap"},
-            {"pct": 1.0, "color": "var(--gold)", "big": "$%d" % int(fr["budget"]), "sub": "each",
+            {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]), "sub": "each",
              "label": "Budget", "note": "spend it or owe it"},
         ])
     else:
@@ -590,7 +582,7 @@ with tab_pot:
             {"pct": (pool - spent_total) / max(1, pool), "color": "var(--acc2)",
              "big": "$%d" % (pool - spent_total), "sub": "left",
              "label": "Still to spend", "note": "every dollar of it is owed if it sits there"},
-            {"pct": 1.0, "color": "var(--gold)", "big": "$%d" % int(fr["budget"]), "sub": "each",
+            {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]), "sub": "each",
              "label": "Budget", "note": "spend it or owe it"},
             {"pct": 1.0, "color": "var(--dim)", "big": "$%d" % settlement.cap, "sub": "cap",
              "label": "Pot cap", "note": "Chase winner first, champion takes the rest"},
@@ -666,8 +658,8 @@ with tab_draft:
         '<div class="legend">'
         '<span><b style="background:var(--acc-soft);border:1px solid var(--acc)"></b> Keeper</span>'
         '<span><b style="background:var(--acc2-soft);border:1px solid var(--acc2)"></b> Rookie keeper</span>'
-        '<span><b style="background:color-mix(in srgb,var(--gold) 30%,transparent);'
-        'border:1px solid var(--gold)"></b> Franchise</span>'
+        '<span><b style="background:color-mix(in srgb,var(--acc2) 30%,transparent);'
+        'border:1px solid var(--acc2)"></b> Franchise</span>'
         '<span><b style="background:color-mix(in srgb,var(--warn) 20%,transparent);'
         'border:1px dashed var(--warn)"></b> Traded</span>'
         '<span><b style="background:var(--card2);border:1px solid var(--line2)"></b> Open</span>'

@@ -1,18 +1,22 @@
-"""Two palettes, one chassis.
+"""Floodlight / Acid - one dark theme.
 
-  lights_off   near-black ground, acid lime, magenta
-  newsprint    warm paper, deep violet, gold
+Big Shoulders Display is a condensed industrial cut doing the display work:
+mastheads, section heads, nav, and every large number. It is the face Impact was
+standing in for in the mockup, which only fell back to Impact because the
+artifact CSP blocks font CDNs. Archivo sets the body, IBM Plex Mono carries
+anything with digits in it.
 
-Unlike the mockup - which ran under an artifact CSP that blocks font CDNs and so
-fell back to Impact - this is an ordinary web page and can load a real typeface.
-Archivo is a grotesque with a variable width axis: the wide cut does the display
-work the condensed 90s faces were standing in for, and the normal cut sets the
-body, so the page is one family in two widths rather than two families arguing.
-IBM Plex Mono carries anything with digits in it.
+Acid lime does all the accent work on a near-black ground; electric blue is the
+second voice and marks the things that are special rather than merely good -
+franchise tags, champions, the year you are currently in.
+
+There is deliberately no light theme. One ground, tuned properly, beats two
+half-tuned ones; a light palette can be added later as a second entry in
+PALETTES without touching a component.
 
 Every colour pair that ends up as text is declared in TEXT_PAIRS and asserted
-against WCAG AA in tests/test_theme.py, so "is this readable in both palettes"
-is a test rather than a judgement call.
+against WCAG AA in tests/test_theme.py, so "is this readable" is a test rather
+than a judgement call.
 """
 from __future__ import annotations
 
@@ -21,35 +25,22 @@ from typing import Dict, List, Tuple
 import streamlit as st
 
 PALETTES: Dict[str, dict] = {
-    "lights_off": {
-        "label": "Lights Off",
+    "acid": {
+        "label": "Acid",
         "vars": """
-  --bg:#0a0a0d; --bg2:#101015;
-  --card:#131319; --card2:#1b1b22; --line:#26262f; --line2:#33333e;
-  --ink:#f5f6f8; --ink2:#aab2be; --dim:#8b95a3;
-  --acc:#c9f24b; --acc-ink:#0c0c0f; --acc-soft:rgba(201,242,75,.13);
-  --acc2:#e59cff; --acc2-soft:rgba(229,156,255,.14);
-  --gold:#ffce1f; --gold-ink:#1a1405;
-  --good:#5ceba0; --warn:#f5c542; --bad:#ff7089;
-  --shadow:0 10px 30px -18px rgba(0,0,0,.9);
-  --grain:.045;
-""",
-    },
-    "newsprint": {
-        "label": "Newsprint",
-        "vars": """
-  --bg:#f4f1e9; --bg2:#ece7f4;
-  --card:#ffffff; --card2:#f5f3fa; --line:#e4dff0; --line2:#d2cbe6;
-  --ink:#1c1430; --ink2:#544a75; --dim:#635a85;
-  --acc:#4b2d9f; --acc-ink:#ffffff; --acc-soft:rgba(75,45,159,.09);
-  --acc2:#a8145a; --acc2-soft:rgba(168,20,90,.10);
-  --gold:#8a5d00; --gold-ink:#ffffff;
-  --good:#0b6f46; --warn:#7a5200; --bad:#a01048;
-  --shadow:0 8px 26px -18px rgba(45,25,90,.4);
-  --grain:.03;
+  --bg:#08090c; --bg2:#0d0f14;
+  --card:#101218; --card2:#171a22; --line:#232833; --line2:#313847;
+  --ink:#f2f5f9; --ink2:#a6b1c2; --dim:#8593a6;
+  --acc:#ccff44; --acc-ink:#0a0d05; --acc-soft:rgba(204,255,68,.13);
+  --acc2:#5b8cff; --acc2-ink:#020a1f; --acc2-soft:rgba(91,140,255,.15);
+  --good:#48e39a; --warn:#f5c542; --bad:#ff6b7d;
+  --shadow:0 10px 30px -18px rgba(0,0,0,.95);
+  --grain:.05;
 """,
     },
 }
+
+DEFAULT = "acid"
 
 # Foreground / background pairs that actually carry text somewhere in the app.
 # tests/test_theme.py walks these for every palette.
@@ -57,21 +48,22 @@ TEXT_PAIRS: List[Tuple[str, str]] = [
     ("--ink", "--bg"), ("--ink", "--card"), ("--ink", "--card2"),
     ("--ink2", "--bg"), ("--ink2", "--card"), ("--ink2", "--card2"),
     ("--dim", "--card"), ("--dim", "--card2"), ("--dim", "--bg"),
-    ("--acc-ink", "--acc"), ("--gold-ink", "--gold"),
+    ("--acc-ink", "--acc"), ("--acc2-ink", "--acc2"),
     ("--acc", "--card"), ("--acc2", "--card"),
     ("--good", "--card"), ("--warn", "--card"), ("--bad", "--card"),
     ("--good", "--card2"), ("--warn", "--card2"), ("--bad", "--card2"),
 ]
 
 FONT_URL = ("https://fonts.googleapis.com/css2?"
-            "family=Archivo:wdth,wght@75..125,400..800"
+            "family=Big+Shoulders+Display:wght@400..800"
+            "&family=Archivo:wdth,wght@75..125,400..800"
             "&family=IBM+Plex+Mono:wght@400;500;600&display=swap")
 
 _FONTS = """
-  --f-display:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-display:'Big Shoulders Display','Archivo Narrow',system-ui,sans-serif;
   --f-body:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   --f-data:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
-  --r:12px; --r-sm:8px;
+  --r:9px; --r-sm:7px;
 """
 
 SLEEPER_IMG = "https://sleepercdn.com/content/nfl/players/thumb/{pid}.jpg"
@@ -140,10 +132,10 @@ html, body, [class*="css"], .stMarkdown, p, li, span, label{
 .mono, .num{ font-family:var(--f-data); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
 
 /* ---- masthead ------------------------------------------------------- */
-.mast{ display:flex; align-items:baseline; gap:13px; line-height:1; margin:0 0 2px; }
+.mast{ display:flex; align-items:baseline; gap:14px; line-height:1; margin:0 0 16px; }
 .mast .name{
-  font-family:var(--f-display); font-weight:800; font-stretch:118%;
-  font-size:31px; letter-spacing:-.025em; color:var(--ink);
+  font-family:var(--f-display); font-weight:800; font-size:42px;
+  letter-spacing:.005em; text-transform:uppercase; line-height:.9; color:var(--ink);
 }
 .mast .name .half{ color:var(--acc); }
 .mast .yr{
@@ -156,23 +148,23 @@ html, body, [class*="css"], .stMarkdown, p, li, span, label{
    full-strength accent - the loudest thing on the page and the worst contrast
    on it at the same time. */
 .bar{
-  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
-  font-family:var(--f-display); font-weight:800; font-stretch:112%;
-  font-size:21px; letter-spacing:-.02em; color:var(--ink);
-  background:none; border-bottom:1px solid var(--line2);
-  padding:0 0 9px; margin:30px 0 15px;
+  display:flex; align-items:center; gap:14px;
+  font-family:var(--f-display); font-weight:800; font-size:29px;
+  letter-spacing:.02em; text-transform:uppercase; color:var(--ink);
+  background:none; padding:0; margin:28px 0 14px;
 }
+.bar::after{ content:""; flex:1; height:1px; background:var(--line2); order:2; }
 .bar .n{
-  margin-left:auto; font-family:var(--f-data); font-size:10.5px; font-weight:500;
-  letter-spacing:.1em; text-transform:uppercase; color:var(--dim);
+  order:3; font-family:var(--f-data); font-size:10px; font-weight:500;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--dim); white-space:nowrap;
 }
 .eyebrow{
   font-family:var(--f-data); font-size:10px; letter-spacing:.15em; font-weight:500;
   text-transform:uppercase; color:var(--dim); margin:0 0 7px;
 }
 h3.k{
-  font-family:var(--f-display); font-weight:700; font-size:15.5px;
-  letter-spacing:-.01em; margin:0 0 10px; color:var(--ink);
+  font-family:var(--f-display); font-weight:700; font-size:21px;
+  letter-spacing:.02em; text-transform:uppercase; margin:0 0 9px; color:var(--ink);
 }
 
 /* ---- cards ---------------------------------------------------------- */
@@ -192,7 +184,7 @@ h3.k{
 .chip.warn{ color:var(--warn); border-color:transparent; background:var(--card2); }
 .chip.bad{ color:var(--bad); border-color:transparent; background:var(--card2); }
 .chip.acc{ color:var(--acc); border-color:transparent; background:var(--acc-soft); }
-.chip.solid{ background:var(--gold); color:var(--gold-ink); border-color:var(--gold); font-weight:600; }
+.chip.solid{ background:var(--acc2); color:var(--acc2-ink); border-color:var(--acc2); font-weight:600; }
 
 /* ---- glance rings --------------------------------------------------- */
 .glance{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
@@ -212,20 +204,20 @@ h3.k{
                  letter-spacing:.02em; margin-top:3px; }
 .contract .tags2{ display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
 .contract .price{ text-align:right; flex:none; }
-.contract .price .rd{ font-family:var(--f-display); font-weight:800; font-stretch:112%;
-                      font-size:24px; line-height:1; letter-spacing:-.03em; }
+.contract .price .rd{ font-family:var(--f-display); font-weight:800;
+                      font-size:34px; line-height:.9; letter-spacing:.01em; }
 .contract .price .sub{ font-family:var(--f-data); font-size:10px; color:var(--dim);
                        letter-spacing:.1em; text-transform:uppercase; margin-top:4px; }
 .contract.wall .price .rd{ color:var(--bad); }
-.contract.fr .price .rd{ color:var(--gold); }
+.contract.fr .price .rd{ color:var(--acc2); }
 .surplus{ font-family:var(--f-data); font-size:12px; font-weight:600; }
 .surplus.p{ color:var(--good); } .surplus.n{ color:var(--bad); } .surplus.z{ color:var(--dim); }
 
 /* year pips - the three-year wall, made visible */
 .pips{ display:flex; gap:3px; align-items:center; }
 .pips i{ width:16px; height:4px; border-radius:2px; background:var(--line2); display:block; }
-.pips i.on{ background:var(--acc); } .pips i.now{ background:var(--gold); }
-.pips i.fr{ background:var(--gold); opacity:.5; }
+.pips i.on{ background:var(--acc); } .pips i.now{ background:var(--acc2); }
+.pips i.fr{ background:var(--acc2); opacity:.5; }
 .pips .wallmark{ width:2px; height:11px; background:var(--bad); border-radius:1px; margin:0 3px; }
 
 /* ---- tables --------------------------------------------------------- */
@@ -257,12 +249,12 @@ table.ledger tr.me td{ background:var(--acc-soft); }
 .worked .wr{ display:grid; grid-template-columns:170px 100px 1fr; gap:14px; padding:11px 15px;
              border-top:1px solid var(--line); align-items:baseline; }
 .worked .wr .l{ font-size:13.5px; color:var(--ink2); }
-.worked .wr .v{ font-family:var(--f-display); font-weight:800; font-stretch:112%; font-size:18px;
-                letter-spacing:-.02em; color:var(--acc); }
+.worked .wr .v{ font-family:var(--f-display); font-weight:800; font-size:24px;
+                letter-spacing:.01em; color:var(--acc); line-height:1; }
 .worked .wr .d{ font-size:13px; color:var(--ink2); line-height:1.55; }
 .toc{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px; }
 .toc a{ font-family:var(--f-data); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
-        padding:6px 11px; border-radius:6px; background:var(--card); border:1px solid var(--line);
+        padding:6px 12px; border-radius:99px; background:var(--card); border:1px solid var(--line);
         color:var(--ink2); text-decoration:none; font-weight:500; }
 .toc a:hover{ color:var(--ink); border-color:var(--acc); }
 
@@ -270,7 +262,7 @@ table.ledger tr.me td{ background:var(--acc-soft); }
 .boardwrap{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--card); }
 table.board{ min-width:900px; width:100%; font-size:11.5px; border-collapse:collapse; color:var(--ink); }
 table.board th{ background:var(--card2); font-family:var(--f-display); font-weight:700;
-                font-size:12px; padding:11px 6px;
+                font-size:15px; letter-spacing:.03em; text-transform:uppercase; padding:10px 6px;
                 border-bottom:1px solid var(--line2); text-align:center; color:var(--ink2); }
 table.board td{ padding:3px; border-bottom:1px solid var(--line);
                 border-right:1px solid var(--line); text-align:center; }
@@ -282,7 +274,7 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 .cell .t{ font-family:var(--f-data); font-size:9px; letter-spacing:.04em; color:var(--dim); }
 .cell.keeper{ background:var(--acc-soft); }
 .cell.rookie{ background:var(--acc2-soft); }
-.cell.franchise{ background:var(--card2); box-shadow:inset 0 0 0 1px var(--gold); }
+.cell.franchise{ background:var(--card2); box-shadow:inset 0 0 0 1px var(--acc2); }
 .cell.traded{ background:var(--card2); color:var(--warn); }
 .cell.open{ color:var(--dim); font-family:var(--f-data); font-size:10px; }
 .legend{ display:flex; gap:16px; flex-wrap:wrap; margin-top:11px; }
@@ -306,16 +298,16 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 [data-testid="stHeader"]{ height:0; min-height:0; background:transparent; }
 
 .stTabs [data-baseweb="tab-list"]{ gap:6px; border-bottom:none; background:transparent;
-  padding:0; margin-bottom:4px; flex-wrap:wrap; }
+  padding:0; margin-bottom:10px; flex-wrap:wrap; }
 .stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"]{ display:none; }
 .stTabs [data-baseweb="tab"]{
-  background:var(--card); border:1px solid var(--line); border-radius:8px;
-  padding:7px 14px; color:var(--ink2); height:auto; min-height:0;
+  background:var(--card); border:1px solid var(--line); border-radius:99px;
+  padding:6px 16px 4px; color:var(--ink2); height:auto; min-height:0;
   transition:background .16s, color .16s, border-color .16s;
 }
 .stTabs [data-baseweb="tab"] p{
-  font-family:var(--f-body); font-weight:600; font-size:12.5px; letter-spacing:.03em;
-  text-transform:uppercase; color:inherit; margin:0;
+  font-family:var(--f-display); font-weight:700; font-size:17px; letter-spacing:.03em;
+  text-transform:uppercase; color:inherit; margin:0; line-height:1.25;
 }
 .stTabs [data-baseweb="tab"]:hover{ color:var(--ink); border-color:var(--line2); }
 .stTabs [aria-selected="true"]{ background:var(--acc) !important; border-color:var(--acc) !important; }
@@ -335,7 +327,7 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked){ background:var(--acc); }
 [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) p{ color:var(--acc-ink); }
 
-.stButton>button{ background:var(--acc); color:var(--acc-ink); border:none; border-radius:8px;
+.stButton>button{ background:var(--acc); color:var(--acc-ink); border:none; border-radius:99px;
   font-family:var(--f-body); font-weight:650; font-size:13px; padding:.5rem 1.1rem;
   transition:filter .16s; }
 .stButton>button:hover{ filter:brightness(1.06); color:var(--acc-ink); }
@@ -375,10 +367,10 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 """
 
 
-def css(palette: str = "lights_off") -> str:
+def css(palette: str = DEFAULT) -> str:
     """Built by substitution rather than %-formatting. The stylesheet is full of
     literal percent signs and every one of them was an escaping bug waiting."""
-    pal = PALETTES.get(palette, PALETTES["lights_off"])
+    pal = PALETTES.get(palette, PALETTES[DEFAULT])
     return (_TEMPLATE
             .replace("__FONTURL__", FONT_URL)
             .replace("__FONTS__", _FONTS)
@@ -386,8 +378,9 @@ def css(palette: str = "lights_off") -> str:
 
 
 def inject(palette: str = None) -> str:
-    from . import config
-    palette = palette or st.session_state.get("palette") or config.palette()
+    """One theme for now. The signature keeps a palette argument so a second
+    ground can be added as another PALETTES entry without touching callers."""
+    palette = palette if palette in PALETTES else DEFAULT
     st.markdown(css(palette), unsafe_allow_html=True)
     return palette
 
@@ -415,7 +408,7 @@ def ring(pct: float, color: str, big: str, small: str = "") -> str:
         'stroke-linecap="round" stroke-dasharray="%.1f" stroke-dashoffset="%.1f" '
         'transform="rotate(-90 37 37)"/>'
         '<text x="37" y="%d" text-anchor="middle" font-family="var(--f-display)" '
-        'font-weight="800" font-size="20" fill="var(--ink)">%s</text>%s</svg>'
+        'font-weight="800" font-size="24" fill="var(--ink)">%s</text>%s</svg>'
     ) % (color, circ, off, 35 if small else 43, big,
          ('<text x="37" y="49" text-anchor="middle" font-family="var(--f-data)" '
           'font-size="8.5" letter-spacing="0.6" fill="var(--dim)">%s</text>' % small) if small else "")

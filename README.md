@@ -126,7 +126,7 @@ halfmen/
   rulebook.py          the league rulebook, rendered on the Rules page
   theme.py             the two palettes, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 130 tests
+tests/                 113 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 
@@ -168,18 +168,27 @@ order-of-operations for the offseason.
 
 ## Type and colour
 
-Archivo (variable width axis — the wide cut does display, the normal cut sets
-body) plus IBM Plex Mono for anything with digits in it, both from Google Fonts.
-The mockup used Impact only because it ran under an artifact CSP that blocks font
-CDNs; a real page has no such constraint.
+**Floodlight / Acid**, one dark ground. Big Shoulders Display — a condensed
+industrial cut — does the display work: masthead, section heads, nav pills and
+every large number. It is the face Impact was standing in for in the mockup,
+which only fell back to Impact because the artifact CSP blocks font CDNs. Archivo
+sets the body, IBM Plex Mono carries anything with digits in it.
 
-Both palettes are contrast-tested rather than eyeballed. Every foreground /
-background pair the app puts text on is declared in `theme.TEXT_PAIRS` and
-asserted against WCAG AA in `tests/test_theme.py`, for both palettes. Add a new
-coloured surface and you add its pair to that list, or the test catches it.
-Tightest current margin is 5.58:1 against a 4.5 floor.
+Acid lime does all the accent work on a near-black ground; electric blue is the
+second voice and marks things that are *special* rather than merely good —
+franchise tags, champions, the year you are currently in.
+
+There is deliberately **no light theme**. One ground tuned properly beats two
+half-tuned ones. `theme.PALETTES` is still a dict and `inject()` still takes a
+palette argument, so a light ground can be added later as one more entry without
+touching a single component.
+
+Contrast is tested, not eyeballed. Every foreground/background pair the app puts
+text on is declared in `theme.TEXT_PAIRS` and asserted against WCAG AA in
+`tests/test_theme.py`. A second test walks every `var(--token)` in the stylesheet
+and fails if the palette does not define it — so a new ground cannot ship with a
+hole in it.
 
 `streamlit` is **pinned** in requirements. The chrome overrides target Streamlit
-internals (`[data-baseweb="tab"]`, `[data-testid="stRadio"]`,
-`label:has(input:checked)`) and would silently render raw on a version that moves
-them.
+internals (`[data-baseweb="tab"]`, `label:has(input:checked)`) and would silently
+render raw on a version that moves them.
