@@ -33,7 +33,8 @@ PALETTES: Dict[str, dict] = {
   --card:#101218; --card2:#171a22; --line:#232833; --line2:#313847;
   --ink:#f2f5f9; --ink2:#a6b1c2; --dim:#8593a6;
   --acc:#ccff44; --acc-ink:#0a0d05; --acc-soft:rgba(204,255,68,.13);
-  --acc2:#5b8cff; --acc2-ink:#020a1f; --acc2-soft:rgba(91,140,255,.15);
+  --acc2:#d08bff; --acc2-ink:#180527; --acc2-soft:rgba(208,139,255,.16);
+  --gold:#ffc61a; --gold-ink:#1a1200; --gold-soft:rgba(255,198,26,.15);
   --good:#48e39a; --warn:#f5c542; --bad:#ff6b7d;
   --shadow:0 10px 30px -18px rgba(0,0,0,.95);
   --grain:.05;
@@ -49,14 +50,15 @@ TEXT_PAIRS: List[Tuple[str, str]] = [
     ("--ink", "--bg"), ("--ink", "--card"), ("--ink", "--card2"),
     ("--ink2", "--bg"), ("--ink2", "--card"), ("--ink2", "--card2"),
     ("--dim", "--card"), ("--dim", "--card2"), ("--dim", "--bg"),
-    ("--acc-ink", "--acc"), ("--acc2-ink", "--acc2"),
-    ("--acc", "--card"), ("--acc2", "--card"),
+    ("--acc-ink", "--acc"), ("--acc2-ink", "--acc2"), ("--gold-ink", "--gold"),
+    ("--acc", "--card"), ("--acc2", "--card"), ("--gold", "--card"),
     ("--good", "--card"), ("--warn", "--card"), ("--bad", "--card"),
     ("--good", "--card2"), ("--warn", "--card2"), ("--bad", "--card2"),
 ]
 
 FONT_URL = ("https://fonts.googleapis.com/css2?"
-            "family=Big+Shoulders+Display:wght@400..800"
+            "family=Pacifico"
+            "&family=Big+Shoulders+Display:wght@400..800"
             "&family=Archivo:wdth,wght@75..125,400..800"
             "&family=IBM+Plex+Mono:wght@400;500;600&display=swap")
 
@@ -64,6 +66,7 @@ _FONTS = """
   --f-display:'Big Shoulders Display','Archivo Narrow',system-ui,sans-serif;
   --f-body:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   --f-data:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --f-script:'Pacifico','Snell Roundhand','Brush Script MT',cursive;
   --r:9px; --r-sm:7px;
 """
 
@@ -133,10 +136,15 @@ html, body, [class*="css"], .stMarkdown, p, li, span, label{
 .mono, .num{ font-family:var(--f-data); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
 
 /* ---- masthead ------------------------------------------------------- */
-.mast{ display:flex; align-items:baseline; gap:14px; line-height:1; margin:0 0 16px; }
+.mast{ display:flex; align-items:baseline; gap:9px; line-height:1; margin:0 0 16px; }
+.mast .the{
+  font-family:var(--f-script); font-size:25px; color:var(--gold);
+  transform:translateY(3px); line-height:1;
+}
 .mast .name{
-  font-family:var(--f-display); font-weight:800; font-size:42px;
-  letter-spacing:.005em; text-transform:uppercase; line-height:.9; color:var(--ink);
+  font-family:var(--f-display); font-weight:800; font-size:44px;
+  letter-spacing:.01em; text-transform:uppercase; line-height:.9; color:var(--ink);
+  -webkit-text-stroke:1px var(--gold); paint-order:stroke fill;
 }
 .mast .name .half{ color:var(--acc); }
 .mast .yr{
@@ -148,16 +156,20 @@ html, body, [class*="css"], .stMarkdown, p, li, span, label{
 /* A rule and a heading, not a saturated slab. The slab put near-black type on
    full-strength accent - the loudest thing on the page and the worst contrast
    on it at the same time. */
+/* The slab is back. It was never a contrast problem - near-black on lime is
+   14:1 - it was Impact's counters closing up at that size. Big Shoulders holds
+   its shape, so the block reads. */
 .bar{
-  display:flex; align-items:center; gap:14px;
-  font-family:var(--f-display); font-weight:800; font-size:29px;
-  letter-spacing:.02em; text-transform:uppercase; color:var(--ink);
-  background:none; padding:0; margin:28px 0 14px;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  font-family:var(--f-display); font-weight:800; font-size:27px;
+  letter-spacing:.045em; text-transform:uppercase;
+  background:var(--acc); color:var(--acc-ink); border-radius:var(--r-sm);
+  padding:8px 16px 5px; margin:28px 0 14px;
 }
-.bar::after{ content:""; flex:1; height:1px; background:var(--line2); order:2; }
 .bar .n{
-  order:3; font-family:var(--f-data); font-size:10px; font-weight:500;
-  letter-spacing:.14em; text-transform:uppercase; color:var(--dim); white-space:nowrap;
+  margin-left:auto; font-family:var(--f-data); font-size:10.5px; font-weight:600;
+  letter-spacing:.13em; text-transform:uppercase; color:var(--acc-ink); opacity:.72;
+  white-space:nowrap;
 }
 .eyebrow{
   font-family:var(--f-data); font-size:10px; letter-spacing:.15em; font-weight:500;
@@ -185,7 +197,11 @@ h3.k{
 .chip.warn{ color:var(--warn); border-color:transparent; background:var(--card2); }
 .chip.bad{ color:var(--bad); border-color:transparent; background:var(--card2); }
 .chip.acc{ color:var(--acc); border-color:transparent; background:var(--acc-soft); }
-.chip.solid{ background:var(--acc2); color:var(--acc2-ink); border-color:var(--acc2); font-weight:600; }
+.chip.mag{ color:var(--acc2); border-color:color-mix(in srgb,var(--acc2) 45%,transparent);
+           background:var(--acc2-soft); }
+.chip.gold{ color:var(--gold); border-color:color-mix(in srgb,var(--gold) 45%,transparent);
+            background:var(--gold-soft); }
+.chip.solid{ background:var(--gold); color:var(--gold-ink); border-color:var(--gold); font-weight:600; }
 
 /* ---- glance rings --------------------------------------------------- */
 .glance{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin:2px 0 6px; }
@@ -208,8 +224,15 @@ svg.liq .bob{ animation:liq-bob 5.5s ease-in-out infinite; }
 
 /* ---- contract cards ------------------------------------------------- */
 .contract{ background:var(--card); border:1px solid var(--line); border-radius:var(--r);
-           padding:14px 15px; display:flex; gap:12px; align-items:flex-start;
+           padding:14px 15px 14px 18px; display:flex; gap:12px; align-items:flex-start;
            position:relative; overflow:hidden; margin-bottom:10px; }
+/* The rail encodes state - at the wall, franchised, or carrying real surplus -
+   so it is information rather than decoration. */
+.contract::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+                   background:transparent; }
+.contract.pick::before{ background:var(--acc); }
+.contract.wall::before{ background:var(--bad); }
+.contract.fr::before{ background:var(--gold); }
 .contract .who{ flex:1; min-width:0; }
 .contract .nm{ font-weight:650; font-size:15px; letter-spacing:-.015em; }
 .contract .meta{ font-family:var(--f-data); font-size:11px; color:var(--dim);
@@ -221,15 +244,15 @@ svg.liq .bob{ animation:liq-bob 5.5s ease-in-out infinite; }
 .contract .price .sub{ font-family:var(--f-data); font-size:10px; color:var(--dim);
                        letter-spacing:.1em; text-transform:uppercase; margin-top:4px; }
 .contract.wall .price .rd{ color:var(--bad); }
-.contract.fr .price .rd{ color:var(--acc2); }
+.contract.fr .price .rd{ color:var(--gold); }
 .surplus{ font-family:var(--f-data); font-size:12px; font-weight:600; }
 .surplus.p{ color:var(--good); } .surplus.n{ color:var(--bad); } .surplus.z{ color:var(--dim); }
 
 /* year pips - the three-year wall, made visible */
 .pips{ display:flex; gap:3px; align-items:center; }
 .pips i{ width:16px; height:4px; border-radius:2px; background:var(--line2); display:block; }
-.pips i.on{ background:var(--acc); } .pips i.now{ background:var(--acc2); }
-.pips i.fr{ background:var(--acc2); opacity:.5; }
+.pips i.on{ background:var(--acc); } .pips i.now{ background:var(--gold); }
+.pips i.fr{ background:var(--gold); opacity:.55; }
 .pips .wallmark{ width:2px; height:11px; background:var(--bad); border-radius:1px; margin:0 3px; }
 
 /* ---- tables --------------------------------------------------------- */
@@ -286,7 +309,7 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 .cell .t{ font-family:var(--f-data); font-size:9px; letter-spacing:.04em; color:var(--dim); }
 .cell.keeper{ background:var(--acc-soft); }
 .cell.rookie{ background:var(--acc2-soft); }
-.cell.franchise{ background:var(--card2); box-shadow:inset 0 0 0 1px var(--acc2); }
+.cell.franchise{ background:var(--gold-soft); box-shadow:inset 0 0 0 1px var(--gold); }
 .cell.traded{ background:var(--card2); color:var(--warn); }
 .cell.open{ color:var(--dim); font-family:var(--f-data); font-size:10px; }
 .legend{ display:flex; gap:16px; flex-wrap:wrap; margin-top:11px; }
@@ -322,8 +345,8 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
   text-transform:uppercase; color:inherit; margin:0; line-height:1.25;
 }
 .stTabs [data-baseweb="tab"]:hover{ color:var(--ink); border-color:var(--line2); }
-.stTabs [aria-selected="true"]{ background:var(--acc) !important; border-color:var(--acc) !important; }
-.stTabs [aria-selected="true"] p{ color:var(--acc-ink) !important; }
+.stTabs [aria-selected="true"]{ background:var(--gold) !important; border-color:var(--gold) !important; }
+.stTabs [aria-selected="true"] p{ color:var(--gold-ink) !important; }
 
 [data-testid="stRadio"] > div{ justify-content:flex-end; }
 [data-testid="stRadio"] [role="radiogroup"]{
@@ -402,7 +425,8 @@ def inject(palette: str = None) -> str:
 
 def masthead(subtitle: str) -> None:
     st.markdown(
-        '<div class="mast"><span class="name">7<span class="half">&frac12;</span> Men</span>'
+        '<div class="mast"><span class="the">the</span>'
+        '<span class="name">7<span class="half">&frac12;</span> Men</span>'
         '<span class="yr">%s</span></div>' % subtitle, unsafe_allow_html=True)
 
 
@@ -477,12 +501,12 @@ def liquid(pct: float, color: str, big: str, label: str = "", idx: int = None) -
         'stroke-width="2"/>'
       '%(lbl)s'
       '<text x="100" y="%(by)d" text-anchor="middle" font-family="var(--f-display)" '
-        'font-weight="800" font-size="54" letter-spacing="0.5" fill="var(--ink)">%(big)s</text>'
+        'font-weight="800" font-size="50" letter-spacing="0.5" fill="var(--ink)">%(big)s</text>'
       '</svg>'
     ) % {
       "uid": uid, "c": color, "sy": surface, "back": _WAVE_BACK, "front": _WAVE_FRONT,
-      "big": big, "label": label, "by": 132 if label else 118,
-      "lbl": ('<text x="100" y="86" text-anchor="middle" font-family="var(--f-data)" '
+      "big": big, "label": label, "by": 132 if label else 120,
+      "lbl": ('<text x="100" y="76" text-anchor="middle" font-family="var(--f-data)" '
               'font-size="15" font-weight="500" letter-spacing="2.2" fill="var(--ink)" '
               'opacity=".92">%s</text>' % label.upper()) if label else "",
     }

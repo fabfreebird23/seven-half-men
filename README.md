@@ -126,7 +126,7 @@ halfmen/
   rulebook.py          the league rulebook, rendered on the Rules page
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 117 tests
+tests/                 126 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 
@@ -174,9 +174,14 @@ every large number. It is the face Impact was standing in for in the mockup,
 which only fell back to Impact because the artifact CSP blocks font CDNs. Archivo
 sets the body, IBM Plex Mono carries anything with digits in it.
 
-Acid lime does all the accent work on a near-black ground; electric blue is the
-second voice and marks things that are *special* rather than merely good —
-franchise tags, champions, the year you are currently in.
+Acid lime is the primary accent — section slabs, keeper chips, surplus. **Gold**
+marks the things you are choosing rather than merely holding: the active tab, a
+franchise tag, the keeper year you are currently in. **Violet** is the rookie
+class. The wordmark keeps the script "the" over a gold-outlined block mark.
+
+State is carried by colour deliberately: a contract card's left rail is red at
+the wall, gold when franchised, lime when it is carrying real surplus. That rail
+is information, not decoration.
 
 There is deliberately **no light theme**. One ground tuned properly beats two
 half-tuned ones. `theme.PALETTES` is still a dict and `inject()` still takes a
