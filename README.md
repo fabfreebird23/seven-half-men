@@ -199,6 +199,26 @@ because CSS animations beat inline styles and the bob keyframes would otherwise
 flatten every bowl to the same height. It is clamped short of the brim on
 purpose — a bowl filled to the top has no surface and reads as a solid disc.
 
+Four bespoke visuals, each earning its place by saying something a table cannot:
+
+- **Liquid bowls** (`theme.liquid`) for the glance metrics.
+- **Year pips** (`theme.pips`) — the whole three-year clock, the wall, and the two
+  franchise years beyond it, in about 90px.
+- **The FAAB burn-down** (`theme.burndown`) — cumulative spend per team against
+  the budget ceiling, with a dashed bracket from each highlighted endpoint up to
+  that ceiling, because the gap *is* the bill. A flat line reads as quitting in a
+  way "$89 owed" in a column never will.
+- **The draft-capital strip** (`theme.capital_strip`) — one block per round, so
+  you read *which* picks a team is missing rather than how many. A team without
+  its 1st and 2nd is in a completely different position from one without its
+  12th and 13th, and a count cannot say so.
+
+Plus taxi pods with a per-year clock, since the squeeze is the league's most
+confusing rule and prose was carrying all of it.
+
+Most of that is dark in year one — pips and the burn-down need a season, the
+board needs a draft. The bowls are the only one visible before week 1.
+
 Contrast is tested, not eyeballed. Every foreground/background pair the app puts
 text on is declared in `theme.TEXT_PAIRS` and asserted against WCAG AA in
 `tests/test_theme.py`. A second test walks every `var(--token)` in the stylesheet

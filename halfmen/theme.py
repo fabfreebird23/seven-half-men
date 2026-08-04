@@ -316,6 +316,36 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 .lotbars i{ display:flex; align-items:center; justify-content:center; font-family:var(--f-data);
             font-size:10px; font-weight:600; color:var(--acc-ink); min-width:0; overflow:hidden; }
 
+/* ---- draft capital strip ------------------------------------------- */
+/* One block per round. Which rounds a team is missing matters more than how
+   many, and a column of counts cannot show it. */
+.capstrip{ display:flex; gap:3px; align-items:center; }
+.capstrip i{ flex:1; height:16px; border-radius:3px; display:block; min-width:6px; }
+.capstrip i.live{ background:var(--line2); }
+.capstrip i.eaten{ background:var(--acc); }
+.capstrip i.traded{ background:transparent; box-shadow:inset 0 0 0 1px var(--warn); }
+.capstrip i.extra{ background:var(--acc2); }
+
+/* ---- taxi pods ------------------------------------------------------ */
+.bay{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.pod{ background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+      padding:15px 16px; }
+.pod.expiring{ border-color:var(--bad); }
+.podtop{ display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+         margin-bottom:9px; }
+.pod .slotno{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.14em;
+              text-transform:uppercase; color:var(--dim); }
+.podname{ font-family:var(--f-display); font-weight:800; font-size:22px; letter-spacing:.02em;
+          text-transform:uppercase; line-height:1; }
+.podmeta{ font-family:var(--f-data); font-size:10.5px; color:var(--dim); margin-top:5px; }
+.podclock{ display:flex; gap:4px; margin-top:12px; }
+.podclock i{ flex:1; height:5px; border-radius:3px; background:var(--line2); display:block; }
+.podclock i.on{ background:var(--acc); }
+.pod.expiring .podclock i.on:last-of-type{ background:var(--bad); }
+.podtags{ display:flex; gap:5px; flex-wrap:wrap; margin-top:12px; }
+
+.chart{ width:100%; height:auto; display:block; }
+
 /* ---- streamlit chrome ----------------------------------------------- */
 [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],
 [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"],
@@ -529,6 +559,118 @@ def pips(year: int, franchise: bool = False, rookie: bool = False) -> str:
         out.append('<i class="%s"></i>' % ("fr" if franchise else ""))
     out.append('</span>')
     return "".join(out)
+
+
+def burndown(series: list, budget: int, weeks: int = 17) -> str:
+    """Cumulative FAAB spend, one line per team, against the budget ceiling.
+
+    The argument the chart makes is the gap: a dashed bracket runs from each
+    highlighted line's endpoint up to the ceiling, because that distance IS the
+    bill. Stating "you owe $89" in a table is a fact; drawing it as the empty space
+    above a flat line is the same fact with the shape of quitting attached.
+
+    `series` is [{"name", "values", "colour", "key"}] - `key` lines are drawn
+    full strength with a bracket, everyone else recedes.
+    """
+    W, H, PL, PR, PT, PB = 880, 300, 46, 200, 18, 34
+    if not series:
+        return ""
+    n = max(2, weeks)
+    x = lambda i: PL + i * (W - PL - PR) / float(n - 1)
+    y = lambda v: PT + (1 - min(1.0, v / float(budget))) * (H - PT - PB)
+
+    grid = "".join(
+        '<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="var(--line)" stroke-width="1"/>'
+        '<text x="%d" y="%.1f" text-anchor="end" font-family="var(--f-data)" font-size="10" '
+        'fill="var(--dim)">$%d</text>' % (PL, y(v), W - PR, y(v), PL - 9, y(v) + 3, v)
+        for v in range(0, budget + 1, max(1, budget // 4)))
+
+    ceiling = (
+        '<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="var(--acc2)" stroke-width="1.5" '
+        'stroke-dasharray="5 4"/><text x="%d" y="%.1f" font-family="var(--f-data)" '
+        'font-size="10" fill="var(--acc2)">$%d ceiling &#8212; anything under it is owed</text>'
+        % (PL, y(budget), W - PR, y(budget), PL + 5, y(budget) - 7, budget))
+
+    lines, marks = "", []
+    for srs in series:
+        vals = list(srs["values"])[:n] or [0]
+        vals += [vals[-1]] * (n - len(vals))
+        pts = " ".join("%.1f,%.1f" % (x(i), y(v)) for i, v in enumerate(vals))
+        key, col = bool(srs.get("key")), srs.get("colour", "var(--dim)")
+        lines += ('<polyline points="%s" fill="none" stroke="%s" stroke-width="%s" '
+                  'opacity="%s" stroke-linejoin="round" stroke-linecap="round"/>'
+                  % (pts, col, "2.6" if key else "1.3", "1" if key else ".55"))
+        ey = y(vals[-1])
+        if key:
+            lines += ('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" '
+                      'stroke-width="1" stroke-dasharray="3 3" opacity=".85"/>'
+                      '<circle cx="%.1f" cy="%.1f" r="3.5" fill="%s"/>'
+                      % (x(n - 1), ey, x(n - 1), y(budget), col, x(n - 1), ey, col))
+        marks.append({"y": ey, "col": col, "key": key,
+                      "label": "%s  $%d" % (srs["name"][:16], budget - vals[-1])})
+
+    # Converging lines stack their labels on top of each other; push them apart.
+    marks.sort(key=lambda m: m["y"])
+    for i in range(1, len(marks)):
+        if marks[i]["y"] - marks[i - 1]["y"] < 15:
+            marks[i]["y"] = marks[i - 1]["y"] + 15
+    overflow = marks[-1]["y"] - (H - PB)
+    if overflow > 0:
+        for m in marks:
+            m["y"] -= overflow
+    labels = "".join(
+        '<text x="%d" y="%.1f" font-family="var(--f-data)" font-size="10.5" fill="%s" '
+        'opacity="%s" font-weight="%s">%s</text>'
+        % (W - PR + 11, m["y"] + 3.5, m["col"], "1" if m["key"] else ".7",
+           "600" if m["key"] else "400", m["label"])
+        for m in marks)
+
+    ticks = "".join(
+        '<text x="%.1f" y="%d" text-anchor="middle" font-family="var(--f-data)" font-size="10" '
+        'fill="var(--dim)">wk %d</text>' % (x(w - 1), H - 9, w)
+        for w in range(1, n + 1, max(1, (n - 1) // 4)))
+
+    return ('<svg viewBox="0 0 %d %d" class="chart" role="img" aria-label="Cumulative FAAB '
+            'spend by team">%s%s%s%s%s</svg>' % (W, H, grid, ticks, ceiling, lines, labels))
+
+
+def capital_strip(states: list) -> str:
+    """One block per round: what a team actually holds going into the draft.
+
+    A count of live picks tells you how many. This tells you WHICH - a team
+    missing rounds 1 and 2 is in a completely different position from one
+    missing 13 and 14, and the table of numbers could not say so.
+    """
+    cls = {"live": "live", "eaten": "eaten", "traded": "traded", "extra": "extra"}
+    return '<div class="capstrip">%s</div>' % "".join(
+        '<i class="%s" title="R%d &#183; %s"></i>' % (cls.get(st, "live"), i + 1, st)
+        for i, st in enumerate(states))
+
+
+def taxi_pod(name: str, position: str, source: str, year: int, years: int,
+             note: str = "") -> str:
+    """A stashed rookie and how much runway he has left.
+
+    The clock is the point: on the last segment he is out of road and has to be
+    promoted or released, which is the decision the squeeze is built around.
+    """
+    expiring = year >= years
+    segs = "".join('<i class="%s"></i>' % ("on" if i < year else "")
+                   for i in range(years))
+    return (
+      '<div class="pod %s">'
+        '<div class="podtop"><span class="slotno">%s</span>'
+        '<span class="chip %s">Year %d of %d</span></div>'
+        '<div class="podname">%s</div>'
+        '<div class="podmeta">%s &#183; %s</div>'
+        '<div class="podclock">%s</div>'
+        '%s'
+        '<div class="podtags"><span class="chip">Cannot start</span>'
+        '<span class="chip">Free of bench</span><span class="chip">No keeper slot</span></div>'
+      '</div>'
+    ) % ("expiring" if expiring else "", source, "bad" if expiring else "warn",
+         year, years, name, position, source, segs,
+         ('<p class="tiny" style="margin:9px 0 0">%s</p>' % note) if note else "")
 
 
 def surplus_class(n) -> str:

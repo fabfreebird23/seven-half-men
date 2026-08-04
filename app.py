@@ -25,6 +25,29 @@ LG = config.league_id()
 SEASON = config.season()
 ME = config.me()
 FIRST = config.is_first_season()
+# The full season a manager can spend FAAB across: regular season plus the
+# Chase bracket, since the bracket teams are still making claims.
+WEEKS = int(config.league()["regular_season_weeks"]) + len(config.league()["chase_weeks"])
+
+
+def submitted_keepers() -> dict:
+    """owner_id -> [{"round", "name", "kind"}]. Empty until the first slip is
+    submitted, which is a year away - the draft board and the capital strip both
+    have to render sensibly against nothing."""
+    try:
+        teams = (storage.load(SEASON) or {}).get("teams") or {}
+    except Exception:
+        return {}
+    out = {}
+    for owner, blob in teams.items():
+        rows = []
+        for e in (blob or {}).get("entries") or []:
+            if e.get("round"):
+                rows.append({"round": int(e["round"]), "name": e.get("name") or "",
+                             "kind": e.get("kind") or "keeper"})
+        if rows:
+            out[str(owner)] = rows
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -463,6 +486,39 @@ with tab_taxi:
         'not the player.</div>' % int(config.keeper_rules()["rookie"]),
         unsafe_allow_html=True)
 
+    mine = bays.get(ME) or taxi.Bay(owner_id=ME, pods=[])
+    mine.incoming_picks = config.rookie_rounds()
+    theme.bar("Your bay", "%d of %d filled \u00b7 %d rookie picks incoming" % (
+        len(mine.pods), mine.slots, mine.incoming_picks))
+    pods = []
+    for i in range(mine.slots):
+        if i < len(mine.pods):
+            pod = mine.pods[i]
+            last = pod.year >= int(tr["years"])
+            pods.append(theme.taxi_pod(
+                pod.name, pod.position, "slot %d" % (i + 1), pod.year, int(tr["years"]),
+                note=("Clock is up. Promote him \u2014 permanent, and he starts costing a rookie "
+                      "keeper slot \u2014 or release him." if last else
+                      "One more year of runway. Holding him is what creates the squeeze.")))
+        else:
+            pods.append(
+                '<div class="pod" style="border-style:dashed">'
+                '<div class="podtop"><span class="slotno">slot %d</span>'
+                '<span class="chip good">open</span></div>'
+                '<div class="podname" style="color:var(--dim)">Empty</div>'
+                '<div class="podmeta">room for a rookie from this year\'s rookie draft</div>'
+                '</div>' % (i + 1))
+    st.markdown('<div class="bay">%s</div>' % "".join(pods), unsafe_allow_html=True)
+    if mine.squeeze:
+        st.markdown(
+            '<div class="banner" style="border-color:var(--bad);margin-top:12px">'
+            '<b>%d with nowhere to go.</b> Two slots, %d rookie picks incoming, and %d of your '
+            'pods still has runway. One of this year\'s rookies has to make the active roster or '
+            'be passed on.</div>' % (
+                mine.squeeze, mine.incoming_picks, len(mine.pods) - len(mine.expiring)),
+            unsafe_allow_html=True)
+
+    theme.bar("Every bay", "%d managers" % len(owner_ids()))
     rows = []
     for oid in owner_ids():
         b = bays.get(oid) or taxi.Bay(owner_id=oid, pods=[])
@@ -600,6 +656,38 @@ with tab_pot:
             'column below is just the full budget. It only means something once waivers open in '
             'week 2.</div>', unsafe_allow_html=True)
 
+    theme.bar("Burn-down", "week 1 \u2192 %d \u00b7 cumulative of $%d" % (
+        WEEKS, int(fr["budget"])))
+    try:
+        weekly = pot.weekly_spend(LG, list(range(1, WEEKS + 1)))
+        curves = pot.burndown(weekly)
+    except Exception:
+        curves = {}
+    if any(any(v) for v in curves.values()):
+        worst = max(settlement.bills, key=lambda b: b.owed).owner_id
+        series = []
+        for oid in owner_ids():
+            key = oid in (ME, worst)
+            series.append({
+                "name": who(oid).split(" ")[0] + " " + who(oid).split(" ")[-1][:1],
+                "values": curves.get(oid) or [0],
+                "colour": ("var(--acc)" if oid == ME else
+                           "var(--bad)" if oid == worst else "var(--dim)"),
+                "key": key})
+        st.markdown('<div class="card">%s</div>' % theme.burndown(
+            series, int(fr["budget"]), WEEKS), unsafe_allow_html=True)
+        st.markdown(
+            '<div class="tiny" style="margin-top:8px">The gap between a line and the ceiling in '
+            'the final week <em>is</em> the bill. Flat lines are the tell.</div>',
+            unsafe_allow_html=True)
+    else:
+        st.markdown(
+            '<div class="banner">Nothing to plot yet \u2014 waivers open in week 2. From then on '
+            'this draws every team\'s cumulative spend against the $%d ceiling, and the gap '
+            'above your line at week %d is what you will owe.</div>' % (
+                int(fr["budget"]), WEEKS), unsafe_allow_html=True)
+
+    theme.bar("Settlement", "who owes what")
     rows = []
     for b in settlement.bills:
         col = "var(--bad)" if b.owed > 50 else ("var(--warn)" if b.owed > 20 else "var(--good)")
@@ -673,18 +761,41 @@ with tab_draft:
         '<span><b style="background:var(--card2);border:1px solid var(--line2)"></b> Open</span>'
         '</div>', unsafe_allow_html=True)
 
-    theme.bar("Draft capital", "what each team actually has left")
+    theme.bar("Draft capital", "which rounds each team actually holds")
+    owned_by = draftboard.owned_rounds(LG, SEASON)
+    keep_by = submitted_keepers()
+    rounds_n = config.veteran_rounds(SEASON)
     cap_rows = []
-    for c in draftboard.capital(order, {}, SEASON, LG):
+    for c in draftboard.capital(order, keep_by, SEASON, LG):
+        oid = c["owner_id"]
+        held = owned_by.get(oid, Counter())
+        eaten_rounds = {int(k.get("round")) for k in (keep_by.get(oid) or [])
+                        if k.get("round")}
+        states = []
+        for r in range(1, rounds_n + 1):
+            n = held.get(r, 0)
+            states.append("traded" if n <= 0 else
+                          "eaten" if r in eaten_rounds else
+                          "extra" if n > 1 else "live")
         cap_rows.append([
             '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
-                esc(who(c["owner_id"])), esc(team_of(c["owner_id"]))),
-            '<span class="mono">%d</span>' % c["rounds"],
-            '<span class="mono" style="color:var(--acc)">-%d</span>' % c["eaten"],
+                esc(who(oid)), esc(team_of(oid))),
+            theme.capital_strip(states),
             '<span class="mono" style="font-weight:700">%d</span>' % c["live"],
             '<span class="mono">%d</span>' % c["rookie_picks"],
         ])
-    ledger_table(["Owner", "Vet picks", "Eaten by keepers", "Live", "Rookie picks"], cap_rows)
+    ledger_table(["Owner", "Round 1 \u2192 %d" % rounds_n, "Live", "Rookie"], cap_rows)
+    st.markdown(
+        '<div class="legend" style="margin-top:10px">'
+        '<span><b style="background:var(--line2)"></b> Held</span>'
+        '<span><b style="background:var(--acc)"></b> Eaten by a keeper</span>'
+        '<span><b style="box-shadow:inset 0 0 0 1px var(--warn)"></b> Traded away</span>'
+        '<span><b style="background:var(--acc2)"></b> Extra, acquired in a trade</span>'
+        '</div>'
+        '<div class="tiny" style="margin-top:8px">Which rounds are missing matters more than how '
+        'many. A team without its 1st and 2nd is in a completely different position from one '
+        'without its %dth and %dth, and a count cannot say so.</div>' % (
+            rounds_n - 1, rounds_n), unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
