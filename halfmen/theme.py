@@ -405,6 +405,19 @@ def css(palette: str = DEFAULT) -> str:
             .replace("__VARS__", pal["vars"]))
 
 
+def fingerprint(palette: str = None) -> str:
+    """Six characters that change whenever the stylesheet does.
+
+    Streamlit Cloud can re-run app.py while keeping an already-imported module
+    in memory, so a deploy can land with the OLD css still being injected and
+    nothing on the page says so. This makes "am I looking at the new code" a
+    glance instead of a guess: if the page still looks wrong and this has not
+    moved, the process needs a reboot rather than another commit.
+    """
+    import hashlib
+    return hashlib.sha1(css(palette or DEFAULT).encode()).hexdigest()[:6]
+
+
 def inject(palette: str = None) -> str:
     """One theme for now. The signature keeps a palette argument so a second
     ground can be added as another PALETTES entry without touching callers."""
@@ -414,6 +427,7 @@ def inject(palette: str = None) -> str:
 
 
 def masthead(subtitle: str) -> None:
+    subtitle = "%s &middot; build %s" % (subtitle, fingerprint())
     st.markdown(
         '<div class="mast"><span class="the">the</span>'
         '<span class="name">7<span class="half">&frac12;</span> Men</span>'

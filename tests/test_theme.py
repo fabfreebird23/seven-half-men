@@ -131,3 +131,20 @@ def test_the_wave_loops_without_a_seam():
     pts = dict((float(a), float(b)) for a, b in re.findall(r"(-?[\d.]+),(-?[\d.]+)", d))
     for x in (0.0, 40.0, 96.0):
         assert abs(pts[x] - pts[x + 200.0]) < 1e-6, "seam at x=%s" % x
+
+
+def test_the_build_fingerprint_moves_when_the_stylesheet_does():
+    """Streamlit Cloud can re-run app.py while keeping an already-imported
+    module in memory, so a deploy lands with the old css still injected and
+    nothing on the page says so. This is how you tell at a glance."""
+    before = theme.fingerprint()
+    assert before == theme.fingerprint(), "must be stable for the same stylesheet"
+    assert len(before) == 6
+
+    original = theme._TEMPLATE
+    try:
+        theme._TEMPLATE = original + "\n/* nudge */"
+        assert theme.fingerprint() != before
+    finally:
+        theme._TEMPLATE = original
+    assert theme.fingerprint() == before

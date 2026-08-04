@@ -138,6 +138,12 @@ scripts/refresh_adp.py daily consensus refresh
 - Sleeper's own `is_keeper` flag has been unreliable across seasons in the
   sibling leagues, so keeper years are counted from our own submitted ledger
   (`storage.load`) rather than trusted from the API.
+- **The masthead carries a six-character build fingerprint**, a hash of the
+  injected stylesheet. Streamlit Cloud can re-run `app.py` while keeping an
+  already-imported module in memory, so a deploy lands with the *old* CSS still
+  being injected and nothing on the page says so — it has bitten all three of
+  these dashboards. If the page looks wrong and the fingerprint has not moved,
+  the process needs a **Reboot app** from the Cloud menu, not another commit.
 - The league is still configured as **dynasty** on Sleeper (`type: 2`), which is
   why `max_keepers` reads 1 and the draft shows 2 rounds. Switch it to keeper
   after the two 2026 drafts and set `max_keepers` to 5.
