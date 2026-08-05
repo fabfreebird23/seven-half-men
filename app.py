@@ -20,7 +20,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from halfmen import (adp_board, config, draftboard, engine, history, lottery,
-                     pot, rulebook, sleeper, storage, taxi, theme, valueboard)
+                     picks, pot, rulebook, sleeper, storage, taxi, theme, valueboard)
 
 st.set_page_config(page_title="7½ Men", page_icon="🏈", layout="wide")
 
@@ -57,14 +57,17 @@ def draw_unlocked() -> bool:
     return bool(st.session_state.get("draw_unlocked"))
 
 
-def draw_lock_ui() -> bool:
+def draw_lock_ui(placeholder: str = "password to run the draw",
+                 note: str = ("Watching only. The board and every envelope update here as the "
+                              "commissioner opens them &mdash; you just cannot re-draw or "
+                              "rewind it.")) -> bool:
     """Renders the unlock control and returns whether we are unlocked."""
     if draw_unlocked():
         return True
     c1, c2 = st.columns([2, 3])
     with c1:
         pw = st.text_input("Commissioner", type="password",
-                           placeholder="password to run the draw",
+                           placeholder=placeholder,
                            label_visibility="collapsed", key="draw_pw")
         if pw:
             if pw == config.draw_password():
@@ -74,9 +77,7 @@ def draw_lock_ui() -> bool:
                 st.markdown('<div class="tiny" style="color:var(--bad)">Not that one.</div>',
                             unsafe_allow_html=True)
     with c2:
-        st.markdown('<div class="tiny">Watching only. The board and every envelope update '
-                    'here as the commissioner opens them &mdash; you just cannot re-draw or '
-                    'rewind it.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="tiny">%s</div>' % note, unsafe_allow_html=True)
     return False
 
 
@@ -206,6 +207,7 @@ GROUPS = {
                                 ("franchise", "Franchise tag")]),
         ("draft", "Draft", [("rookie", "Rookie draft"),
                             ("board", "Veteran draft"),
+                            ("enter", "Enter results"),
                             ("locks", "What a pick locks you into"),
                             ("capital", "Draft capital")]),
         ("young", "Rookies & Taxi", [("bay", "Taxi bay"),
@@ -1084,6 +1086,70 @@ def render_draft(leaf=None):
             '</div>', unsafe_allow_html=True)
 
         # ------------------------------------------------- what a pick locks you into
+    if leaf in (None, "enter"):
+        theme.bar("Enter results", "for a draft held off Sleeper")
+        unlocked = draw_lock_ui(
+            "password to record picks",
+            "Reading only. Anyone can see what has been entered; only the commissioner types it "
+            "in, so eight people cannot overwrite the board at once.")
+        st.markdown(
+            '<div class="banner" style="margin-top:14px">Every live board in this app reads rosters from Sleeper. If '
+            'the draft happened in a room and never got keyed in anywhere, the value board, the '
+            'wire, the taxi bay and every keeper price stay empty <b>permanently</b>. Enter the '
+            'results in Sleeper if you can &mdash; that is the real record. This is here so a '
+            'paper draft is not a dead end.</div>', unsafe_allow_html=True)
+
+        which = st.radio("Which draft", [("rookie", "Rookie draft"), ("veteran", "Veteran draft")],
+                         format_func=lambda x: x[1], horizontal=True,
+                         label_visibility="collapsed", key="pick_kind")[0]
+        rounds = (config.rookie_rounds() if which == "rookie"
+                  else config.veteran_rounds(SEASON))
+        snake = (bool(config.drafts().get("rookie_snake", True)) if which == "rookie"
+                 else bool(config.drafts().get("snake", True)))
+        pick_order = ((draw.get("rookie") or owner_ids()) if which == "rookie"
+                      else (draw.get("veteran") or owner_ids()))
+
+        existing = picks.load(which, SEASON)
+        st.markdown('<div class="tiny" style="margin:6px 0">%d of %d picks recorded. Paste one '
+                    'player per line, in pick order &mdash; or prefix a line with its slot '
+                    '(<code>3.05 Bijan Robinson</code>) to place it exactly. Round and pick are '
+                    'optional; everything else is read as a name.</div>' % (
+                        len(existing), rounds * len(pick_order)), unsafe_allow_html=True)
+
+        pasted = st.text_area("Results", height=180, key="paste_picks",
+                              placeholder="Ja'Marr Chase\nBijan Robinson\n3.05 Puka Nacua",
+                              label_visibility="collapsed", disabled=not unlocked)
+        c1, c2 = st.columns([1, 4])
+        with c1:
+            do_import = st.button("Import", disabled=not unlocked or not pasted.strip())
+        with c2:
+            if st.button("Clear this draft", disabled=not unlocked or not existing):
+                picks.clear(which, SEASON); st.rerun()
+
+        if do_import:
+            got = picks.parse(pasted, pick_order, rounds, snake)
+            if got["problems"]:
+                st.markdown("".join(
+                    '<div class="banner" style="border-color:var(--bad);color:var(--bad);'
+                    'margin-bottom:6px">%s</div>' % esc(p) for p in got["problems"][:12]),
+                    unsafe_allow_html=True)
+            if got["picks"]:
+                picks.save(which, got["picks"], SEASON)
+                st.markdown('<div class="banner" style="border-color:var(--acc)">Recorded '
+                            '<b>%d</b> of %d picks. Anything flagged above was skipped &mdash; '
+                            'fix the name and paste those lines again.</div>' % (
+                                len(got["picks"]), len(got["picks"]) + len(got["problems"])),
+                            unsafe_allow_html=True)
+                st.rerun()
+
+        if existing:
+            ledger_table(["Pick", "Player", "To"], [[
+                '<span class="mono">%d.%02d</span>' % (p["round"], p["pick"]),
+                '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
+                    esc(p["name"]), esc(p.get("position", ""))),
+                '<span class="tiny">%s</span>' % esc(who(p["owner_id"])),
+            ] for p in existing])
+
     if leaf in (None, "locks"):
         theme.bar("What this pick locks you into", "the draft is where keeper value is made")
         st.markdown(

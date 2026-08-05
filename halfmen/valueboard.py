@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Dict, List, Optional
 
-from . import adp_board, config, draftboard, engine, history, sleeper
+from . import adp_board, config, draftboard, engine, history, picks, sleeper
 from .names import normalize_name
 
 
@@ -24,7 +24,13 @@ def _roster_players(league_id: str) -> Dict[str, List[str]]:
         owner = str(r.get("owner_id") or "")
         if owner:
             out[owner] = [str(p) for p in (r.get("players") or [])]
-    return out
+    if any(out.values()):
+        return out
+    # Sleeper has nobody rostered. If the draft was held offline and keyed in
+    # here, use that - otherwise every board in the app stays permanently empty.
+    # Sleeper always wins when it has anything, because it is what the league
+    # actually plays on.
+    return picks.rosters() or out
 
 
 def price_for(pid: str, *, hist, pmap: dict, owner: str = None,

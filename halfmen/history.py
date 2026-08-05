@@ -15,7 +15,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
 
-from . import config, sleeper, storage
+from . import config, picks as local_picks, sleeper, storage
 from .engine import rookie_draft_premium
 
 
@@ -129,6 +129,23 @@ def build(league_id: str = None) -> History:
         players = sleeper.get_players()
     except Exception:
         players = {}
+
+    # If the drafts were held offline and keyed in, they are the only record of
+    # who drafted whom - which is what every keeper price and the R5 premium
+    # hang off. Merged before Sleeper's own drafts so real data still wins.
+    for row in local_picks.draft_rows():
+        pid = str(row["player_id"])
+        meta = players.get(pid) or {}
+        season = int(row["season"])
+        was_rookie = _was_rookie(meta, season)
+        hist.by_player[pid].append(PlayerSeason(
+            season=season, owner_id=str(row["owner_id"]), round=int(row["round"]),
+            pick_no=int(row["pick"]), draft_type=row["draft"], was_rookie=was_rookie))
+        if row["draft"] == "rookie" and pid not in hist.drafted_as_rookie:
+            hist.drafted_as_rookie[pid] = season
+            hist.rookie_draft_round[pid] = int(row["round"])
+        elif was_rookie and pid not in hist.drafted_as_rookie:
+            hist.drafted_as_rookie[pid] = season
 
     for link in sorted(chain, key=lambda c: c["season"]):
         season = int(link["season"])

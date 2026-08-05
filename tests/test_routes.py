@@ -40,7 +40,7 @@ def test_every_leaf_in_the_nav_is_covered_here():
     """The count is deliberately hard-coded: adding a leaf without adding it to
     the walk below would leave a route untested, and most of them are dark in
     year one so nothing else would notice."""
-    assert len(ALL) == 19
+    assert len(ALL) == 20
 
 
 @pytest.mark.parametrize("qp", ALL, ids=lambda q: "/".join(q.values()))
@@ -241,3 +241,33 @@ def test_the_wrong_password_leaves_it_locked():
     at.text_input(key="draw_pw").set_value("hunter2").run()
     assert at.text_input, "still asking"
     assert [b.disabled for b in at.button if b.label == "Draw both orders"] == [True]
+
+
+def test_entering_a_paper_draft_gets_it_onto_the_board(tmp_path, monkeypatch):
+    """The whole point of the entry page: picks typed in here have to reach the
+    boards that were previously empty."""
+    from halfmen import config, picks, storage
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(storage.config, "DATA_DIR", tmp_path)
+
+    def open_page():
+        at = AppTest.from_file(APP, default_timeout=60)
+        at.query_params.update({"p": "preseason", "g": "draft", "t": "enter"})
+        at.run()
+        return at
+
+    at = open_page()
+    assert at.text_area[0].disabled, "locked until the commissioner signs in"
+
+    at = open_page()
+    at.text_input[0].set_value(config.draw_password()).run()
+    assert not at.text_area[0].disabled
+
+    names = [p["name"] for p in list(picks._player_index().values())[:3]]
+    at.text_area[0].set_value("\n".join(names)).run()
+    next(b for b in at.button if b.label == "Import").click().run()
+
+    got = picks.load(picks.ROOKIE, config.season())
+    assert len(got) == 3
+    assert [p["round"] for p in got] == [1, 1, 1]
+    assert picks.rosters(config.season()), "rosters now answer where they did not"
