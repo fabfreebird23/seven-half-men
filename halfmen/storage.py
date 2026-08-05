@@ -95,10 +95,26 @@ def save_draw(seed: int, rookie: List[str], veteran: List[str],
     """
     data = load(season)
     data["draw"] = {"seed": int(seed), "rookie": list(rookie), "veteran": list(veteran),
-                    "drawn_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+                    "drawn_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "reveal": 0}
     save(data, season)
     return data["draw"]
 
 
 def load_draw(season: int = None) -> Dict[str, Any]:
     return (load(season) or {}).get("draw") or {}
+
+
+def set_reveal(n: int, season: int = None) -> int:
+    """How many selections have been read out so far.
+
+    Kept in the file rather than the session so a manager watching from their
+    phone sees the same envelope open at the same moment as the room, which is
+    the entire point of doing it live.
+    """
+    data = load(season)
+    if not data.get("draw"):
+        return 0
+    data["draw"]["reveal"] = max(0, int(n))
+    save(data, season)
+    return data["draw"]["reveal"]

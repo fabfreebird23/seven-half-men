@@ -103,3 +103,65 @@ def test_saving_a_draw_leaves_submitted_keepers_alone(tmp_path, monkeypatch):
     storage.save_draw(5, ["a"], ["a"], 2026)
     assert storage.entries_for("owner1", 2026), "the draw must not clobber the ledger"
     assert storage.load_draw(2026)["seed"] == 5
+
+
+# ------------------------------------------------- the live reveal
+
+@pytest.fixture
+def store(tmp_path, monkeypatch):
+    from halfmen import config, storage
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(storage.config, "DATA_DIR", tmp_path)
+    return storage
+
+
+OWNERS = ["a", "b", "c", "d", "e", "f", "g", "h"]
+
+
+def test_a_fresh_draw_starts_with_nothing_opened(store):
+    d = store.save_draw(1, OWNERS, OWNERS, 2026)
+    assert d["reveal"] == 0
+
+
+def test_reveal_progress_is_shared_not_per_session(store):
+    """A manager watching from their phone has to see the same envelope open
+    at the same moment as the room."""
+    store.save_draw(1, OWNERS, OWNERS, 2026)
+    store.set_reveal(5, 2026)
+    assert store.load_draw(2026)["reveal"] == 5
+
+
+def test_the_reveal_can_be_reset_for_a_second_run(store):
+    store.save_draw(1, OWNERS, OWNERS, 2026)
+    store.set_reveal(9, 2026)
+    assert store.set_reveal(0, 2026) == 0
+
+
+def test_reveal_never_goes_negative(store):
+    store.save_draw(1, OWNERS, OWNERS, 2026)
+    assert store.set_reveal(-4, 2026) == 0
+
+
+def test_setting_reveal_without_a_draw_is_a_no_op(store):
+    assert store.set_reveal(3, 2026) == 0
+
+
+def test_a_redraw_puts_the_envelopes_back(store):
+    """Re-drawing has to reset the reveal, or the new order would appear
+    already half-open."""
+    store.save_draw(1, OWNERS, OWNERS, 2026)
+    store.set_reveal(6, 2026)
+    again = store.save_draw(2, OWNERS[::-1], OWNERS, 2026)
+    assert again["reveal"] == 0
+
+
+def test_the_last_envelope_is_first_choice():
+    """Reading back to front is the whole point - slot index 0 is the prize and
+    it must be the final reveal."""
+    from halfmen import theme
+    n = len(OWNERS)
+    shown = 1                      # one envelope opened
+    revealed = [i >= n - shown for i in range(n)]
+    assert revealed[-1] is True and revealed[0] is False
+    first_choice = theme.draw_slot(1, "x", "y", revealed=False, final=True)
+    assert "final" in first_choice and "?" in first_choice

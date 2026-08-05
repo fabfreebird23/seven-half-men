@@ -357,6 +357,30 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 
 .chart{ width:100%; height:auto; display:block; }
 
+/* ---- the live draw --------------------------------------------------- */
+.draw{ display:flex; flex-direction:column-reverse; gap:7px; }
+.slot{ display:flex; align-items:center; gap:14px; padding:12px 15px; border-radius:10px;
+       background:var(--card); border:1px solid var(--line); min-height:56px; }
+.slot .pk{ font-family:var(--f-display); font-weight:800; font-size:22px; color:var(--dim);
+           min-width:30px; }
+.slot .nm{ font-family:var(--f-display); font-weight:800; font-size:22px;
+           letter-spacing:.02em; text-transform:uppercase; line-height:1; }
+.slot .nm.q{ color:var(--line2); }
+.slot .tm{ font-family:var(--f-data); font-size:10.5px; color:var(--dim); margin-top:4px; }
+.slot.on{ border-color:var(--line2); }
+.slot.fresh{ border-color:var(--acc); box-shadow:0 0 0 1px var(--acc), 0 0 34px -6px var(--acc);
+             animation:slam .5s cubic-bezier(.2,1.4,.4,1); }
+.slot.fresh .pk{ color:var(--acc); }
+.slot.final.on{ background:var(--acc-soft); border-color:var(--acc); }
+.slot.final.on .nm{ font-size:28px; color:var(--acc); }
+.slot.final.on .pk{ color:var(--acc); }
+@keyframes slam{ 0%{ transform:scale(1.13); opacity:0 } 60%{ opacity:1 } 100%{ transform:scale(1) } }
+.hat{ display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 4px; }
+.hat span{ font-family:var(--f-data); font-size:10.5px; letter-spacing:.06em;
+           text-transform:uppercase; padding:4px 10px; border-radius:99px;
+           border:1px solid var(--line2); color:var(--ink2); }
+.hat span.out{ opacity:.25; text-decoration:line-through; }
+
 /* ---- the bottom bar --------------------------------------------------
    The only navigation. A floating pill rather than a full-width bar so it
    reads as an object over the page rather than a browser chrome, and so the
@@ -780,6 +804,24 @@ def taxi_pod(name: str, position: str, source: str, year: int, years: int,
     ) % ("expiring" if expiring else "", source, "bad" if expiring else "warn",
          year, years, name, position, source, segs,
          ('<p class="tiny" style="margin:9px 0 0">%s</p>' % note) if note else "")
+
+
+def draw_slot(pick: int, name: str, team: str, revealed: bool,
+              fresh: bool = False, final: bool = False) -> str:
+    """One envelope in the live draw.
+
+    Unrevealed slots stay in place rather than appearing as they are drawn, so
+    the room can see how much is still to come - the empty slots above are the
+    tension. The freshly-read one lands with a slam; the last envelope, which is
+    first choice, gets the loudest treatment because it is the only one anybody
+    will remember.
+    """
+    cls = " ".join(x for x in (
+        "slot", "on" if revealed else "", "fresh" if fresh else "",
+        "final" if final else "") if x)
+    body = ('<div class="who"><div class="nm">%s</div><div class="tm">%s</div></div>'
+            % (name, team)) if revealed else '<div class="who"><div class="nm q">?</div></div>'
+    return '<div class="%s"><span class="pk">%d</span>%s</div>' % (cls, pick, body)
 
 
 def surplus_class(n) -> str:

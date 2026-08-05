@@ -117,7 +117,20 @@ any spot on the board they want.
 **Pre-Season → Lottery.** The draw sits at the top of that section on every one
 of its leaves, so any of the three gets you there.
 
-Pick a seed, hit **Draw both orders**. It writes to `data/keepers_2026.json`, not
+Pick a seed, hit **Draw both orders**. Then run the reveal: **Open next** opens
+one envelope at a time, or flip **Auto** and set a pause to let it run hands-free.
+
+Envelopes are read **back to front** — last pick first, first choice last — so
+the room learns who is stuck at the back while the prize is still in the hat.
+Unopened slots stay visible as `?` rather than appearing as they are drawn,
+because the empty space above is the tension. Names still in the hat show as
+chips and disappear as they come out. The last envelope of each act gets the
+loud treatment, since first choice is the only one anybody will remember.
+
+Both drafts run as two acts: the whole rookie order, then the whole veteran
+order. Reveal progress is stored with the draw, not in the session, so a manager
+watching on their phone sees the same envelope open at the same moment as the
+room. **Reset the reveal** puts them all back without re-drawing. It writes to `data/keepers_2026.json`, not
 to session state, so every manager sees the same order and it survives a refresh
 — it used to live in `st.session_state`, which meant the commissioner saw the
 result and everyone else saw "nothing drawn yet". The board and the draft-capital
@@ -127,6 +140,9 @@ The seed is the point: anyone can re-enter it and get the identical order back,
 so the draw is reproducible rather than something the league has to take on
 trust. Both drafts come from one seed (veteran uses `seed + 1`, so the two orders
 differ). Re-drawing overwrites.
+
+Auto uses a blocking sleep, so the buttons will not respond mid-pause — if you
+want to talk over it, use **Open next**.
 
 One caveat: `data/` is ephemeral on Streamlit Cloud, so a container restart can
 lose the file. **Screenshot the result, or note the seed** — the seed alone is
@@ -162,7 +178,7 @@ halfmen/
   valueboard.py        every roster priced for next year, plus the franchise tag
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 198 tests
+tests/                 205 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 

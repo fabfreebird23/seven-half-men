@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import html
 import json
+import time
 import math
 from collections import Counter
 from typing import Dict, List, Optional
@@ -1122,25 +1123,63 @@ def render_lottery(leaf=None):
                         existing.get("seed"), esc((existing.get("drawn_at") or "")[:10])),
                     unsafe_allow_html=True)
         draw = first_draw()
-        with c2:
-            if draw:
-                cols = st.columns(2)
-                for col, key, label in ((cols[0], "rookie", "Rookie draft"),
-                                        (cols[1], "veteran", "Veteran draft")):
-                    with col:
-                        st.markdown('<div class="eyebrow">%s — selection order</div>' % label,
-                                    unsafe_allow_html=True)
-                        st.markdown("".join(
-                            '<div style="display:flex;justify-content:space-between;padding:3px 0">'
-                            '<span class="mono" style="color:var(--dim)">%d</span>'
-                            '<span style="font-weight:%d;color:%s">%s</span></div>' % (
-                                i + 1, 700 if o == VIEW else 500,
-                                "var(--acc)" if o == VIEW else "var(--ink)", esc(who(o)))
-                            for i, o in enumerate(draw[key])), unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="banner">Nothing drawn yet. Pick a seed and hit the '
-                            'button — the seed is there so a draw can be reproduced in front of '
-                            'everyone rather than taken on trust.</div>', unsafe_allow_html=True)
+
+    if FIRST and draw:
+        # Read out LAST pick first and work up to first choice. That is how a
+        # lottery is meant to be run: the room learns who is stuck at the back
+        # while the prize is still in the hat, and the last envelope is the
+        # only one anybody remembers.
+        acts = [("rookie", "Rookie draft"), ("veteran", "Veteran draft")]
+        n = len(owner_ids())
+        total = n * len(acts)
+        shown = int(draw.get("reveal", 0))
+
+        theme.bar("The draw", "read from the back &mdash; %d of %d opened" % (shown, total))
+        cA, cB, cC, cD = st.columns([1, 1, 1, 2])
+        with cA:
+            if st.button("Open next", disabled=shown >= total, use_container_width=True):
+                storage.set_reveal(shown + 1, SEASON); st.rerun()
+        with cB:
+            auto = st.toggle("Auto", value=False, key="auto_reveal",
+                             disabled=shown >= total)
+        with cC:
+            pause = st.number_input("Pause", 1, 20, 6, key="reveal_pause",
+                                    label_visibility="collapsed")
+        with cD:
+            if st.button("Reset the reveal", disabled=not shown):
+                storage.set_reveal(0, SEASON); st.rerun()
+            st.markdown('<div class="tiny">Seconds between envelopes when Auto is on. '
+                        'Nothing is random here &mdash; the order was fixed by the seed '
+                        'before the first envelope opened.</div>', unsafe_allow_html=True)
+
+        for act, (key, label) in enumerate(acts):
+            order = draw.get(key) or []
+            done_here = max(0, min(n, shown - act * n))
+            st.markdown('<div class="eyebrow" style="margin-top:16px">%s &mdash; selection '
+                        'order</div>' % label, unsafe_allow_html=True)
+            if done_here < n:
+                left = order[:n - done_here]
+                st.markdown('<div class="hat">%s</div>' % "".join(
+                    '<span>%s</span>' % esc(who(o)) for o in left), unsafe_allow_html=True)
+            st.markdown('<div class="draw">%s</div>' % "".join(
+                theme.draw_slot(
+                    i + 1, esc(who(o)), esc(team_of(o)),
+                    revealed=(i >= n - done_here),
+                    fresh=(i == n - done_here and shown == act * n + done_here),
+                    final=(i == 0))
+                for i, o in enumerate(order)), unsafe_allow_html=True)
+
+        if shown >= total:
+            st.markdown(
+                '<div class="banner" style="border-color:var(--acc);margin-top:14px">'
+                '<b>That is the board.</b> Both orders are selection order, not slots &mdash; '
+                'first choice takes any spot they want, second choice takes any that is left. '
+                'Seed <b style="color:var(--acc)">%s</b>, so anyone can reproduce this exact '
+                'draw.</div>' % esc(str(draw.get("seed"))), unsafe_allow_html=True)
+        elif auto:
+            time.sleep(int(pause))
+            storage.set_reveal(shown + 1, SEASON)
+            st.rerun()
 
     # Page-level: the simulator reads the same two drums the diagram draws.
     demo = [
