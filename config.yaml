@@ -82,7 +82,12 @@ rules:
     pot_cap: 200
     pot_to: chase_winner      # first $cap
     overflow_to: champion     # everything above the cap
-    cut_lockout_days: 365     # can't re-add a player you cut for 12 months
+    # Dropping a player does not launder his keeper price. There is no re-add
+    # lockout - anyone can claim anyone - but he carries whatever round and
+    # clock he already had, so a cut-and-re-add cannot reset him to a last-round
+    # pick. Only a player who has NEVER been drafted in this league prices off
+    # your last available round.
+    price_survives_a_drop: true
 
   lottery:
     # Two drums, same shape, different basis.

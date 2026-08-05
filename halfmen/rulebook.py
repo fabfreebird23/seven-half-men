@@ -288,9 +288,21 @@ def sections() -> List[tuple]:
           "prize from ever rivalling the title."),
  ("p", "The point of all of it: there is no free ride for quitting in November. You either play "
        "or you pay."),
- ("p", "One more waiver rule — if you cut someone during the season you cannot pick him back up "
-       "off waivers for twelve months. The draft is fair game; sneaking a player back through "
-       "waivers to reset his keeper price is not."),
+ ("p", "One more waiver rule, and it is about price rather than permission. <b>Anyone can claim "
+       "anyone.</b> There is no lock-out on picking a player back up after you cut him — but "
+       "dropping him does not wipe what he costs to keep."),
+ ("table", ["How he reached the wire", "What he costs whoever claims him"], [
+   ["Drafted in this league at some point, then dropped",
+    "<b>the round he was drafted in</b>, with his clock where it left off"],
+   ["Never drafted here at all", "your last available round — the only genuinely cheap route"],
+ ]),
+ ("note", "<b>You cannot launder a price by cutting him.</b> That was the whole point of the old "
+          "twelve-month lock-out, and carrying the price does the same job without asking anyone "
+          "to police a transaction log — which nobody was going to do, and which Sleeper will "
+          "not do for us. It also matches how a keeper already behaves in a trade: the price is a "
+          "property of the player's run in this league, not of who happens to hold him."),
+ ("p", "Worth knowing before you drop someone in a bye week. A 2nd-rounder you cut for a streamer "
+       "is a 2nd-round keeper for whoever grabs him, and he is off your slip either way."),
 ]),
 
 ("lotteries", "The two lotteries", "Both drafts are ordered by drum, and the drums are weighted "

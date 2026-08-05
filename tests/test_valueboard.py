@@ -111,3 +111,59 @@ def test_players_short_of_the_wall_rank_below_those_at_it(monkeypatch):
     hist = FakeHistory(years={"1": 0, "3": 3}, peaks={"1": 9, "3": 4})
     got = valueboard.franchise_candidates("o", "x", hist=hist)
     assert got[0]["at_the_wall"] and not got[1]["at_the_wall"]
+
+
+# ------------------------------------------- dropping does not launder a price
+
+def _fa_setup(monkeypatch, hist, adp_rows):
+    monkeypatch.setattr(valueboard, "_roster_players", lambda lid: {})
+    monkeypatch.setattr(valueboard.sleeper, "get_players", lambda: PMAP)
+    monkeypatch.setattr(valueboard, "table_items", lambda: adp_rows.items())
+    monkeypatch.setattr(valueboard.adp_board, "rank_to_round", lambda r: 2)
+    monkeypatch.setattr(valueboard.adp_board, "adp_round_for_player", lambda m, s=None: 2)
+    return valueboard.free_agents("x", limit=10, hist=hist)
+
+
+ADP = {
+    "jahmyrgibbs": {"name": "Jahmyr Gibbs", "position": "RB", "rank": 1.0},
+    "olliegordon": {"name": "Ollie Gordon II", "position": "RB", "rank": 2.0},
+}
+
+
+def test_a_dropped_player_carries_the_round_he_was_drafted_in(monkeypatch):
+    """The whole point of the rule: cutting him cannot reset his price to a
+    last-round pick."""
+    hist = FakeHistory(anchors={"1": 2})          # Gibbs drafted in the 2nd
+    got = {r["name"]: r for r in _fa_setup(monkeypatch, hist, ADP)}
+    assert got["Jahmyr Gibbs"]["cost"] == 2
+    assert got["Jahmyr Gibbs"]["carried"] is True
+
+
+def test_a_player_never_drafted_here_is_the_only_cheap_one(monkeypatch):
+    hist = FakeHistory(anchors={"1": 2})          # Gordon has no history
+    got = {r["name"]: r for r in _fa_setup(monkeypatch, hist, ADP)}
+    assert got["Ollie Gordon II"]["cost"] == config.veteran_rounds()
+    assert got["Ollie Gordon II"]["carried"] is False
+
+
+def test_the_board_no_longer_calls_a_cut_second_rounder_a_last_round_pickup(monkeypatch):
+    """This is the bug the rule clarification exposed - it would have told the
+    league a dropped 2nd was an R13."""
+    hist = FakeHistory(anchors={"1": 2})
+    got = {r["name"]: r for r in _fa_setup(monkeypatch, hist, ADP)}
+    assert got["Jahmyr Gibbs"]["cost"] != config.veteran_rounds()
+    assert got["Jahmyr Gibbs"]["surplus"] < got["Ollie Gordon II"]["surplus"]
+
+
+def test_a_dropped_players_clock_keeps_running(monkeypatch):
+    """He does not come back as a fresh year-one keeper either."""
+    hist = FakeHistory(anchors={"1": 9}, years={"1": 1})
+    got = {r["name"]: r for r in _fa_setup(monkeypatch, hist, ADP)}
+    assert got["Jahmyr Gibbs"]["cost"] == 6, "year two is 9 minus 3, not year one at 9"
+
+
+def test_there_is_no_re_add_lockout_in_config():
+    """The rule is enforced by carrying the price, not by policing a
+    transaction log nobody was going to read."""
+    assert "cut_lockout_days" not in config.faab_rules()
+    assert config.faab_rules()["price_survives_a_drop"] is True

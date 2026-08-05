@@ -94,13 +94,17 @@ def rows(league_id: str = None, season: int = None, hist=None) -> List[dict]:
 
 
 def free_agents(league_id: str = None, limit: int = 30, hist=None) -> List[dict]:
-    """Consensus-board players nobody has rostered, priced as if you claimed
-    them today.
+    """Unrostered consensus-board players, priced as if you claimed them today.
 
-    An undrafted pickup keeps at your last available round, which makes a
-    mid-season waiver find one of the cheapest keepers in the league - and that
-    is exactly the thing you cannot see anywhere else. Matching is by normalized
-    name because the ADP board is name-keyed and Sleeper is id-keyed.
+    Dropping a player does not launder his keeper price. So a name on the wire
+    is only cheap if he has never been drafted in this league - anyone who has
+    carries the round he was drafted in, and his clock, straight onto the roster
+    of whoever claims him. Pricing every free agent at a last-round pick would
+    have told eight managers that a cut 2nd-rounder was an R13, which is the
+    single most expensive thing this board could get wrong.
+
+    Matching is by normalized name because the ADP board is name-keyed and
+    Sleeper is id-keyed.
     """
     league_id = league_id or config.league_id()
     hist = hist or history.build(league_id)
@@ -108,6 +112,12 @@ def free_agents(league_id: str = None, limit: int = 30, hist=None) -> List[dict]
         pmap = sleeper.get_players()
     except Exception:
         pmap = {}
+
+    by_name: Dict[str, str] = {}
+    for pid, meta in pmap.items():
+        full = (meta or {}).get("full_name")
+        if full:
+            by_name.setdefault(normalize_name(full), str(pid))
 
     rostered_keys = set()
     for pids in _roster_players(league_id).values():
@@ -122,14 +132,20 @@ def free_agents(league_id: str = None, limit: int = 30, hist=None) -> List[dict]
         if key in rostered_keys:
             continue
         adp = adp_board.rank_to_round(row["rank"])
-        # Undrafted, so he prices off your last available pick rather than a
-        # draft round - engine.waiver_anchor is the same number the slip uses.
-        cost = engine.waiver_anchor(last)
-        out.append({"name": row["name"], "position": row["position"],
+        pid = by_name.get(key)
+        priced = price_for(pid, hist=hist, pmap=pmap, last_round=last) if pid else None
+        if priced and priced.final_round:
+            cost, kind = priced.final_round, priced.kind
+            # He has a history here, so he is not a fresh last-round pickup.
+            carried = bool(hist.draft_round(pid) or hist.keeper_year(pid))
+        else:
+            cost, kind, carried = engine.waiver_anchor(last), "waiver", False
+        out.append({"name": row["name"], "position": row["position"], "player_id": pid,
                     "cost": cost, "adp": adp, "surplus": cost - adp,
-                    "kind": "waiver"})
+                    "kind": kind, "carried": carried})
         if len(out) >= limit:
             break
+    out.sort(key=lambda r: (-r["surplus"], r["cost"]))
     return out
 
 

@@ -536,18 +536,23 @@ with tab_keep:
             fa = valueboard.free_agents(LG, limit=20, hist=hist_all)
         except Exception:
             fa = []
-        ledger_table(["Player", "Costs", "Market", "Surplus"], [[
+        ledger_table(["Player", "Costs", "Market", "Surplus", ""], [[
             '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
                 esc(f["name"]), esc(f["position"])),
             '<span class="mono">R%d</span>' % f["cost"],
             '<span class="mono">R%d</span>' % f["adp"],
             '<span class="surplus %s">%s</span>' % (
                 theme.surplus_class(f["surplus"]), theme.signed(f["surplus"])),
+            ('<span class="chip warn">carries R%d</span>' % f["cost"]) if f["carried"]
+            else '<span class="chip good">never drafted here</span>',
         ] for f in fa])
         st.markdown(
-            '<div class="tiny" style="margin-top:8px">An undrafted pickup keeps at your last '
-            'available round, so a waiver find is among the cheapest keepers in the league. That '
-            'is worth knowing before the bidding starts, not after.</div>', unsafe_allow_html=True)
+            '<div class="tiny" style="margin-top:8px">Only a player who has <b>never been drafted '
+            'in this league</b> is genuinely cheap \u2014 he keeps at your last available round. '
+            'Anyone who has been drafted here carries that round and his clock straight onto your '
+            'roster, because dropping a player does not launder his keeper price. A 2nd-rounder '
+            'somebody cut in a bye week is still a 2nd-round keeper.</div>',
+            unsafe_allow_html=True)
 
     # ---------------------------------------------------------------- franchise
     theme.bar("Franchise tag", "one player, years %d and %d, price frozen" % (

@@ -69,6 +69,14 @@ at once (two on taxi, two kept) with every regular slot still free.
 `taxi.promotion_keeps_rookie_status` in config flips to `second_year_only` if the
 league ever wants an early promotion to forfeit it.
 
+**Dropping a player does not launder his keeper price.** There is no re-add
+lock-out — anyone can claim anyone — but a player who has ever been drafted in
+this league carries that round and his clock onto the roster of whoever picks him
+up. Only a player never drafted here prices off your last available round. This
+replaced a twelve-month lock-out that Sleeper cannot enforce and nobody was going
+to police, and it matches how a keeper already behaves in a trade: the price is a
+property of the player's run in the league, not of who holds him.
+
 **The pot** — unspent FAAB comes due, every dollar of it. The first $200 goes to
 the Chase-bracket winner and everything above the cap goes to the champion. The
 cap decides who gets paid, not how much is collected.
