@@ -291,11 +291,21 @@ def sections() -> List[tuple]:
  ("p", "One more waiver rule, and it is about price rather than permission. <b>Anyone can claim "
        "anyone.</b> There is no lock-out on picking a player back up after you cut him — but "
        "dropping him does not wipe what he costs to keep."),
+ ("p", "Anyone can claim him \u2014 a league mate, or the manager who just cut him. There is no "
+       "waiting period and nobody is blocked."),
  ("table", ["How he reached the wire", "What he costs whoever claims him"], [
    ["Drafted in this league at some point, then dropped",
-    "<b>the round he was drafted in</b>, with his clock where it left off"],
-   ["Never drafted here at all", "your last available round — the only genuinely cheap route"],
+    "he keeps <b>his draft round as the anchor and his clock where it left off</b>, and the "
+    "normal ladder runs from there \u2014 so in year one that is still the cheaper of that round "
+    "or his current ADP"],
+   ["Never drafted here at all \u2014 undrafted in the veteran draft, then picked up",
+    "<b>your last available round.</b> The only genuinely cheap route onto a roster."],
  ]),
+ ("note", "<b>Cutting a player gains you nothing, which is why no lock-out is needed.</b> "
+          "The year-one price already offers the cheaper of his draft round and his current ADP. "
+          "So dropping a fading 2nd-rounder and re-claiming him lands on exactly the number you "
+          "would have paid by simply keeping him. The exploit the old rule guarded against stops "
+          "existing the moment the price follows the player."),
  ("note", "<b>You cannot launder a price by cutting him.</b> That was the whole point of the old "
           "twelve-month lock-out, and carrying the price does the same job without asking anyone "
           "to police a transaction log — which nobody was going to do, and which Sleeper will "

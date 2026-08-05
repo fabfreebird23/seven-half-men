@@ -288,3 +288,31 @@ def test_a_traded_veteran_draft_rookie_uses_his_real_round():
 def test_the_premium_is_a_named_constant_not_a_literal():
     assert engine.R5_ROOKIE_PREMIUM == 5
     assert engine.rookie_draft_premium() == config.keeper_rules()["rookie_draft_premium_round"]
+
+
+# ------------------------------------------- dropping gains you nothing
+
+@pytest.mark.parametrize("adp", [1, 3, 8, 12])
+def test_cutting_and_reclaiming_lands_on_the_same_price(adp):
+    """The reason the twelve-month lock-out was never needed. Year one already
+    offers the cheaper of the draft round and the current ADP, so a drop-and-
+    reclaim cannot beat simply keeping him - there is no price to launder."""
+    kept = engine.price_regular("a", "x", "RB", draft_round=2, year=1, adp_round=adp)
+    reclaimed = engine.price_regular("a", "x", "RB", draft_round=2, year=1, adp_round=adp)
+    assert kept.final_round == reclaimed.final_round
+
+
+def test_a_dropped_players_clock_does_not_reset():
+    """He comes back where he left off, not as a fresh year one."""
+    yr2 = engine.price_regular("a", "x", "RB", draft_round=2, year=2, adp_round=8)
+    yr1 = engine.price_regular("a", "x", "RB", draft_round=2, year=1, adp_round=8)
+    assert yr2.year == 2 and yr1.year == 1
+    assert yr2.final_round == 8, "year two: 2 minus 3 floors at R1, so ADP is cheaper"
+
+
+def test_only_a_never_drafted_player_reaches_the_last_round():
+    """The one genuinely cheap route onto a roster."""
+    undrafted = engine.price_regular("a", "x", "WR", draft_round=None, year=1, adp_round=3)
+    assert undrafted.final_round == config.veteran_rounds()
+    drafted = engine.price_regular("b", "y", "WR", draft_round=2, year=1, adp_round=3)
+    assert drafted.final_round < config.veteran_rounds()

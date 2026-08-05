@@ -69,13 +69,20 @@ at once (two on taxi, two kept) with every regular slot still free.
 `taxi.promotion_keeps_rookie_status` in config flips to `second_year_only` if the
 league ever wants an early promotion to forfeit it.
 
-**Dropping a player does not launder his keeper price.** There is no re-add
-lock-out — anyone can claim anyone — but a player who has ever been drafted in
-this league carries that round and his clock onto the roster of whoever picks him
-up. Only a player never drafted here prices off your last available round. This
-replaced a twelve-month lock-out that Sleeper cannot enforce and nobody was going
-to police, and it matches how a keeper already behaves in a trade: the price is a
-property of the player's run in the league, not of who holds him.
+**Dropping a player does not launder his keeper price.** No re-add lock-out —
+anyone can claim him, a league mate or the manager who just cut him. A player
+drafted in this league at any point keeps his draft round as the *anchor* and his
+clock where it left off, and the normal ladder runs from there (so year one is
+still the cheaper of that round or his current ADP). Only a player never drafted
+here — undrafted in the veteran draft, then picked up — prices off your last
+available round, which is the one genuinely cheap route onto a roster.
+
+This replaced a twelve-month lock-out, and the reason it can is that **cutting
+gains you nothing**: year one already offers the cheaper of the draft round and
+current ADP, so a drop-and-reclaim lands on exactly the number keeping him would
+have. The exploit the old rule guarded against stops existing once the price
+follows the player. Same principle as a trade: the price belongs to the player's
+run in the league, not to whoever holds him.
 
 **The pot** — unspent FAAB comes due, every dollar of it. The first $200 goes to
 the Chase-bracket winner and everything above the cap goes to the champion. The
@@ -135,7 +142,7 @@ halfmen/
   valueboard.py        every roster priced for next year, plus the franchise tag
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 151 tests
+tests/                 157 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 
