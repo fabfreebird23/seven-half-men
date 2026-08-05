@@ -385,7 +385,10 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
    The only navigation. A floating pill rather than a full-width bar so it
    reads as an object over the page rather than a browser chrome, and so the
    content behind it stays visible. */
-.bb-wrap{ position:fixed; left:0; right:0; bottom:18px; display:flex;
+.bb-wrap{ position:fixed; left:0; right:0; display:flex;
+          /* Clear of the iPhone home indicator - at 18px flat the pill sits in
+             the swipe zone, and this whole league will be on phones. */
+          bottom:max(18px, calc(env(safe-area-inset-bottom) + 8px));
           justify-content:center; z-index:1000; pointer-events:none; }
 .bb{ pointer-events:auto; display:flex; gap:2px; background:rgba(16,18,24,.94);
      backdrop-filter:blur(16px); border:1px solid var(--line2); border-radius:999px;
@@ -401,7 +404,8 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 .bb-scrim{ position:fixed; inset:0; background:rgba(0,0,0,0); pointer-events:none;
            transition:background .25s; z-index:998; }
 .bb-scrim.on{ background:rgba(0,0,0,.5); pointer-events:auto; }
-.bb-pop{ position:fixed; left:50%; bottom:84px; transform:translate(-50%,10px) scale(.96);
+.bb-pop{ position:fixed; left:50%;
+         bottom:max(84px, calc(env(safe-area-inset-bottom) + 74px)); transform:translate(-50%,10px) scale(.96);
          width:min(340px, calc(100% - 32px)); background:var(--card2);
          border:1px solid var(--line2); border-radius:16px; padding:8px;
          box-shadow:0 16px 44px rgba(0,0,0,.6); opacity:0; pointer-events:none;
@@ -424,7 +428,8 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 .bb-item .chev{ color:var(--dim); font-family:var(--f-data); font-size:12px; }
 
 /* the bar floats over the page, so the page needs room to scroll clear of it */
-[data-testid="stAppViewContainer"] .main .block-container{ padding-bottom:120px; }
+[data-testid="stAppViewContainer"] .main .block-container{
+  padding-bottom:calc(120px + env(safe-area-inset-bottom)); }
 
 /* ---- streamlit chrome ----------------------------------------------- */
 [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],

@@ -40,6 +40,13 @@ def season() -> int:
     return int(league()["season"])
 
 
+def current_season() -> int:
+    """Alias the ADP stack uses. It came over from the kreeper tool, which named
+    it this - keeping the alias is cheaper than editing four scrapers, and the
+    daily refresh silently failed on the missing name until it was caught."""
+    return season()
+
+
 def is_first_season(yr: int = None) -> bool:
     yr = season() if yr is None else yr
     return yr <= int(league()["first_season"])

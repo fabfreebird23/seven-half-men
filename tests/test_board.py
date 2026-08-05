@@ -217,3 +217,10 @@ def test_no_keeper_ever_strikes_a_rookie_pick():
     the failure would be silently reusing grid() and eating picks."""
     board = draftboard.rookie_grid(OWNERS)
     assert all(c.kind == "open" for row in board for c in row)
+
+
+def test_the_adp_refresh_entry_points_exist():
+    """The daily job calls these by name. It silently failed every run against a
+    missing config.current_season until somebody actually ran it."""
+    assert config.current_season() == config.season()
+    assert isinstance(config.adp_sources(), dict)

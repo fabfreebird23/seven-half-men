@@ -250,5 +250,13 @@ def test_the_page_scrolls_clear_of_the_floating_bar():
     """The bar floats over the content, so the last card must not sit under
     it."""
     import re
-    m = re.search(r"\.block-container\{[^}]*padding-bottom:(\d+)px", theme.css())
+    m = re.search(r"\.block-container\{[^}]*padding-bottom:calc\((\d+)px", theme.css())
     assert m and int(m.group(1)) >= 100
+
+
+def test_the_bottom_bar_clears_the_home_indicator():
+    """At a flat 18px the pill sits in the iPhone swipe zone, and this league
+    will be on phones during the draft."""
+    css = theme.css()
+    assert "env(safe-area-inset-bottom)" in css
+    assert css.count("env(safe-area-inset-bottom)") >= 3, "bar, sheet and page padding"
