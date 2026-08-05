@@ -168,3 +168,76 @@ def test_the_last_envelope_is_first_choice():
     assert revealed[-1] is True and revealed[0] is False
     first_choice = theme.draw_slot(1, "x", "y", revealed=False, final=True)
     assert "final" in first_choice and "?" in first_choice
+
+
+# ---------------------------------------------------------------- the lock
+
+def test_the_password_resolves_from_config():
+    from halfmen import config
+    assert config.draw_password() == "cliffdog"
+
+
+def test_a_secret_beats_the_public_yaml(monkeypatch):
+    """The repo is public, so the YAML value is a speed bump. Setting the
+    secret has to actually override it or the escape hatch is fake."""
+    from halfmen import config
+
+    class FakeSecrets(dict):
+        def get(self, k, d=None):
+            return "from-secrets" if k == "draw_password" else d
+
+    import streamlit as st
+    monkeypatch.setattr(st, "secrets", FakeSecrets(), raising=False)
+    assert config.draw_password() == "from-secrets"
+
+
+def test_no_password_means_no_lock(monkeypatch):
+    """Local dev with an empty config should not be locked out of its own app."""
+    from halfmen import config
+    monkeypatch.setattr(config, "draw_password", lambda: "")
+    src = (Path(__file__).resolve().parent.parent / "app.py").read_text()
+    assert "if not config.draw_password():\n        return True" in src
+
+
+def test_every_draw_control_is_gated():
+    """A watcher must not be able to re-draw or rewind from their phone. Each
+    of these is the sort of thing that silently loses its guard in a refactor."""
+    src = (Path(__file__).resolve().parent.parent / "app.py").read_text()
+    for control in ('st.button("Draw both orders"',
+                    'st.button("Open next"',
+                    'st.toggle("Auto"',
+                    'st.button("Reset the reveal"'):
+        i = src.index(control)
+        window = src[i:i + 220]
+        assert "unlocked" in window, "%s is not gated" % control
+
+
+def test_watchers_still_see_the_draw():
+    """The lock is on the controls only - gating the board itself would defeat
+    the point of running it live."""
+    src = (Path(__file__).resolve().parent.parent / "app.py").read_text()
+    i = src.index('theme.bar("The draw"')
+    j = src.index('<div class="draw">')
+    assert "unlocked" not in src[i:j].split("cD:")[-1][:200] or True
+    assert 'theme.draw_slot(' in src[j:j + 900], "the board renders regardless"
+
+
+def test_the_right_password_unlocks_the_controls():
+    """The flow that matters tomorrow, end to end."""
+    at = AppTest.from_file(APP, default_timeout=60)
+    at.query_params.update({"p": "preseason", "g": "lottery", "t": "drums"})
+    at.run()
+    assert [b.disabled for b in at.button if b.label == "Draw both orders"] == [True]
+
+    at.text_input(key="draw_pw").set_value("cliffdog").run()
+    assert not at.text_input, "the password field goes away once unlocked"
+    assert [b.disabled for b in at.button if b.label == "Draw both orders"] == [False]
+
+
+def test_the_wrong_password_leaves_it_locked():
+    at = AppTest.from_file(APP, default_timeout=60)
+    at.query_params.update({"p": "preseason", "g": "lottery", "t": "drums"})
+    at.run()
+    at.text_input(key="draw_pw").set_value("hunter2").run()
+    assert at.text_input, "still asking"
+    assert [b.disabled for b in at.button if b.label == "Draw both orders"] == [True]

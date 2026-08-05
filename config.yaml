@@ -123,6 +123,17 @@ managers:
 
 me: "964703051971887104"   # whose team the "my" views default to
 
+draw:
+  # Soft lock on the live draw controls, so a stray click cannot re-draw or
+  # rewind the real thing while eight people are watching. Everyone can still
+  # WATCH without it - only the buttons are gated.
+  #
+  # This repo is public, so treat what is written here as a speed bump rather
+  # than a secret. Set `draw_password` in .streamlit/secrets.toml (gitignored)
+  # and in the Streamlit Cloud secrets box to override it with something that
+  # is not in git.
+  password: cliffdog
+
 theme:
   default_palette: lights_off   # lights_off | newsprint
 

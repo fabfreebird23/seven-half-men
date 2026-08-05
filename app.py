@@ -45,6 +45,41 @@ FIRST = config.is_first_season()
 WEEKS = int(config.league()["regular_season_weeks"]) + len(config.league()["chase_weeks"])
 
 
+def draw_unlocked() -> bool:
+    """Whether this browser may operate the draw.
+
+    Only the controls are gated. Everyone else still sees the board, the hat and
+    each envelope as it opens - which is the point of running it live - they
+    just cannot re-draw it or rewind the reveal from their phone.
+    """
+    if not config.draw_password():
+        return True
+    return bool(st.session_state.get("draw_unlocked"))
+
+
+def draw_lock_ui() -> bool:
+    """Renders the unlock control and returns whether we are unlocked."""
+    if draw_unlocked():
+        return True
+    c1, c2 = st.columns([2, 3])
+    with c1:
+        pw = st.text_input("Commissioner", type="password",
+                           placeholder="password to run the draw",
+                           label_visibility="collapsed", key="draw_pw")
+        if pw:
+            if pw == config.draw_password():
+                st.session_state["draw_unlocked"] = True
+                st.rerun()
+            else:
+                st.markdown('<div class="tiny" style="color:var(--bad)">Not that one.</div>',
+                            unsafe_allow_html=True)
+    with c2:
+        st.markdown('<div class="tiny">Watching only. The board and every envelope update '
+                    'here as the commissioner opens them &mdash; you just cannot re-draw or '
+                    'rewind it.</div>', unsafe_allow_html=True)
+    return False
+
+
 def first_draw() -> dict:
     """The season-one draw, from disk. Falls back to this session only if the
     file is unreadable, so every manager sees the same order rather than only
@@ -1162,12 +1197,14 @@ def render_lottery(leaf=None):
 
     if FIRST:
         theme.bar("Season one", "no standings, so both orders are drawn flat")
+        unlocked = draw_lock_ui()
         c1, c2 = st.columns([1, 2])
         with c1:
             existing = first_draw()
             seed = st.number_input("Draw seed", 0, 10 ** 6,
-                                   int(existing.get("seed", 0)), key="seed_first")
-            if st.button("Draw both orders"):
+                                   int(existing.get("seed", 0)), key="seed_first",
+                                   disabled=not unlocked)
+            if st.button("Draw both orders", disabled=not unlocked):
                 storage.save_draw(
                     int(seed),
                     lottery.first_season_order(owner_ids(), seed=int(seed)),
@@ -1185,6 +1222,7 @@ def render_lottery(leaf=None):
         draw = first_draw()
 
     if FIRST and draw:
+        unlocked = draw_unlocked()
         # Read out LAST pick first and work up to first choice. That is how a
         # lottery is meant to be run: the room learns who is stuck at the back
         # while the prize is still in the hat, and the last envelope is the
@@ -1197,16 +1235,17 @@ def render_lottery(leaf=None):
         theme.bar("The draw", "read from the back &mdash; %d of %d opened" % (shown, total))
         cA, cB, cC, cD = st.columns([1, 1, 1, 2])
         with cA:
-            if st.button("Open next", disabled=shown >= total, use_container_width=True):
+            if st.button("Open next", disabled=(shown >= total or not unlocked),
+                         use_container_width=True):
                 storage.set_reveal(shown + 1, SEASON); st.rerun()
         with cB:
             auto = st.toggle("Auto", value=False, key="auto_reveal",
-                             disabled=shown >= total)
+                             disabled=(shown >= total or not unlocked))
         with cC:
             pause = st.number_input("Pause", 1, 20, 6, key="reveal_pause",
-                                    label_visibility="collapsed")
+                                    label_visibility="collapsed", disabled=not unlocked)
         with cD:
-            if st.button("Reset the reveal", disabled=not shown):
+            if st.button("Reset the reveal", disabled=(not shown or not unlocked)):
                 storage.set_reveal(0, SEASON); st.rerun()
             st.markdown('<div class="tiny">Seconds between envelopes when Auto is on. '
                         'Nothing is random here &mdash; the order was fixed by the seed '

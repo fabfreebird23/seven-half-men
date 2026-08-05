@@ -128,3 +128,19 @@ def lottery_weights(alt: bool = False) -> List[int]:
 
 def adp_sources() -> Dict[str, Any]:
     return load().get("adp_sources", {})
+
+
+def draw_password() -> str:
+    """The soft lock on the live draw controls.
+
+    A secret wins over the YAML, because this repo is public and the YAML value
+    is therefore a speed bump rather than a password. Empty means no lock.
+    """
+    try:
+        import streamlit as st
+        secret = st.secrets.get("draw_password")
+        if secret:
+            return str(secret)
+    except Exception:
+        pass
+    return str(load().get("draw", {}).get("password", "") or "")

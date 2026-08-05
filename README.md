@@ -133,6 +133,16 @@ the front.
 **Pre-Season → Lottery.** The draw sits at the top of that section on every one
 of its leaves, so any of the three gets you there.
 
+The controls are **locked behind a password** so a stray click cannot re-draw or
+rewind the real thing mid-ceremony. Everyone else can still watch: the board, the
+hat and each envelope update for them as you open them — only the buttons are
+gated. Unlock persists for your browser session.
+
+The password lives in `config.yaml`. **This repo is public**, so treat it as a
+speed bump rather than a secret; set `draw_password` in `.streamlit/secrets.toml`
+(gitignored) and in the Streamlit Cloud secrets box to override it with something
+that is not in git.
+
 Pick a seed, hit **Draw both orders**. Then run the reveal: **Open next** opens
 one envelope at a time, or flip **Auto** and set a pause to let it run hands-free.
 
@@ -197,7 +207,7 @@ halfmen/
   valueboard.py        every roster priced for next year, plus the franchise tag
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 212 tests
+tests/                 218 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 
