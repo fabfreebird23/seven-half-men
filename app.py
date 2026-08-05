@@ -20,7 +20,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from halfmen import (adp_board, config, draftboard, engine, history, lottery,
-                     picks, pot, rulebook, sleeper, storage, taxi, theme, valueboard)
+                     picks, pot, remote, rulebook, sleeper, storage, taxi, theme,
+                     valueboard)
 
 st.set_page_config(page_title="7½ Men", page_icon="🏈", layout="wide")
 
@@ -79,6 +80,18 @@ def draw_lock_ui(placeholder: str = "password to run the draw",
     with c2:
         st.markdown('<div class="tiny">%s</div>' % note, unsafe_allow_html=True)
     return False
+
+
+def storage_note() -> str:
+    """One line telling the commissioner whether what they are about to type in
+    will still be here tomorrow. Streamlit Cloud deletes the container's disk on
+    every reboot, so this is not a detail worth hiding."""
+    if remote.enabled():
+        return ('<div class="tiny" style="margin-top:8px">Saved to the league data branch '
+                '&mdash; this survives a reboot or a redeploy.</div>')
+    return ('<div class="tiny" style="margin-top:8px;color:var(--warn)">Saved to this '
+            'container only. Set <code>github_token</code> in the app secrets to make it '
+            'durable &mdash; otherwise a Streamlit reboot wipes it.</div>')
 
 
 def first_draw() -> dict:
@@ -1125,6 +1138,7 @@ def render_draft(leaf=None):
         with c2:
             if st.button("Clear this draft", disabled=not unlocked or not existing):
                 picks.clear(which, SEASON); st.rerun()
+        st.markdown(storage_note(), unsafe_allow_html=True)
 
         if do_import:
             got = picks.parse(pasted, pick_order, rounds, snake)
@@ -1285,6 +1299,7 @@ def render_lottery(leaf=None):
                     'something you have to take on trust. Re-drawing overwrites it.</div>' % (
                         existing.get("seed"), esc((existing.get("drawn_at") or "")[:10])),
                     unsafe_allow_html=True)
+            st.markdown(storage_note(), unsafe_allow_html=True)
         draw = first_draw()
 
     if FIRST and draw:

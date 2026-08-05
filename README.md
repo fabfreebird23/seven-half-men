@@ -244,6 +244,42 @@ falling back to `me` in config. Each manager can bookmark their own, and a link
 pasted in the group chat opens on whatever the sender was looking at. The picker
 sits beside the masthead.
 
+## Where the data lives
+
+Everything this app *writes* — keeper slips, the season-one draw, and any draft
+picks entered by hand — is one JSON blob per season. It is written to two places
+at once:
+
+- `data/keepers_<season>.json` on disk, always.
+- `data/keepers_<season>.json` on a **`league-data` branch of this repo**, when
+  a token is configured.
+
+The second one is the copy that matters on Streamlit Cloud, which deletes the
+container's disk on every reboot and every redeploy. Without it, rebooting the
+app mid-draw would blank the order in front of eight people. A *branch* rather
+than `main` on purpose: a commit to `main` triggers a redeploy, which restarts
+the container — the exact thing being guarded against.
+
+To turn it on, put a fine-grained PAT with **Contents: read & write** on this
+repo into the app's secrets (Streamlit Cloud → Settings → Secrets), and the same
+in a gitignored `.streamlit/secrets.toml` for local work:
+
+```toml
+github_token = "github_pat_..."
+github_repo = "fabfreebird23/seven-half-men"   # optional, this is the default
+github_branch = "league-data"                  # optional, this is the default
+```
+
+The branch is created on the first write. Reads are cached for five seconds so
+a room watching the draw sees each envelope open near-live without hammering the
+API, and a read failure serves the last good value rather than an empty board.
+Any push failure degrades to the local file instead of raising — a save is never
+lost, only made fragile. The commissioner surfaces say which mode they are in,
+so nobody types in a draft that is about to evaporate.
+
+The Sleeper cache under `data/` is *not* covered by this and does not need to be:
+it rebuilds itself from the API.
+
 ## Notes
 
 - Every Sleeper read is disk-cached with a stale fallback. urllib3 on this

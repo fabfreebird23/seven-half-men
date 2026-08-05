@@ -1,9 +1,14 @@
-"""Where submitted keeper slips live.
+"""Where submitted keeper slips, the draw and any recorded picks live.
 
-A JSON file per season under data/. Deliberately boring: the slip is eight
-managers times five players once a year, so there is nothing to be gained from
-a database. The one thing that matters is that a slip, once locked, is a record
-- so writes are atomic and the previous file is kept as `.bak`.
+One JSON blob per season. Deliberately boring: the slip is eight managers times
+five players once a year, so there is nothing to be gained from a database. The
+one thing that matters is that a slip, once locked, is a record - so writes are
+atomic and the previous file is kept as `.bak`.
+
+The blob is written to BOTH a local file and, when a GitHub token is configured,
+a data branch of this app's own repo. On Streamlit Cloud the local file is
+scratch that the next reboot deletes; the branch is the copy that survives. See
+remote.py. With no token nothing changes and this is just a file.
 """
 from __future__ import annotations
 
@@ -12,26 +17,42 @@ import os
 import time
 from typing import Any, Dict, List
 
-from . import config
+from . import config, remote
 
 
 def _path(season: int):
     return config.DATA_DIR / ("keepers_%d.json" % int(season))
 
 
+def _remote_path(season: int) -> str:
+    return "data/keepers_%d.json" % int(season)
+
+
+def _blank(season: int) -> Dict[str, Any]:
+    return {"season": season, "teams": {}, "kept": [], "rookie_kept": [], "locked": False}
+
+
 def load(season: int = None) -> Dict[str, Any]:
     season = int(season or config.season())
+    if remote.enabled():
+        got = remote.read(_remote_path(season))
+        if got:
+            return got
+        # Nothing on the branch yet, or GitHub is unreachable. Either way the
+        # local copy is the best answer we have; a write will push it up.
     p = _path(season)
     if not p.exists():
-        return {"season": season, "teams": {}, "kept": [], "rookie_kept": [], "locked": False}
+        return _blank(season)
     try:
         return json.loads(p.read_text())
     except ValueError:
-        return {"season": season, "teams": {}, "kept": [], "rookie_kept": [], "locked": False}
+        return _blank(season)
 
 
 def save(data: Dict[str, Any], season: int = None) -> None:
     season = int(season or data.get("season") or config.season())
+    # Local first and always: it is the fallback if the push fails, and on a
+    # laptop it is the only copy.
     config.DATA_DIR.mkdir(exist_ok=True)
     p = _path(season)
     if p.exists():
@@ -39,6 +60,8 @@ def save(data: Dict[str, Any], season: int = None) -> None:
     tmp = p.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(data, indent=2, sort_keys=True))
     os.replace(str(tmp), str(p))
+    if remote.enabled():
+        remote.write(_remote_path(season), data, "league data: %d" % season)
 
 
 def submit(owner_id: str, entries: List[Dict[str, Any]], season: int = None) -> Dict[str, Any]:
