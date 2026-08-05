@@ -155,6 +155,16 @@ def owned_map() -> Dict[str, Counter]:
         return {o: Counter({r: 1 for r in range(1, rounds + 1)}) for o in config.managers()}
 
 
+@st.cache_data(ttl=900, show_spinner=False)
+def value_rows() -> List[dict]:
+    """Every rostered player, priced. Cheap to call before the draft - the
+    module bails on an empty league before touching the 5MB player map."""
+    try:
+        return valueboard.rows(LG, SEASON)
+    except Exception:
+        return []
+
+
 def esc(s) -> str:
     return html.escape(str(s if s is not None else ""))
 
@@ -360,6 +370,131 @@ RULES_LEDGER = [
 # HOME
 # ---------------------------------------------------------------------------
 
+def stat_strip(cells) -> None:
+    """Four (label, value, note, rail-colour) facts in a row."""
+    st.markdown('<div class="mine">%s</div>' % "".join(
+        '<div class="m" style="border-left-color:%s"><div class="k">%s</div>'
+        '<div class="v">%s</div><div class="n">%s</div></div>' % (color, esc(k), v, note)
+        for k, v, note, color in cells), unsafe_allow_html=True)
+
+
+def my_situation(view: str) -> dict:
+    """Everything the Home card needs about one team, in whatever state the
+    season is actually in.
+
+    Written to degrade rather than lie. Before the draft there is no record, no
+    spend and no keeper worth anything, so the card reports the things that ARE
+    settled - your two selection slots, an untouched budget, an empty bay -
+    instead of printing four zeros and pretending they mean something.
+    """
+    out = {"record": None, "place": None, "faab_left": None, "owed": None,
+           "best": None, "worst": None, "taxi": None, "slots": {}, "kept": 0}
+
+    r = next((x for x in (state["rosters"] or [])
+              if str(x.get("owner_id")) == str(view)), None)
+    if r:
+        st_ = r.get("settings") or {}
+        w, l, t = (int(st_.get("wins", 0)), int(st_.get("losses", 0)),
+                   int(st_.get("ties", 0)))
+        if w or l or t:
+            out["record"] = "%d-%d%s" % (w, l, ("-%d" % t) if t else "")
+        budget = int(config.faab_rules()["budget"])
+        left = st_.get("waiver_budget_used")
+        if left is not None:
+            out["faab_left"] = max(0, budget - int(left))
+            out["owed"] = out["faab_left"]
+
+    d = first_draw()
+    for kind in ("rookie", "veteran"):
+        order = d.get(kind) or []
+        if str(view) in [str(o) for o in order]:
+            out["slots"][kind] = [str(o) for o in order].index(str(view)) + 1
+
+    mine = [x for x in value_rows() if str(x["owner_id"]) == str(view)]
+    priced = [x for x in mine if x.get("surplus") is not None and x.get("eligible")]
+    if priced:
+        out["best"] = max(priced, key=lambda x: x["surplus"])
+        out["worst"] = min(priced, key=lambda x: x["surplus"])
+    out["kept"] = len(submitted_keepers().get(str(view)) or [])
+
+    try:
+        bay = taxi.build(LG, SEASON).get(str(view))
+    except Exception:
+        bay = None
+    if bay:
+        out["taxi"] = bay
+    return out
+
+
+def my_card(view: str) -> None:
+    """Your team, on the way in. The one screen a manager checks from a phone in
+    week 6 should answer 'where do I stand and what does it cost me' without a
+    single tap."""
+    sit = my_situation(view)
+    budget = int(config.faab_rules()["budget"])
+    total_keepers = int(config.keeper_rules()["total"])
+    slots = int(config.taxi_rules()["slots"])
+    taxi_used = len(sit["taxi"].pods) if sit["taxi"] else 0
+
+    theme.bar("Your team", esc(team_of(view)))
+
+    if sit["record"]:
+        rec = ("Record", sit["record"], "regular season", "var(--acc)")
+    elif sit["slots"]:
+        both = " &middot; ".join(
+            "%s %s" % (ordinal(sit["slots"][k]), k) for k in ("rookie", "veteran")
+            if k in sit["slots"])
+        rec = ("Your slot", str(sit["slots"].get("veteran", sit["slots"].get("rookie"))),
+               both, "var(--acc)")
+    else:
+        rec = ("Record", "\u2014", "nothing played, and no draw yet", "var(--line)")
+
+    left = budget if sit["faab_left"] is None else sit["faab_left"]
+    stat_strip([
+        rec,
+        ("FAAB left", "$%d" % left,
+         ("all of it still comes due in the pot" if left == budget else
+          "still owed to the pot at year end" if left else
+          "spent out \u2014 you owe the pot nothing"),
+         "var(--warn)" if left else "var(--good)"),
+        ("Keepers in", "%d" % sit["kept"], "of %d on your slip" % total_keepers,
+         "var(--acc2)" if sit["kept"] else "var(--line)"),
+        ("On taxi", "%d" % taxi_used,
+         ("%d of %d \u2014 %d expiring" % (taxi_used, slots, len(sit["taxi"].expiring))
+          if sit["taxi"] and sit["taxi"].expiring else "%d of %d slots" % (taxi_used, slots)),
+         "var(--good)" if taxi_used else "var(--line)"),
+    ])
+
+    lines = []
+    if sit["best"]:
+        lines.append(('<span class="chip good">best value</span>', sit["best"],
+                      "costs R%s against an R%s market" % (
+                          sit["best"]["cost"], sit["best"]["adp"])))
+    if sit["worst"] and sit["worst"] is not sit["best"]:
+        lines.append(('<span class="chip bad">worst value</span>', sit["worst"],
+                      "costs R%s against an R%s market" % (
+                          sit["worst"]["cost"], sit["worst"]["adp"])))
+    if lines:
+        ledger_table(["", "Player", "Price"], [[
+            tag,
+            '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
+                esc(p["name"]), esc(p["position"] or "")),
+            '<div class="mono">R%s</div><div class="tiny">%s</div>' % (p["cost"], note),
+        ] for tag, p, note in lines])
+    elif not FIRST or sit["record"]:
+        st.markdown('<div class="tiny">No priced keepers yet.</div>', unsafe_allow_html=True)
+
+    if sit["taxi"] and sit["taxi"].squeeze:
+        st.markdown(
+            '<div class="banner" style="border-color:var(--warn);color:var(--warn)">'
+            '<b>%d incoming rookie%s with nowhere to go.</b> Your bay is full and %d '
+            'pod%s expiring, so something has to be promoted, cut or kept before the '
+            'rookie draft.</div>' % (
+                sit["taxi"].squeeze, "" if sit["taxi"].squeeze == 1 else "s",
+                len(sit["taxi"].expiring), "" if len(sit["taxi"].expiring) == 1 else "s"),
+            unsafe_allow_html=True)
+
+
 def render_home(leaf=None):
     rosters = state["rosters"] or []
     filled = sum(1 for r in rosters if (r.get("players") or []))
@@ -374,6 +509,8 @@ def render_home(leaf=None):
             'and priced off real ADP, so you can already see what a pick will cost you to hold.'
             '</div>' % (config.rookie_rounds(), config.veteran_rounds()),
             unsafe_allow_html=True)
+
+    my_card(VIEW)
 
     theme.bar("The league", "%s · %s" % (esc(lg.get("name") or ""),
                                          esc((lg.get("status") or "").replace("_", " "))))

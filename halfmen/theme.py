@@ -193,6 +193,21 @@ h3.k{
            background:var(--acc2-soft); }
 .chip.solid{ background:var(--acc2); color:var(--acc2-ink); border-color:var(--acc2); font-weight:600; }
 
+/* ---- your-team strip ------------------------------------------------- */
+/* Deliberately NOT another row of bowls. Home already carries four of them for
+   the league, and eight identical circles stacked on a phone stops reading as
+   information and starts reading as wallpaper. This is the dense counterpart:
+   same palette, quarter the height, scannable in one look. */
+.mine{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:2px 0 8px; }
+.mine .m{ background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+          padding:13px 14px 12px; display:flex; flex-direction:column; gap:3px;
+          border-left:3px solid var(--line); }
+.mine .m .k{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.13em;
+             text-transform:uppercase; color:var(--dim); }
+.mine .m .v{ font-family:var(--f-display); font-size:33px; line-height:1;
+             letter-spacing:.005em; color:var(--ink); font-variant-numeric:tabular-nums; }
+.mine .m .n{ font-size:11.5px; color:var(--dim); line-height:1.45; }
+
 /* ---- glance rings --------------------------------------------------- */
 .glance{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin:2px 0 6px; }
 .gl{ display:flex; flex-direction:column; align-items:center; gap:11px; }
@@ -507,6 +522,7 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 
 @media (max-width:820px){
   .glance{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .mine{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   .lotrow{ grid-template-columns:118px 1fr; }
   .worked .wr{ grid-template-columns:1fr; gap:4px; }
   .bay{ grid-template-columns:1fr; }
@@ -529,6 +545,9 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 
   [data-testid="stSelectbox"]{ max-width:none; margin:6px 0 0; }
   .glance{ gap:14px; }
+  .mine{ gap:8px; }
+  .mine .m{ padding:11px 12px 10px; }
+  .mine .m .v{ font-size:26px; }
   .gl svg.liq{ max-width:132px; }
   .gl .s{ font-size:12px; max-width:24ch; }
 

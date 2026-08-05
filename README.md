@@ -244,6 +244,24 @@ falling back to `me` in config. Each manager can bookmark their own, and a link
 pasted in the group chat opens on whatever the sender was looking at. The picker
 sits beside the masthead.
 
+## Home
+
+The first block is **your team**, not the league's. It answers the two questions
+a manager actually opens this for — where do I stand, and what is it costing me
+— in one screen: record (or, before a ball is kicked, your two selection slots),
+what is left of the FAAB budget and therefore what you owe the pot, keepers on
+your slip, taxi pods with expiries called out, and the best and worst contract
+you are holding priced against the market.
+
+It is written to degrade rather than lie. Before the draft there is no record,
+no spend and no priced keeper, so it says so instead of printing four zeros that
+read as facts. An ineligible player — one at the three-year wall — is never
+offered as your "best value", because it is not a contract you can take.
+
+The strip is deliberately *not* another row of liquid bowls. The league block
+below already carries four of those, and eight identical circles stacked on a
+phone stops reading as information.
+
 ## Where the data lives
 
 Everything this app *writes* — keeper slips, the season-one draw, and any draft
