@@ -179,3 +179,41 @@ def test_compliance_only_reports_teams_with_a_problem():
     }
     flagged = taxi.compliance(bays, _FakeHistory(["1"]))
     assert set(flagged) == {"b"}
+
+
+# ---------------------------------------------------------------- rookie board
+
+def test_the_rookie_board_is_two_rounds_of_eight():
+    board = draftboard.rookie_grid(OWNERS)
+    assert len(board) == config.rookie_rounds()
+    assert all(len(r) == len(OWNERS) for r in board)
+    assert draftboard.rookie_pick_count() == config.rookie_rounds() * len(config.managers())
+
+
+def test_the_rookie_board_snakes_when_configured(monkeypatch):
+    d = dict(config.drafts()); d["rookie_snake"] = True
+    monkeypatch.setattr(config, "drafts", lambda: d)
+    board = draftboard.rookie_grid(OWNERS)
+    assert [c.pick_label for c in board[0]][:2] == ["1.01", "1.02"]
+    assert [c.pick_label for c in board[1]][:2] == ["2.08", "2.07"]
+
+
+def test_round_two_can_repeat_round_one_instead(monkeypatch):
+    """The written rules never settled snake vs linear for the rookie draft."""
+    d = dict(config.drafts()); d["rookie_snake"] = False
+    monkeypatch.setattr(config, "drafts", lambda: d)
+    board = draftboard.rookie_grid(OWNERS)
+    assert [c.pick_label for c in board[1]][:2] == ["2.01", "2.02"]
+
+
+def test_columns_stay_with_their_team_in_both_rounds():
+    board = draftboard.rookie_grid(OWNERS)
+    for row in board:
+        assert [c.owner_id for c in row] == OWNERS
+
+
+def test_no_keeper_ever_strikes_a_rookie_pick():
+    """A keeper costs a VETERAN round, so nothing is burned off this board -
+    the failure would be silently reusing grid() and eating picks."""
+    board = draftboard.rookie_grid(OWNERS)
+    assert all(c.kind == "open" for row in board for c in row)

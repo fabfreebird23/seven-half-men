@@ -4,6 +4,11 @@ __pycache__/
 .streamlit/secrets.toml
 data/cache_*.json
 data/players_nfl.json
+# Runtime league state - the draw, the reveal, submitted slips. Not source.
+# A stray local click would otherwise land in a commit looking like the real
+# league record. The draw's SEED is the durable artefact: it regenerates the
+# order exactly, so nothing that matters depends on this file surviving.
+data/keepers_*.json
 data/keepers_*.json.bak
 data/keepers_*.json.tmp
 .pytest_cache/

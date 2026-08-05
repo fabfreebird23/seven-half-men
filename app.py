@@ -169,7 +169,8 @@ GROUPS = {
         ("keepers", "Keepers", [("matrix", "Where the value is"),
                                 ("slip", "Set my keepers"),
                                 ("franchise", "Franchise tag")]),
-        ("draft", "Draft", [("board", "Draft board"),
+        ("draft", "Draft", [("rookie", "Rookie draft"),
+                            ("board", "Veteran draft"),
                             ("locks", "What a pick locks you into"),
                             ("capital", "Draft capital")]),
         ("young", "Rookies & Taxi", [("bay", "Taxi bay"),
@@ -940,6 +941,65 @@ def render_draft(leaf=None):
     # Page-level: the capital strip needs the same order the board draws in.
     draw = first_draw()
     order = draw.get("veteran") or owner_ids()
+    if leaf in (None, "rookie"):
+        rk_order = draw.get("rookie") or owner_ids()
+        theme.bar("Rookie draft", "%d rounds &middot; %d picks &middot; held first" % (
+            config.rookie_rounds(), draftboard.rookie_pick_count()))
+        if not draw.get("rookie"):
+            st.markdown(
+                '<div class="banner">Order is provisional until the drum runs &mdash; this is '
+                'showing config order. Draw it on <b>Pre-Season &rsaquo; Lottery</b> and the '
+                'board fills in.</div>', unsafe_allow_html=True)
+
+        rk = draftboard.rookie_grid(rk_order, SEASON)
+        head = "".join('<th title="%s">%s</th>' % (esc(team_of(o)), esc(who(o).split(" ")[0]))
+                       for o in rk_order)
+        body = "".join(
+            '<tr><td class="rd">R%d</td>%s</tr>' % (
+                r + 1, "".join('<td><div class="cell open">%s</div></td>' % c.pick_label
+                               for c in row))
+            for r, row in enumerate(rk))
+        st.markdown('<div class="boardwrap"><table class="board">'
+                    '<thead><tr><th></th>%s</tr></thead><tbody>%s</tbody></table></div>' % (
+                        head, body), unsafe_allow_html=True)
+        st.markdown(
+            '<div class="tiny" style="margin-top:8px">No keeper ever strikes a pick off this '
+            'board &mdash; a keeper costs a <b>veteran</b> round. Round two %s.</div>' % (
+                "snakes back" if config.drafts().get("rookie_snake", True)
+                else "repeats round one"), unsafe_allow_html=True)
+
+        # The point of this board is not the grid, it is what a pick here is
+        # worth to hold - which is different from every other pick in the league.
+        prem = engine.rookie_draft_premium()
+        last = config.veteran_rounds()
+        st.markdown(
+            '<div class="card" style="margin-top:12px"><div class="eyebrow">What a pick here '
+            'buys you</div>%s</div>' % "".join(
+                '<div class="wr" style="display:grid;grid-template-columns:190px 90px 1fr;'
+                'gap:14px;padding:10px 0;border-top:1px solid var(--line);align-items:baseline">'
+                '<div style="font-size:13.5px;color:var(--ink2)">%s</div>'
+                '<div style="font-family:var(--f-display);font-weight:800;font-size:21px;'
+                'color:var(--acc)">%s</div><div class="tiny">%s</div></div>' % (a, b, c)
+                for a, b, c in (
+                    ("In a rookie keeper slot", "R%d / R%d" % (last, last - 1),
+                     "no clock, yours for his career &mdash; but only two slots a team"),
+                    ("In a regular keeper slot", "R%d" % prem,
+                     "flat in year one, then %d, then the market. He has no veteran round, "
+                     "so the premium stands in for one" % max(1, prem - 3)),
+                    ("Stashed on taxi", "free",
+                     "two years, no keeper slot, and promoting him keeps the rookie "
+                     "designation"),
+                    ("Left in the pool", "&mdash;",
+                     "he goes into the veteran draft and anybody can take him at a real round"),
+                )), unsafe_allow_html=True)
+        st.markdown(
+            '<div class="tiny" style="margin-top:10px">Only <b>%d</b> of the %d players taken '
+            'here can end up in rookie keeper slots on any one team. The rest are R%d regular '
+            'keepers, taxi stashes, or cuts &mdash; which is what makes the back half of this '
+            'board a different decision from the front.</div>' % (
+                int(config.keeper_rules()["rookie"]), draftboard.rookie_pick_count(), prem),
+            unsafe_allow_html=True)
+
     if leaf in (None, "board"):
         theme.bar("Veteran draft", "%d rounds · snake · keeper costs burned in" % config.veteran_rounds())
         if FIRST:

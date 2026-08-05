@@ -18,6 +18,10 @@ drafts:
                                     # so year one still offers a promote-or-stash choice
   rookie_rounds: 2
   snake: true
+  # Does the rookie draft snake too, or does round 2 repeat round 1? The written
+  # rules only ever said "2 rounds, 16 picks" and never settled it. Snake here
+  # for consistency with the veteran draft; flip to false for a linear board.
+  rookie_snake: true
 
 roster:
   starters: [QB, RB, RB, WR, WR, TE, FLEX, FLEX, FLEX]

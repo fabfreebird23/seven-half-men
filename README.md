@@ -112,6 +112,22 @@ worthless. Three guardrails, in order:
 Each drum produces a **selection order**, not a draft slot: first choice takes
 any spot on the board they want.
 
+## The two draft boards
+
+**Pre-Season → Draft → Rookie draft** is the one that runs first: 2 rounds, 16
+picks, in whatever order the drum settled. `rookie_snake` in config decides
+whether round two snakes back or repeats round one — the written rules only ever
+said "2 rounds, 16 picks" and never settled it, so it is a flag rather than an
+assumption.
+
+No keeper ever strikes a pick off that board, because a keeper costs a *veteran*
+round — which is why it is its own `draftboard.rookie_grid` rather than a flag on
+`grid()`. The page leads with what a pick there is actually worth to hold: R13/R12
+in a rookie keeper slot, R5 in a regular one, free on taxi, or nothing if you let
+him go back to the pool. Only two of the sixteen can end up in rookie slots on any
+one team, which is what makes the back half of the board a different decision from
+the front.
+
 ## Running the season-one draw
 
 **Pre-Season → Lottery.** The draw sits at the top of that section on every one
@@ -143,6 +159,9 @@ differ). Re-drawing overwrites.
 
 Auto uses a blocking sleep, so the buttons will not respond mid-pause — if you
 want to talk over it, use **Open next**.
+
+`data/keepers_*.json` is gitignored: it is runtime league state, not source, and
+a stray local click should never land in a commit looking like the real record.
 
 One caveat: `data/` is ephemeral on Streamlit Cloud, so a container restart can
 lose the file. **Screenshot the result, or note the seed** — the seed alone is
@@ -178,7 +197,7 @@ halfmen/
   valueboard.py        every roster priced for next year, plus the franchise tag
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 205 tests
+tests/                 212 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 

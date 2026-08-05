@@ -130,3 +130,30 @@ def capital(order: Sequence[str], keepers: Dict[str, List[dict]] = None,
                     "eaten": eaten, "live": max(0, held - eaten),
                     "rookie_picks": config.rookie_rounds()})
     return out
+
+
+def rookie_grid(order: Sequence[str], season: int = None) -> List[List[Cell]]:
+    """The rookie draft board: rounds x teams, in the order the drum settled.
+
+    Its own function rather than a flag on grid(): the rookie draft has its own
+    round count, its own snake setting, and no keepers to burn in - a keeper
+    costs a VETERAN pick, so nothing is ever struck off this board.
+    """
+    season = int(season or config.season())
+    rounds = config.rookie_rounds()
+    snake = bool(config.drafts().get("rookie_snake", True))
+    n = len(order)
+
+    board: List[List[Cell]] = []
+    for rnd in range(1, rounds + 1):
+        row: List[Cell] = []
+        for i, owner in enumerate(order):
+            pick = (n - i) if (snake and rnd % 2 == 0) else (i + 1)
+            row.append(Cell(round=rnd, slot=i + 1, owner_id=owner, kind="open",
+                            pick_label="%d.%02d" % (rnd, pick)))
+        board.append(row)
+    return board
+
+
+def rookie_pick_count(season: int = None) -> int:
+    return config.rookie_rounds() * len(config.managers())
