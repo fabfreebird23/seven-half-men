@@ -357,6 +357,51 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 
 .chart{ width:100%; height:auto; display:block; }
 
+/* ---- the bottom bar --------------------------------------------------
+   The only navigation. A floating pill rather than a full-width bar so it
+   reads as an object over the page rather than a browser chrome, and so the
+   content behind it stays visible. */
+.bb-wrap{ position:fixed; left:0; right:0; bottom:18px; display:flex;
+          justify-content:center; z-index:1000; pointer-events:none; }
+.bb{ pointer-events:auto; display:flex; gap:2px; background:rgba(16,18,24,.94);
+     backdrop-filter:blur(16px); border:1px solid var(--line2); border-radius:999px;
+     padding:7px; box-shadow:0 12px 36px rgba(0,0,0,.6); }
+.bb-link, [data-testid="stMarkdownContainer"] a.bb-link{
+  font-family:var(--f-display); font-weight:700; font-size:15px; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--ink) !important; text-decoration:none !important;
+  border:none !important; border-radius:999px !important; white-space:nowrap; opacity:.55;
+  padding:10px 20px !important; cursor:pointer; transition:opacity .2s, background .25s; }
+.bb-link:hover{ opacity:.85; }
+.bb-link.active{ opacity:1; background:var(--acc) !important; color:var(--acc-ink) !important; }
+
+.bb-scrim{ position:fixed; inset:0; background:rgba(0,0,0,0); pointer-events:none;
+           transition:background .25s; z-index:998; }
+.bb-scrim.on{ background:rgba(0,0,0,.5); pointer-events:auto; }
+.bb-pop{ position:fixed; left:50%; bottom:84px; transform:translate(-50%,10px) scale(.96);
+         width:min(340px, calc(100% - 32px)); background:var(--card2);
+         border:1px solid var(--line2); border-radius:16px; padding:8px;
+         box-shadow:0 16px 44px rgba(0,0,0,.6); opacity:0; pointer-events:none;
+         transition:opacity .2s ease, transform .2s ease; z-index:999; }
+.bb-pop.on{ opacity:1; pointer-events:auto; transform:translate(-50%,0) scale(1); }
+.bb-panel{ display:none; }
+.bb-panel.on{ display:block; }
+.bb-head{ display:flex; align-items:center; gap:9px; padding:8px 10px 10px; }
+.bb-back{ font-family:var(--f-data); font-size:11px; color:var(--dim); cursor:pointer; }
+.bb-back:hover{ color:var(--ink); }
+.bb-title{ font-family:var(--f-display); font-weight:700; font-size:15px;
+           text-transform:uppercase; letter-spacing:.05em; color:var(--dim); }
+.bb-item, [data-testid="stMarkdownContainer"] a.bb-item{
+  display:flex; align-items:center; justify-content:space-between; padding:12px;
+  border-radius:10px; font-size:13.5px; font-weight:600; color:var(--ink) !important;
+  text-decoration:none !important; cursor:pointer; transition:background .15s; }
+.bb-item:hover{ background:rgba(255,255,255,.05); }
+.bb-item.leaf{ font-weight:500; font-size:13px; }
+.bb-item.leaf.on{ background:var(--acc-soft); color:var(--acc) !important; }
+.bb-item .chev{ color:var(--dim); font-family:var(--f-data); font-size:12px; }
+
+/* the bar floats over the page, so the page needs room to scroll clear of it */
+[data-testid="stAppViewContainer"] .main .block-container{ padding-bottom:120px; }
+
 /* ---- streamlit chrome ----------------------------------------------- */
 [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"],
 [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"],
@@ -458,17 +503,7 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
   .gl svg.liq{ max-width:132px; }
   .gl .s{ font-size:12px; max-width:24ch; }
 
-  /* Seven tabs on one line at 375px. The two long labels are shortened rather
-     than the type squeezed to nothing - nth-child is coupled to TABS in app.py,
-     and tests/test_theme.py asserts the two stay in step. */
-  .stTabs [data-baseweb="tab-list"]{ gap:3px; }
-  .stTabs [data-baseweb="tab"]{ padding:6px 8px 4px; }
-  .stTabs [data-baseweb="tab"] p{ font-size:13px; letter-spacing:.02em; }
-  .stTabs [data-baseweb="tab"]:nth-child(4) p{ font-size:0; }
-  .stTabs [data-baseweb="tab"]:nth-child(4) p::after{ content:"Taxi"; font-size:13px; }
-  .stTabs [data-baseweb="tab"]:nth-child(5) p{ font-size:0; }
-  .stTabs [data-baseweb="tab"]:nth-child(5) p::after{ content:"Pot"; font-size:13px; }
-
+  /* No tab row any more - navigation is the floating bottom bar. */
   .lotname{ font-size:12px; }
   .lotname small{ font-size:9px; }
   .rule{ padding:16px 15px; }
@@ -490,12 +525,6 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
   .toc a{ font-size:10px; padding:5px 9px; }
 }
 
-@media (max-width:380px){
-  /* Anything narrower than an iPhone SE. Keep the seven on one line. */
-  .stTabs [data-baseweb="tab"]{ padding:6px 6px 4px; }
-  .stTabs [data-baseweb="tab"] p,
-  .stTabs [data-baseweb="tab"]:nth-child(4) p::after,
-  .stTabs [data-baseweb="tab"]:nth-child(5) p::after{ font-size:10.5px; }
 }
 @media (prefers-reduced-motion:reduce){
   *{ transition:none !important; }

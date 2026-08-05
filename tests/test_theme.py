@@ -222,36 +222,6 @@ def test_a_pod_clock_has_one_segment_per_year():
 
 # ------------------------------------------------------------------ mobile
 
-def test_the_mobile_tab_labels_are_coupled_to_the_tab_order():
-    """The phone stylesheet shortens two tabs by :nth-child, which silently
-    relabels the wrong tab if anyone reorders app.py's TABS. Assert they stay in
-    step rather than finding out on a phone."""
-    import re, pathlib
-    app = pathlib.Path("app.py").read_text()
-    tabs = re.search(r"^TABS = \[(.+?)\]", app, re.M).group(1)
-    labels = [t.strip().strip('"') for t in tabs.split(",")]
-    css = theme.css()
-
-    for nth, short in re.findall(r'nth-child\((\d)\) p::after\{ content:"([^"]+)"', css):
-        full = labels[int(nth) - 1]
-        assert short.lower() in full.lower(), (
-            "mobile tab %s says %r but TABS position %s is %r" % (nth, short, nth, full))
-
-
-def test_only_the_long_tab_labels_are_shortened():
-    """Shortening a label that already fits is churn; this catches a stale rule
-    left behind after a rename."""
-    import re, pathlib
-    app = pathlib.Path("app.py").read_text()
-    labels = [t.strip().strip('"') for t in
-              re.search(r"^TABS = \[(.+?)\]", app, re.M).group(1).split(",")]
-    shortened = {int(n) for n, _ in
-                 re.findall(r'nth-child\((\d)\) p::after\{ content:"([^"]+)"', theme.css())}
-    for i, label in enumerate(labels, start=1):
-        if i in shortened:
-            assert len(label) > 6, "%r is short enough already" % label
-
-
 def test_the_section_heading_wraps_its_eyebrow_on_a_phone():
     """The eyebrow is nowrap and sits in a flex row with the title, so without
     this it pushed the whole heading past the viewport."""
@@ -266,3 +236,19 @@ def test_the_phone_breakpoints_target_the_element_that_exists():
     div, so it silently did nothing for weeks."""
     css = theme.css()
     assert "h2.bar" not in css, "stale selector - the heading is div.bar"
+
+
+def test_the_bottom_bar_is_the_only_navigation():
+    """Nav moved off a tab row into a floating pill bar with a drill-down
+    sheet, matching what Kreeper and Babies & Boomer converged on."""
+    css = theme.css()
+    assert ".bb-wrap" in css and ".bb-pop" in css and ".bb-scrim" in css
+    assert "position:fixed" in css.split(".bb-wrap")[1][:120]
+
+
+def test_the_page_scrolls_clear_of_the_floating_bar():
+    """The bar floats over the content, so the last card must not sit under
+    it."""
+    import re
+    m = re.search(r"\.block-container\{[^}]*padding-bottom:(\d+)px", theme.css())
+    assert m and int(m.group(1)) >= 100

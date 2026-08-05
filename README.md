@@ -126,7 +126,7 @@ Set in `config.yaml` as `drafts.veteran_rounds_first_season`.
 ## Layout
 
 ```
-app.py                 seven pages: Home, Rules, Keepers, Taxi Bay, The Pot, Draft, Lottery
+app.py                 four sections, sixteen leaves, routed on ?p=&g=&t=
 config.yaml            every rule the engine branches on
 halfmen/
   config.py            typed-ish accessors over the YAML
@@ -142,9 +142,35 @@ halfmen/
   valueboard.py        every roster priced for next year, plus the franchise tag
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 157 tests
+tests/                 194 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
+
+## Navigation
+
+Grouped by **season phase**, not content type, and routed entirely through
+`?p=&g=&t=`. There is no tab row: the top bar is the wordmark and a phase status
+line, and every route lives in a floating pill **bottom bar** whose sections open
+a group → leaf sheet. Two taps to any of the sixteen leaves, and the sheet closes
+on arrival rather than dropping you at a page root to scroll past three other
+sections. Same pattern the Kreeper and Babies & Boomer apps converged on.
+
+```
+Home
+Pre-Season   Keepers · Draft · Rookies & Taxi · Lottery
+In-Season    The Wire · The Pot
+Rules
+```
+
+Rules gets its own slot rather than folding under a phase — it is a twelve-section
+reference document and year one is nothing but rule questions.
+
+The bar is injected via `components.html` reaching `window.parent.document`,
+because `st.markdown` strips `<script>` and the handlers have to be real. That is
+the most version-fragile thing in the app, which is why `streamlit` is pinned.
+`tests/test_routes.py` walks all eighteen routes through Streamlit's own harness
+and asserts each renders real content — most of them are dark in year one, so a
+route that silently rendered nothing would not surface until the season started.
 
 ## Who sees what
 
