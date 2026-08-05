@@ -57,3 +57,49 @@ def test_route_renders_actual_content(qp):
     at.run()
     body = "".join(m.value for m in at.markdown)
     assert len(body) > 400, "%s rendered %d chars" % (qp, len(body))
+
+
+# ---------------------------------------------------------------- the draw
+
+def test_the_draw_survives_the_session_that_ran_it(tmp_path, monkeypatch):
+    """It lived in st.session_state, which is per-browser-session: the
+    commissioner would have seen the order and everyone else 'nothing drawn
+    yet', and a refresh would have wiped it."""
+    from halfmen import config, storage
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(storage.config, "DATA_DIR", tmp_path)
+
+    assert storage.load_draw(2026) == {}
+    storage.save_draw(42, ["a", "b"], ["b", "a"], 2026)
+    got = storage.load_draw(2026)
+    assert got["rookie"] == ["a", "b"] and got["veteran"] == ["b", "a"]
+    assert got["seed"] == 42 and got["drawn_at"]
+
+
+def test_the_draw_is_reproducible_from_its_seed():
+    """The seed is the whole reason this can be run in front of people: any of
+    them can re-enter it and get the same order back."""
+    from halfmen import lottery
+    owners = ["a", "b", "c", "d", "e", "f", "g", "h"]
+    first = lottery.first_season_order(owners, seed=42)
+    assert lottery.first_season_order(owners, seed=42) == first
+    assert lottery.first_season_order(owners, seed=43) != first
+
+
+def test_the_two_drafts_get_different_orders_from_one_seed():
+    """Same seed for both would give the same order twice, which nobody would
+    accept as a draw."""
+    from halfmen import lottery
+    owners = ["a", "b", "c", "d", "e", "f", "g", "h"]
+    assert (lottery.first_season_order(owners, seed=7)
+            != lottery.first_season_order(owners, seed=8))
+
+
+def test_saving_a_draw_leaves_submitted_keepers_alone(tmp_path, monkeypatch):
+    from halfmen import config, storage
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(storage.config, "DATA_DIR", tmp_path)
+    storage.submit("owner1", [{"player_id": "1", "kind": "keeper", "round": 3}], 2026)
+    storage.save_draw(5, ["a"], ["a"], 2026)
+    assert storage.entries_for("owner1", 2026), "the draw must not clobber the ledger"
+    assert storage.load_draw(2026)["seed"] == 5

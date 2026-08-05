@@ -112,6 +112,26 @@ worthless. Three guardrails, in order:
 Each drum produces a **selection order**, not a draft slot: first choice takes
 any spot on the board they want.
 
+## Running the season-one draw
+
+**Pre-Season → Lottery.** The draw sits at the top of that section on every one
+of its leaves, so any of the three gets you there.
+
+Pick a seed, hit **Draw both orders**. It writes to `data/keepers_2026.json`, not
+to session state, so every manager sees the same order and it survives a refresh
+— it used to live in `st.session_state`, which meant the commissioner saw the
+result and everyone else saw "nothing drawn yet". The board and the draft-capital
+strip both read the saved order.
+
+The seed is the point: anyone can re-enter it and get the identical order back,
+so the draw is reproducible rather than something the league has to take on
+trust. Both drafts come from one seed (veteran uses `seed + 1`, so the two orders
+differ). Re-drawing overwrites.
+
+One caveat: `data/` is ephemeral on Streamlit Cloud, so a container restart can
+lose the file. **Screenshot the result, or note the seed** — the seed alone is
+enough to regenerate it exactly.
+
 ## Year one (2026)
 
 No keepers — every clock starts at zero after this season. Two drafts: the
@@ -142,7 +162,7 @@ halfmen/
   valueboard.py        every roster priced for next year, plus the franchise tag
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 194 tests
+tests/                 198 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 

@@ -44,6 +44,17 @@ FIRST = config.is_first_season()
 WEEKS = int(config.league()["regular_season_weeks"]) + len(config.league()["chase_weeks"])
 
 
+def first_draw() -> dict:
+    """The season-one draw, from disk. Falls back to this session only if the
+    file is unreadable, so every manager sees the same order rather than only
+    whoever pressed the button."""
+    try:
+        saved = storage.load_draw(SEASON)
+    except Exception:
+        saved = {}
+    return saved or st.session_state.get("first_draw") or {}
+
+
 def submitted_keepers() -> dict:
     """owner_id -> [{"round", "name", "kind"}]. Empty until the first slip is
     submitted, which is a year away - the draft board and the capital strip both
@@ -926,7 +937,7 @@ def render_pot(leaf=None):
 
 def render_draft(leaf=None):
     # Page-level: the capital strip needs the same order the board draws in.
-    draw = st.session_state.get("first_draw") or {}
+    draw = first_draw()
     order = draw.get("veteran") or owner_ids()
     if leaf in (None, "board"):
         theme.bar("Veteran draft", "%d rounds · snake · keeper costs burned in" % config.veteran_rounds())
@@ -1092,13 +1103,25 @@ def render_lottery(leaf=None):
         theme.bar("Season one", "no standings, so both orders are drawn flat")
         c1, c2 = st.columns([1, 2])
         with c1:
-            seed = st.number_input("Draw seed", 0, 10 ** 6, 0, key="seed_first")
+            existing = first_draw()
+            seed = st.number_input("Draw seed", 0, 10 ** 6,
+                                   int(existing.get("seed", 0)), key="seed_first")
             if st.button("Draw both orders"):
-                st.session_state["first_draw"] = {
-                    "rookie": lottery.first_season_order(owner_ids(), seed=int(seed)),
-                    "veteran": lottery.first_season_order(owner_ids(), seed=int(seed) + 1),
-                }
-        draw = st.session_state.get("first_draw")
+                storage.save_draw(
+                    int(seed),
+                    lottery.first_season_order(owner_ids(), seed=int(seed)),
+                    lottery.first_season_order(owner_ids(), seed=int(seed) + 1),
+                    SEASON)
+                st.rerun()
+            if existing:
+                st.markdown(
+                    '<div class="tiny" style="margin-top:8px">Drawn from seed '
+                    '<b style="color:var(--acc)">%s</b> on %s. Anyone can put that seed in '
+                    'and get this exact order back &mdash; the draw is reproducible, not '
+                    'something you have to take on trust. Re-drawing overwrites it.</div>' % (
+                        existing.get("seed"), esc((existing.get("drawn_at") or "")[:10])),
+                    unsafe_allow_html=True)
+        draw = first_draw()
         with c2:
             if draw:
                 cols = st.columns(2)

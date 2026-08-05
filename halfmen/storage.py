@@ -78,3 +78,27 @@ def lock(season: int = None) -> None:
     data = load(season)
     data["locked"] = True
     save(data, season)
+
+
+# --------------------------------------------------------------------------
+# the year-one draw
+# --------------------------------------------------------------------------
+
+def save_draw(seed: int, rookie: List[str], veteran: List[str],
+              season: int = None) -> Dict[str, Any]:
+    """Record the season-one draw so it outlives the browser tab that ran it.
+
+    It was in st.session_state, which is per-browser-session: the commissioner
+    would have seen the order and every other manager would have seen "nothing
+    drawn yet", and a refresh would have wiped it. The seed is stored alongside
+    so anyone can reproduce the same order from scratch and check it.
+    """
+    data = load(season)
+    data["draw"] = {"seed": int(seed), "rookie": list(rookie), "veteran": list(veteran),
+                    "drawn_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    save(data, season)
+    return data["draw"]
+
+
+def load_draw(season: int = None) -> Dict[str, Any]:
+    return (load(season) or {}).get("draw") or {}
