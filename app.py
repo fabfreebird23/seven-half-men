@@ -370,14 +370,6 @@ RULES_LEDGER = [
 # HOME
 # ---------------------------------------------------------------------------
 
-def stat_strip(cells) -> None:
-    """Four (label, value, note, rail-colour) facts in a row."""
-    st.markdown('<div class="mine">%s</div>' % "".join(
-        '<div class="m" style="border-left-color:%s"><div class="k">%s</div>'
-        '<div class="v">%s</div><div class="n">%s</div></div>' % (color, esc(k), v, note)
-        for k, v, note, color in cells), unsafe_allow_html=True)
-
-
 def my_situation(view: str) -> dict:
     """Everything the Home card needs about one team, in whatever state the
     season is actually in.
@@ -387,17 +379,28 @@ def my_situation(view: str) -> dict:
     settled - your two selection slots, an untouched budget, an empty bay -
     instead of printing four zeros and pretending they mean something.
     """
-    out = {"record": None, "place": None, "faab_left": None, "owed": None,
+    out = {"record": None, "place": None, "played": 0, "faab_left": None, "owed": None,
            "best": None, "worst": None, "taxi": None, "slots": {}, "kept": 0}
 
-    r = next((x for x in (state["rosters"] or [])
-              if str(x.get("owner_id")) == str(view)), None)
+    rosters = state["rosters"] or []
+    r = next((x for x in rosters if str(x.get("owner_id")) == str(view)), None)
     if r:
         st_ = r.get("settings") or {}
         w, l, t = (int(st_.get("wins", 0)), int(st_.get("losses", 0)),
                    int(st_.get("ties", 0)))
         if w or l or t:
-            out["record"] = "%d-%d%s" % (w, l, ("-%d" % t) if t else "")
+            out["record"] = "%d\u2013%d%s" % (w, l, ("\u2013%d" % t) if t else "")
+            out["played"] = w + l + t
+            # Wins first, points for as the tiebreak - the same order Sleeper
+            # shows, so the card never disagrees with the app they play on.
+            def rank_key(x):
+                sx = x.get("settings") or {}
+                return (-int(sx.get("wins", 0)),
+                        -(float(sx.get("fpts", 0)) + float(sx.get("fpts_decimal", 0)) / 100))
+            ranked = sorted(rosters, key=rank_key)
+            for i, x in enumerate(ranked):
+                if str(x.get("owner_id")) == str(view):
+                    out["place"] = i + 1
         budget = int(config.faab_rules()["budget"])
         left = st_.get("waiver_budget_used")
         if left is not None:
@@ -426,73 +429,166 @@ def my_situation(view: str) -> dict:
     return out
 
 
+def meter(label: str, value: str, note: str, *, pct: float = None, pips=None,
+          color: str = "var(--acc)", off: bool = False) -> str:
+    """One fraction, drawn. Everything on this card is n-of-something, so the
+    denominator is shown rather than left to be worked out."""
+    if pips is not None:
+        gauge = '<div class="pips">%s</div>' % "".join(
+            '<span class="pip"%s></span>' % (
+                ' style="background:%s;border-color:%s"' % (c, c) if c else "")
+            for c in pips)
+    else:
+        gauge = ('<div class="track"><div class="fill" style="width:%.0f%%;background:%s">'
+                 '</div></div>' % (max(0.0, min(1.0, pct or 0)) * 100, color))
+    return ('<div class="m"><div class="t"><div class="k">%s</div>'
+            '<div class="val%s"%s>%s</div></div><div class="n">%s</div>%s</div>' % (
+                esc(label), " off" if off else "",
+                "" if off else ' style="color:%s"' % color, value, note, gauge))
+
+
+def band_numbers(sit: dict) -> tuple:
+    """The two numbers at the top, and the caption under them.
+
+    Two rather than one on purpose: a single figure leaves dead air beside it,
+    and before the season starts a lone em-dash in an empty band reads as broken
+    rather than as "not yet". There is always an honest pair.
+    """
+    weeks = int(config.league()["regular_season_weeks"])
+    n = len(owner_ids())
+
+    if sit["record"]:
+        # Not "9 of 14 played" - the caption under the band already says that.
+        # Whether you are in the bracket is the thing the record is actually for.
+        cut = int(config.league()["playoff_teams"])
+        where = ("in the playoff bracket" if sit["place"] and sit["place"] <= cut
+                 else "outside the top %d" % cut if sit["place"] else "")
+        left = ("Record", sit["record"], where, False)
+        right = ("Standing", ordinal(sit["place"]) if sit["place"] else "\u2014",
+                 "of %d &mdash; <b>final standing sets your veteran balls</b>" % n, True)
+        played = sit["played"]
+        cap = ("Week %d" % played, "%d to play" % max(0, weeks - played))
+        return left, right, cap, (played / float(weeks) if weeks else 0)
+
+    if sit["slots"]:
+        left = ("Rookie slot",
+                ordinal(sit["slots"]["rookie"]) if "rookie" in sit["slots"] else "\u2014",
+                "%d rounds, held first" % config.rookie_rounds(), False)
+        right = ("Veteran slot",
+                 ordinal(sit["slots"]["veteran"]) if "veteran" in sit["slots"] else "\u2014",
+                 "%d rounds &mdash; <b>first choice takes any spot on the board</b>"
+                 % config.veteran_rounds(), True)
+        return left, right, ("Pre-season", "season starts week 1"), 0
+
+    if FIRST:
+        # No draw yet. Season one is drawn flat, so everyone's odds really are
+        # one in eight - a true pair of numbers beats two dashes.
+        return (("Teams in the drum", str(n), "both orders are drawn flat", False),
+                ("Your odds", "1 in %d" % n,
+                 "on first choice &mdash; <b>no standings to weight a lottery with</b>", True),
+                ("Pre-season", "nothing drawn yet"), 0)
+
+    return (("Rookie slot", "\u2014", "not drawn yet", False),
+            ("Veteran slot", "\u2014", "not drawn yet", True),
+            ("Pre-season", "nothing drawn yet"), 0)
+
+
 def my_card(view: str) -> None:
-    """Your team, on the way in. The one screen a manager checks from a phone in
-    week 6 should answer 'where do I stand and what does it cost me' without a
-    single tap."""
+    """Your team, on the way in.
+
+    The one screen a manager opens from a phone in week 6 should answer "where
+    do I stand and what is it costing me" without a tap. One object rather than
+    a strip of tiles plus a loose table: header, the two numbers that matter,
+    three meters, contracts in the footer.
+    """
     sit = my_situation(view)
     budget = int(config.faab_rules()["budget"])
     total_keepers = int(config.keeper_rules()["total"])
     slots = int(config.taxi_rules()["slots"])
     taxi_used = len(sit["taxi"].pods) if sit["taxi"] else 0
+    expiring = len(sit["taxi"].expiring) if sit["taxi"] else 0
+    left_faab = budget if sit["faab_left"] is None else sit["faab_left"]
 
-    theme.bar("Your team", esc(team_of(view)))
+    theme.bar("Your team", "")
 
-    if sit["record"]:
-        rec = ("Record", sit["record"], "regular season", "var(--acc)")
-    elif sit["slots"]:
-        both = " &middot; ".join(
-            "%s %s" % (ordinal(sit["slots"][k]), k) for k in ("rookie", "veteran")
-            if k in sit["slots"])
-        rec = ("Your slot", str(sit["slots"].get("veteran", sit["slots"].get("rookie"))),
-               both, "var(--acc)")
-    else:
-        rec = ("Record", "\u2014", "nothing played, and no draw yet", "var(--line)")
+    (lk, lv, ln, _), (rk, rv, rn, _), (cap_l, cap_r), progress = band_numbers(sit)
+    # The accent is reserved for a place that is worth something. Eighth of
+    # eight lit up in acid green reads as congratulation.
+    in_bracket = bool(sit["place"] and sit["place"] <= int(config.league()["playoff_teams"]))
+    status = (("%s of %d" % (ordinal(sit["place"]), len(owner_ids())), not in_bracket)
+              if sit["place"] else
+              ("both orders drawn", True) if sit["slots"] else
+              ("nothing played yet", True))
 
-    left = budget if sit["faab_left"] is None else sit["faab_left"]
-    stat_strip([
-        rec,
-        ("FAAB left", "$%d" % left,
-         ("all of it still comes due in the pot" if left == budget else
-          "still owed to the pot at year end" if left else
-          "spent out \u2014 you owe the pot nothing"),
-         "var(--warn)" if left else "var(--good)"),
-        ("Keepers in", "%d" % sit["kept"], "of %d on your slip" % total_keepers,
-         "var(--acc2)" if sit["kept"] else "var(--line)"),
-        ("On taxi", "%d" % taxi_used,
-         ("%d of %d \u2014 %d expiring" % (taxi_used, slots, len(sit["taxi"].expiring))
-          if sit["taxi"] and sit["taxi"].expiring else "%d of %d slots" % (taxi_used, slots)),
-         "var(--good)" if taxi_used else "var(--line)"),
-    ])
+    parts = ['<div class="tcard">']
+    parts.append(
+        '<div class="head%s"><div class="nm"><small>Your team</small>%s</div>'
+        '<div class="st%s">%s</div></div>' % (
+            "" if in_bracket else " quiet", esc(team_of(view)),
+            " off" if status[1] else "", esc(status[0])))
 
-    lines = []
-    if sit["best"]:
-        lines.append(('<span class="chip good">best value</span>', sit["best"],
-                      "costs R%s against an R%s market" % (
-                          sit["best"]["cost"], sit["best"]["adp"])))
-    if sit["worst"] and sit["worst"] is not sit["best"]:
-        lines.append(('<span class="chip bad">worst value</span>', sit["worst"],
-                      "costs R%s against an R%s market" % (
-                          sit["worst"]["cost"], sit["worst"]["adp"])))
-    if lines:
-        ledger_table(["", "Player", "Price"], [[
-            tag,
-            '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
-                esc(p["name"]), esc(p["position"] or "")),
-            '<div class="mono">R%s</div><div class="tiny">%s</div>' % (p["cost"], note),
-        ] for tag, p, note in lines])
-    elif not FIRST or sit["record"]:
-        st.markdown('<div class="tiny">No priced keepers yet.</div>', unsafe_allow_html=True)
+    parts.append(
+        '<div class="band"><div class="row">'
+        '<div class="half"><div class="k">%s</div><div class="v">%s</div>'
+        '<div class="n">%s</div></div>'
+        '<div class="div"></div>'
+        '<div class="half mut"><div class="k">%s</div><div class="v">%s</div>'
+        '<div class="n">%s</div></div></div>'
+        '<div class="season">%s</div>'
+        '<div class="cap"><span>%s</span><span>%s</span></div></div>' % (
+            esc(lk), lv, ln, esc(rk), rv, rn,
+            '<i style="width:%.0f%%"></i>' % (progress * 100) if progress else "",
+            esc(cap_l), esc(cap_r)))
+
+    parts.append('<div class="meters">')
+    parts.append(meter(
+        "FAAB left", "$%d" % left_faab,
+        ("all of it still comes due" if left_faab == budget else
+         "owed to the pot at year end" if left_faab else
+         "spent out &mdash; you owe the pot nothing"),
+        pct=left_faab / float(budget),
+        color="var(--warn)" if left_faab else "var(--good)", off=not left_faab))
+    parts.append(meter(
+        "Keepers in", "%d<small>/%d</small>" % (sit["kept"], total_keepers),
+        "on your slip",
+        pips=["var(--acc2)" if i < sit["kept"] else None for i in range(total_keepers)],
+        color="var(--acc2)", off=not sit["kept"]))
+    # An expiring pod is coloured apart: "2 of 2" and "2 of 2 with a decision to
+    # make" must not look identical.
+    parts.append(meter(
+        "On taxi", "%d<small>/%d</small>" % (taxi_used, slots),
+        ("%d pod%s expiring" % (expiring, "" if expiring == 1 else "s") if expiring
+         else "bay is empty" if not taxi_used else "no decisions due"),
+        pips=[("var(--warn)" if i >= taxi_used - expiring else "var(--good)")
+              if i < taxi_used else None for i in range(slots)],
+        color="var(--good)", off=not taxi_used))
+    parts.append('</div>')
+
+    shown = 0
+    for tag, p in (("good", sit["best"]), ("bad", sit["worst"])):
+        if not p or (tag == "bad" and p is sit["best"]):
+            continue
+        shown += 1
+        parts.append(
+            '<div class="foot"><span class="chip %s">%s value</span>'
+            '<span><b>%s</b> costs <span class="mono">R%s</span> against an '
+            '<span class="mono">R%s</span> market</span></div>' % (
+                tag, "best" if tag == "good" else "worst", esc(p["name"]),
+                p["cost"], p["adp"]))
+    if not shown:
+        parts.append('<div class="foot"><span class="tiny">Contracts appear here once the '
+                     'draft has been held.</span></div>')
 
     if sit["taxi"] and sit["taxi"].squeeze:
-        st.markdown(
-            '<div class="banner" style="border-color:var(--warn);color:var(--warn)">'
-            '<b>%d incoming rookie%s with nowhere to go.</b> Your bay is full and %d '
-            'pod%s expiring, so something has to be promoted, cut or kept before the '
-            'rookie draft.</div>' % (
-                sit["taxi"].squeeze, "" if sit["taxi"].squeeze == 1 else "s",
-                len(sit["taxi"].expiring), "" if len(sit["taxi"].expiring) == 1 else "s"),
-            unsafe_allow_html=True)
+        sq = sit["taxi"].squeeze
+        parts.append(
+            '<div class="foot warn"><span><b>%d incoming rookie%s with nowhere to go.</b> '
+            'Your bay is full and %d pod%s expiring &mdash; something has to be promoted, '
+            'cut or kept before the rookie draft.</span></div>' % (
+                sq, "" if sq == 1 else "s", expiring, "" if expiring == 1 else "s"))
+
+    parts.append('</div>')
+    st.markdown("".join(parts), unsafe_allow_html=True)
 
 
 def render_home(leaf=None):

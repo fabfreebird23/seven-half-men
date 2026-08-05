@@ -246,21 +246,37 @@ sits beside the masthead.
 
 ## Home
 
-The first block is **your team**, not the league's. It answers the two questions
-a manager actually opens this for — where do I stand, and what is it costing me
-— in one screen: record (or, before a ball is kicked, your two selection slots),
-what is left of the FAAB budget and therefore what you owe the pot, keepers on
-your slip, taxi pods with expiries called out, and the best and worst contract
-you are holding priced against the market.
+The first block is **your team**, not the league's — one card rather than a strip
+of tiles plus a loose table. It answers the two questions a manager actually
+opens this for: where do I stand, and what is it costing me.
 
-It is written to degrade rather than lie. Before the draft there is no record,
-no spend and no priced keeper, so it says so instead of printing four zeros that
-read as facts. An ineligible player — one at the three-year wall — is never
-offered as your "best value", because it is not a contract you can take.
+- A **band of two numbers**, never one. Two rather than one on purpose: a single
+  figure leaves dead air beside it, and before the season starts a lone em-dash
+  in an empty band reads as broken rather than as "not yet". In season it is
+  record and standing; once the draw is run it is your rookie and veteran slots;
+  before that it is the eight teams in the drum and your one-in-eight odds — a
+  true pair, because season one is drawn flat. The band closes with a hairline
+  season rule so progress frames the card instead of competing with the meters.
+- **Three meters**, because all three are fractions of something — $100, five
+  keeper slots, two taxi slots. The fraction is drawn rather than left to be
+  worked out. An expiring taxi pod is coloured apart from a live one, so "2 of 2"
+  and "2 of 2 with a decision due" cannot look identical.
+- **The contracts in the footer**: best and worst value you hold, priced against
+  the market, plus the taxi-squeeze warning when there actually is one.
 
-The strip is deliberately *not* another row of liquid bowls. The league block
-below already carries four of those, and eight identical circles stacked on a
-phone stops reading as information.
+It degrades rather than lies. An ineligible player — one at the three-year wall —
+is never offered as your "best value", because it is not a contract you can take.
+`$0` FAAB reads as owing the pot nothing rather than as an empty tank, since the
+pot is funded by what you did *not* spend. The accent colour is reserved for a
+placing worth having; eighth of eight is not lit up like a prize.
+
+The card is deliberately *not* another row of liquid bowls. The league block
+below already carries four, and eight identical circles stacked on a phone stop
+reading as information.
+
+> One trap worth knowing: `.rule` was already taken by the rulebook's section
+> cards, which set their own padding. Reusing the name inside the card turned a
+> 3px hairline into a 34px gap. The class is `.season` now.
 
 ## Where the data lives
 

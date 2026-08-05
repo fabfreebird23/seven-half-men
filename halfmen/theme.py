@@ -34,6 +34,7 @@ PALETTES: Dict[str, dict] = {
   --ink:#f2f5f9; --ink2:#a6b1c2; --dim:#8593a6;
   --acc:#ccff44; --acc-ink:#0a0d05; --acc-soft:rgba(204,255,68,.13);
   --acc2:#5b8cff; --acc2-ink:#020a1f; --acc2-soft:rgba(91,140,255,.15);
+  --warn-soft:rgba(245,197,66,.07);
   --good:#48e39a; --warn:#f5c542; --bad:#ff6b7d;
   --shadow:0 10px 30px -18px rgba(0,0,0,.95);
   --grain:.05;
@@ -193,20 +194,87 @@ h3.k{
            background:var(--acc2-soft); }
 .chip.solid{ background:var(--acc2); color:var(--acc2-ink); border-color:var(--acc2); font-weight:600; }
 
-/* ---- your-team strip ------------------------------------------------- */
-/* Deliberately NOT another row of bowls. Home already carries four of them for
-   the league, and eight identical circles stacked on a phone stops reading as
-   information and starts reading as wallpaper. This is the dense counterpart:
-   same palette, quarter the height, scannable in one look. */
-.mine{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:2px 0 8px; }
-.mine .m{ background:var(--card); border:1px solid var(--line); border-radius:var(--r);
-          padding:13px 14px 12px; display:flex; flex-direction:column; gap:3px;
-          border-left:3px solid var(--line); }
-.mine .m .k{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.13em;
-             text-transform:uppercase; color:var(--dim); }
-.mine .m .v{ font-family:var(--f-display); font-size:33px; line-height:1;
-             letter-spacing:.005em; color:var(--ink); font-variant-numeric:tabular-nums; }
-.mine .m .n{ font-size:11.5px; color:var(--dim); line-height:1.45; }
+/* ---- your-team card -------------------------------------------------- */
+/* One object, not a strip of tiles plus a loose table underneath. A header, a
+   band carrying the two numbers that mean the most, three meters, then the
+   contracts in the footer. Deliberately NOT another row of liquid bowls - Home
+   already carries four of those for the league, and eight identical circles
+   stacked on a phone stop reading as information. */
+.tcard{ border:1px solid var(--line2); border-radius:12px; overflow:hidden;
+        background:var(--card); margin:2px 0 8px; }
+.tcard .head{ display:flex; align-items:center; justify-content:space-between; gap:14px;
+              padding:13px 18px; border-bottom:1px solid var(--line);
+              background:linear-gradient(90deg,var(--acc-soft),transparent 68%); }
+.tcard .head.quiet{ background:linear-gradient(90deg,var(--card2),transparent 68%); }
+.tcard .head .nm{ font-family:var(--f-display); font-size:22px; text-transform:uppercase;
+                  line-height:1; }
+.tcard .head .nm small{ display:block; font-family:var(--f-data); font-size:9.5px;
+                        letter-spacing:.16em; color:var(--dim); text-transform:uppercase;
+                        margin-bottom:5px; }
+.tcard .head .st{ font-family:var(--f-data); font-size:10.5px; letter-spacing:.1em;
+                  color:var(--acc); text-transform:uppercase; white-space:nowrap; }
+.tcard .head .st.off{ color:var(--dim); }
+
+/* the band: two numbers, because one number leaves dead air beside it and a
+   single dash in an empty band reads as broken rather than as "not yet". */
+.tcard .band{ padding:17px 18px 0; border-bottom:1px solid var(--line);
+              background:linear-gradient(120deg,var(--card2),transparent 58%); }
+/* stretch, not end-align: the two notes wrap to different depths, and bottom
+   alignment made the two labels and the two numbers sit at different heights.
+   Labels and numbers pin to the top, the notes fall to the bottom. */
+.tcard .band .row{ display:grid; grid-template-columns:1fr 1px 1fr; gap:22px;
+                   align-items:stretch; }
+.tcard .band .half{ display:flex; flex-direction:column; }
+.tcard .band .half .n{ margin-top:auto; padding-top:7px; }
+.tcard .band .div{ background:var(--line); align-self:stretch; margin:2px 0 8px; }
+.tcard .band .k{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.15em;
+                 text-transform:uppercase; color:var(--dim); }
+.tcard .band .v{ font-family:var(--f-display); font-size:60px; line-height:.86; color:var(--acc);
+                 font-variant-numeric:tabular-nums; letter-spacing:.004em; }
+.tcard .band .half.mut .v{ color:var(--ink); opacity:.62; }
+.tcard .band .v.off{ color:var(--ink); opacity:.22; }
+.tcard .band .n{ font-size:12.5px; color:var(--ink2); line-height:1.45; }
+.tcard .band .n b{ color:var(--ink); }
+/* the season rule closes the band edge to edge, so the progress is the frame
+   rather than another bar competing with the meters below */
+/* line-height and font-size are zeroed because Streamlit's own markdown styles
+   give a bare div a text line box, which turned a 3px rule into a 34px gap. */
+.tcard .band .season{ margin:15px -18px 0; height:3px; min-height:0; background:var(--card);
+                    border-top:1px solid var(--line); position:relative;
+                    line-height:0; font-size:0; }
+.tcard .band .season i{ position:absolute; left:0; top:-1px; bottom:0; background:var(--acc);
+                      opacity:.85; }
+.tcard .band .cap{ display:flex; justify-content:space-between; gap:14px;
+                   font-family:var(--f-data); font-size:9px; letter-spacing:.13em;
+                   text-transform:uppercase; color:var(--dim); padding:6px 0 9px; }
+
+/* the meters: every one of these is a fraction of something, so draw the
+   fraction instead of asking for it to be done in the head */
+.tcard .meters{ display:grid; grid-template-columns:repeat(3,1fr); }
+.tcard .meters .m{ padding:14px 18px 15px; border-left:1px solid var(--line); }
+.tcard .meters .m:first-child{ border-left:none; }
+.tcard .meters .m .t{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.tcard .meters .m .k{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.14em;
+                      text-transform:uppercase; color:var(--dim); }
+.tcard .meters .m .val{ font-family:var(--f-display); font-size:29px; line-height:1;
+                        font-variant-numeric:tabular-nums; white-space:nowrap; }
+.tcard .meters .m .val.off{ color:var(--dim); opacity:.42; }
+.tcard .meters .m .val small{ font-family:var(--f-body); font-size:10.5px; color:var(--dim);
+                              margin-left:4px; }
+.tcard .meters .m .n{ font-size:11.5px; color:var(--dim); line-height:1.4; margin-top:1px; }
+.tcard .meters .m .track{ height:8px; border-radius:99px; background:var(--card2);
+                          overflow:hidden; border:1px solid var(--line); margin-top:10px; }
+.tcard .meters .m .fill{ height:100%; border-radius:99px; }
+.tcard .meters .m .pips{ display:flex; gap:5px; margin-top:10px; }
+.tcard .meters .m .pip{ width:100%; height:8px; border-radius:3px; background:var(--card2);
+                        border:1px solid var(--line); }
+
+.tcard .foot{ border-top:1px solid var(--line); padding:11px 18px; display:flex; gap:11px;
+              align-items:center; flex-wrap:wrap; background:var(--bg2); font-size:12.5px;
+              color:var(--ink2); }
+.tcard .foot b{ color:var(--ink); }
+.tcard .foot.warn{ background:var(--warn-soft); color:var(--warn); }
+.tcard .foot.warn b{ color:var(--warn); }
 
 /* ---- glance rings --------------------------------------------------- */
 .glance{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin:2px 0 6px; }
@@ -522,7 +590,6 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 
 @media (max-width:820px){
   .glance{ grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .mine{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   .lotrow{ grid-template-columns:118px 1fr; }
   .worked .wr{ grid-template-columns:1fr; gap:4px; }
   .bay{ grid-template-columns:1fr; }
@@ -545,9 +612,15 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 
   [data-testid="stSelectbox"]{ max-width:none; margin:6px 0 0; }
   .glance{ gap:14px; }
-  .mine{ gap:8px; }
-  .mine .m{ padding:11px 12px 10px; }
-  .mine .m .v{ font-size:26px; }
+  /* The card goes single-column: two numbers side by side survive a phone,
+     three meters in a row do not. */
+  .tcard .meters{ grid-template-columns:1fr; }
+  .tcard .meters .m{ border-left:none; border-top:1px solid var(--line); }
+  .tcard .meters .m:first-child{ border-top:none; }
+  .tcard .band .row{ grid-template-columns:1fr 1fr; gap:16px; }
+  .tcard .band .div{ display:none; }
+  .tcard .band .v{ font-size:46px; }
+  .tcard .band .n{ font-size:12px; }
   .gl svg.liq{ max-width:132px; }
   .gl .s{ font-size:12px; max-width:24ch; }
 

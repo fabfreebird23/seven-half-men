@@ -40,31 +40,38 @@ def roster(**settings):
     return [{"owner_id": ME, "players": [], "settings": base}]
 
 
-def test_before_anything_happens_it_says_so_instead_of_printing_zeros(monkeypatch):
+def test_before_anything_happens_the_band_still_carries_two_real_numbers(monkeypatch):
+    """A lone em-dash in an empty band reads as broken. In season one the draw is
+    flat, so everyone's odds genuinely are one in eight - that is a fact, not a
+    placeholder."""
     monkeypatch.setattr(sleeper, "get_rosters", lambda lid: roster())
     body = home()
-    assert "nothing played, and no draw yet" in body
-    assert "$100" in body and "all of it still comes due in the pot" in body
+    assert "Teams in the drum" in body and "1 in 8" in body
+    assert "nothing drawn yet" in body
+    assert "$100" in body and "all of it still comes due" in body
 
 
-def test_once_the_order_is_drawn_the_record_tile_becomes_your_slot(monkeypatch):
+def test_once_the_order_is_drawn_the_band_becomes_your_two_slots(monkeypatch):
     monkeypatch.setattr(sleeper, "get_rosters", lambda lid: roster())
     ids = list(config.managers().keys())
     rookie = [ids[3]] + [i for i in ids if i != ids[3]]
     veteran = [i for i in ids if i != ME] + [ME]      # last of eight
     storage.save_draw(11, rookie, veteran, config.season())
     body = home()
-    assert "Your slot" in body
-    assert "8th veteran" in body
+    assert "Rookie slot" in body and "Veteran slot" in body
+    assert "8th" in body, "last of eight in the veteran drum"
+    assert "Teams in the drum" not in body, "the pre-draw fallback is gone once drawn"
 
 
 def test_midseason_shows_the_record_and_what_is_left_of_the_budget(monkeypatch):
     monkeypatch.setattr(sleeper, "get_rosters",
                         lambda lid: roster(wins=6, losses=3, waiver_budget_used=71))
     body = home()
-    assert "6-3" in body
+    assert "6\u20133" in body
+    assert "Standing" in body and "1st" in body, "one roster, so it is top of the table"
     assert "$29" in body
-    assert "still owed to the pot" in body
+    assert "owed to the pot at year end" in body
+    assert "Week 9" in body and "5 to play" in body
 
 
 def test_spending_out_is_reported_as_owing_nothing_not_as_zero_left(monkeypatch):
@@ -82,8 +89,8 @@ def test_a_submitted_slip_is_counted(monkeypatch):
                         {"player_id": "2", "kind": "rookie", "round": 13}],
                    config.season())
     body = home()
-    assert "of %d on your slip" % config.keeper_rules()["total"] in body
-    assert ">2<" in body.replace(" ", ""), "the count itself is on the tile"
+    assert "on your slip" in body
+    assert "2<small>/%d</small>" % config.keeper_rules()["total"] in body
 
 
 def test_it_names_the_best_and_worst_contract_on_your_roster(monkeypatch):
@@ -121,4 +128,65 @@ def test_an_ineligible_player_is_not_offered_as_your_best_value(monkeypatch):
     ])
     body = home()
     assert "At The Wall" not in body
-    assert "No priced keepers yet" in body
+    assert "Contracts appear here once the draft has been held" in body
+
+
+def test_an_expiring_taxi_pod_does_not_look_like_a_healthy_one(monkeypatch):
+    """"2 of 2" and "2 of 2 with a decision due" must not render identically -
+    the second one is the whole reason to look at the card in August."""
+    from halfmen import taxi
+    monkeypatch.setattr(sleeper, "get_rosters", lambda lid: roster(wins=6, losses=3))
+    pods = [taxi.Pod(player_id="1", name="A", position="RB", drafted_season=2026, year=2),
+            taxi.Pod(player_id="2", name="B", position="WR", drafted_season=2027, year=1)]
+    monkeypatch.setattr(taxi, "build", lambda *a, **k: {
+        ME: taxi.Bay(owner_id=ME, pods=pods, incoming_picks=2)})
+    body = home()
+    assert "1 pod expiring" in body
+    assert "var(--warn)" in body, "the expiring pod is coloured apart from the live one"
+    assert "incoming rookie" in body, "and the squeeze is called out"
+
+
+def test_no_squeeze_means_no_warning(monkeypatch):
+    from halfmen import taxi
+    monkeypatch.setattr(sleeper, "get_rosters", lambda lid: roster(wins=6, losses=3))
+    monkeypatch.setattr(taxi, "build", lambda *a, **k: {
+        ME: taxi.Bay(owner_id=ME, pods=[], incoming_picks=2)})
+    body = home()
+    assert "nowhere to go" not in body
+    assert "bay is empty" in body
+
+
+def test_the_record_says_whether_you_are_in_the_bracket(monkeypatch):
+    """"6-3" on its own is a number. Whether it puts you in the top four is the
+    thing the number is for."""
+    monkeypatch.setattr(sleeper, "get_rosters", lambda lid: [
+        {"owner_id": ME, "players": [],
+         "settings": {"wins": 2, "losses": 7, "ties": 0, "fpts": 900}},
+    ] + [{"owner_id": "o%d" % i, "players": [],
+          "settings": {"wins": 8 - i, "losses": 1 + i, "ties": 0, "fpts": 1200 - i}}
+         for i in range(7)])
+    body = home()
+    assert "outside the top %d" % config.league()["playoff_teams"] in body
+
+
+def test_a_contender_is_told_so(monkeypatch):
+    monkeypatch.setattr(sleeper, "get_rosters", lambda lid: [
+        {"owner_id": ME, "players": [],
+         "settings": {"wins": 8, "losses": 1, "ties": 0, "fpts": 1400}},
+    ] + [{"owner_id": "o%d" % i, "players": [],
+          "settings": {"wins": 3, "losses": 6, "ties": 0, "fpts": 900 - i}}
+         for i in range(7)])
+    body = home()
+    assert "in the playoff bracket" in body
+
+
+def test_last_place_is_not_lit_up_like_a_prize(monkeypatch):
+    monkeypatch.setattr(sleeper, "get_rosters", lambda lid: [
+        {"owner_id": ME, "players": [],
+         "settings": {"wins": 0, "losses": 9, "ties": 0, "fpts": 700}},
+    ] + [{"owner_id": "o%d" % i, "players": [],
+          "settings": {"wins": 6, "losses": 3, "ties": 0, "fpts": 1200 - i}}
+         for i in range(7)])
+    body = home()
+    assert '<div class="st off">8th of 8</div>' in body
+    assert 'class="head quiet"' in body
