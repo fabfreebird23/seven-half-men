@@ -135,7 +135,7 @@ halfmen/
   valueboard.py        every roster priced for next year, plus the franchise tag
   theme.py             the Acid palette, the type, the Streamlit chrome overrides
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
-tests/                 117 tests
+tests/                 151 tests
 scripts/refresh_adp.py daily consensus refresh
 ```
 
