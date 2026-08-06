@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 import streamlit as st
 import streamlit.components.v1 as components
 
-from halfmen import (adp_board, config, draftboard, engine, history, lottery,
+from halfmen import (adp_board, agenda, config, draftboard, engine, history, lottery,
                      picks, pot, remote, rulebook, sleeper, storage, taxi, theme,
                      valueboard)
 
@@ -415,7 +415,7 @@ RULES_LEDGER = [
     ("Taxi", "Two slots, two-year clocks, that year's rookie draft only. Never startable. "
              "Promotion is permanent."),
     ("The pot", "Unspent FAAB comes due. The first $%d goes to the Chase-bracket winner and "
-                "everything above it goes to the champion." % int(config.faab_rules()["pot_cap"])),
+                "everything above it rejoins the payout." % pot.cap_amount()[0]),
     ("Two lotteries", "Rookie drum on regular-season record, veteran drum on final standing "
                       "including the Chase bracket. Champion always at the floor. Nobody wins "
                       "first choice in both. Win a top-two selection and you sit out the top two "
@@ -648,6 +648,36 @@ def my_card(view: str) -> None:
     st.markdown("".join(parts), unsafe_allow_html=True)
 
 
+def render_agenda() -> None:
+    """The open votes, on the front page.
+
+    Year one is nothing but rule questions and the answers were living in a
+    group chat where they scroll away. The options sit next to each question so
+    a vote does not have to open by re-explaining the choice.
+    """
+    items = agenda.open_items()
+    if items:
+        theme.bar("On the table", "%d to vote on" % len(items))
+        st.markdown('<div class="agenda">%s</div>' % "".join(
+            '<div class="it"><div class="h"><span class="n">%02d</span>'
+            '<span class="t">%s</span></div><div class="why">%s</div>'
+            '<div class="opts">%s</div>%s</div>' % (
+                i + 1, esc(it["title"]), it["why"],
+                "".join('<div class="o"><div class="lab">%s</div><div class="d">%s</div></div>'
+                        % (esc(lab), note) for lab, note in it["options"]),
+                ('<div class="foot">%s</div>' % it["note"]) if it.get("note") else "")
+            for i, it in enumerate(items)), unsafe_allow_html=True)
+
+    done = agenda.decided()
+    if done:
+        theme.bar("Settled", "%d &middot; with the reasoning" % len(done))
+        st.markdown('<div class="agenda">%s</div>' % "".join(
+            '<div class="done"><span class="tick">&#10003;</span>'
+            '<div><div class="t">%s</div><div class="d">%s</div></div></div>' % (
+                esc(d["title"]), d["detail"])
+            for d in done), unsafe_allow_html=True)
+
+
 def render_home(leaf=None):
     rosters = state["rosters"] or []
     filled = sum(1 for r in rosters if (r.get("players") or []))
@@ -664,6 +694,7 @@ def render_home(leaf=None):
             unsafe_allow_html=True)
 
     my_card(VIEW)
+    render_agenda()
 
     theme.bar("The league", "%s · %s" % (esc(lg.get("name") or ""),
                                          esc((lg.get("status") or "").replace("_", " "))))
@@ -1221,9 +1252,11 @@ def render_pot(leaf=None):
                 {"pct": settlement.to_chase / max(1, settlement.cap), "color": "var(--acc)",
                  "big": "$%d" % settlement.to_chase,
                  "label": "To the Chase winner", "note": "capped at $%d" % settlement.cap},
-                {"pct": 1.0 if settlement.to_champion else 0.0, "color": "var(--acc2)",
-                 "big": "$%d" % settlement.to_champion,
-                 "label": "To the champion", "note": "everything above the cap"},
+                {"pct": 1.0 if settlement.overflow else 0.0, "color": "var(--acc2)",
+                 "big": "$%d" % settlement.overflow,
+                 "label": "Back to the bracket",
+                 "note": "above the cap \u2014 $%d champion, $%d runner-up, $%d third" % (
+                     settlement.to_champion, settlement.to_second, settlement.to_third)},
                 {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
                  "label": "Budget", "note": "spend it or owe it"},
             ])
@@ -1240,7 +1273,8 @@ def render_pot(leaf=None):
                 {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
                  "label": "Budget", "note": "spend it or owe it"},
                 {"pct": 1.0, "color": "var(--dim)", "big": "$%d" % settlement.cap,
-                 "label": "Pot cap", "note": "Chase winner first, champion takes the rest"},
+                 "label": "Pot cap", "note": "the third-place prize \u2014 the Chase can never "
+                                             "outrank a playoff finish"},
             ])
             st.markdown(
                 '<div class="tiny" style="margin-top:8px">Nothing has been spent yet, so the "owed" '
@@ -1293,11 +1327,15 @@ def render_pot(leaf=None):
                 '<span class="mono" style="color:%s;font-weight:700">$%d</span>' % (col, b.owed),
             ])
         ledger_table(["Owner", "Spent", "Burn", "Owed"], rows)
+        _sp = config.payout_split()
         st.markdown(
             '<div class="banner" style="margin-top:12px"><b>The cap is a ceiling, not a discount.</b> '
-            'Every unspent dollar comes due. The first $%d goes to whoever wins the Chase bracket and '
-            'anything above it goes to the champion, which is what keeps the consolation prize from '
-            'ever rivalling the title.</div>' % settlement.cap, unsafe_allow_html=True)
+            'Every unspent dollar comes due. The first <b>$%d</b> goes to whoever wins the Chase '
+            'bracket &mdash; that is the third-place prize, so the consolation can never outrank a '
+            'playoff finish. Everything above it rejoins the payout, %d/%d/%d, which means a '
+            'low-spend year lifts the whole bracket rather than one person.</div>' % (
+                settlement.cap, int(_sp["first"]), int(_sp["second"]), int(_sp["third"])),
+            unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------

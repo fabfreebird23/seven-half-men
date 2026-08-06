@@ -95,6 +95,25 @@ def lottery_rules() -> Dict[str, Any]:
     return rules()["lottery"]
 
 
+def payouts() -> Dict[str, Any]:
+    return load().get("payouts", {}) or {}
+
+
+def buy_in():
+    """Dollars per team, or None while the league has not settled it."""
+    v = payouts().get("buy_in")
+    return None if v in (None, "") else float(v)
+
+
+def payout_split() -> Dict[str, float]:
+    sp = payouts().get("split") or {}
+    return {k: float(sp.get(k, 0)) for k in ("first", "second", "third")}
+
+
+def faab_to_dollars() -> float:
+    return float(payouts().get("faab_to_dollars", 1.0))
+
+
 def roster() -> Dict[str, Any]:
     return load()["roster"]
 

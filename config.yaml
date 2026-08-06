@@ -83,9 +83,20 @@ rules:
 
   faab:
     budget: 100
-    pot_cap: 200
+    # The cap is the THIRD-PLACE PRIZE, not a fixed number - voted 2026-08-06.
+    # Deriving it means it can never drift above a playoff finish, at any buy-in:
+    # at a flat $200 a bubble team in week 14 was close to indifferent between
+    # sneaking into the bracket and missing on purpose to play for the pot, which
+    # is a tanking incentive written into the foundation. Set `payouts.buy_in`
+    # and this computes itself. A plain number still works if you want one.
+    pot_cap: third_place      # third_place | <a number>
+    pot_cap_fallback: 200     # used only while buy_in is unset
     pot_to: chase_winner      # first $cap
-    overflow_to: champion     # everything above the cap
+    # Overflow rejoins the prize pool in the SAME proportions as the payout,
+    # rather than landing entirely on the champion. It is a principle instead of
+    # another number to re-argue, and it lifts the whole bracket in a year when
+    # the league leaves money on the table.
+    overflow_to: bracket      # bracket | champion
     # Dropping a player does not launder his keeper price. There is no re-add
     # lockout - anyone can claim anyone - but he carries whatever round and
     # clock he already had, so a cut-and-re-add cannot reset him to a last-round
@@ -120,6 +131,21 @@ managers:
   "979382824706912256": { name: "Corey McKinney",  team: "The Whig Party",         handle: coreymckinney }
   "980569987930804224": { name: "Lucas Hamilton",  team: "Maybe Later",            handle: lucashamilton4 }
   "1001531274030305280": { name: "Clayton Hamilton", team: "My Nabers heard me cry", handle: claytonhamilton }
+
+# Prize money. buy_in is the one number the meeting still has to settle; until
+# it is set the pot falls back to rules.faab.pot_cap_fallback and every prize
+# reads as unknown rather than as zero.
+payouts:
+  buy_in: 100               # dollars per team, 2026. Escalation still to vote.
+  split:                    # percent of the pool, must total 100
+    first: 60
+    second: 25
+    third: 15
+  # $1 of unspent FAAB = this many real dollars. 1.0 is what the engine assumed
+  # before anyone asked the question out loud. If you set this below 1 the cap
+  # will rarely bind and the Chase winner simply takes whatever is in the pot -
+  # a legitimate choice, but then the cap is doing no work.
+  faab_to_dollars: 1.0
 
 me: "964703051971887104"   # whose team the "my" views default to
 

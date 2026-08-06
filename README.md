@@ -305,6 +305,32 @@ reading as information.
 > cards, which set their own padding. Reusing the name inside the card turned a
 > 3px hairline into a 34px gap. The class is `.season` now.
 
+## Money, and what is still being voted on
+
+Settled 2026-08-06: **$100 buy-in**, **60/25/15** payout, and the pot cap is the
+**third-place prize** rather than a fixed number.
+
+That last one is the interesting change. At a flat $200 against an $800 pool, a
+bubble team in week 14 was roughly indifferent between sneaking into the playoff
+bracket and missing on purpose to play for the pot — the 4-seed's shot at a $480
+title and the best Chase team's shot at a $200 pot both come out near $70 of
+expected value. That is a tanking incentive sitting in the foundation. Pinned to
+third place the consolation can never outrank a playoff finish at any buy-in, and
+it re-derives itself if the buy-in ever moves — no re-vote.
+
+Anything above the cap rejoins the payout in the same proportions as the pool
+(60/25/15) rather than landing entirely on the champion, so a low-spend year
+lifts the whole bracket. Odd dollars go to the champion; nobody counts out change.
+
+`payouts.buy_in` in `config.yaml` is the single number all of it hangs off. Leave
+it unset and the cap falls back to `rules.faab.pot_cap_fallback` rather than
+capping at zero, which would silently hand the whole pot to the champion.
+
+`halfmen/agenda.py` holds the open votes and the settled ones, rendered on Home.
+Its numbers are read from config, not typed, so the agenda cannot quietly
+disagree with what the engine actually does — a test pins `agenda._cap_at` to
+`pot.cap_amount`.
+
 ## Where the data lives
 
 Everything this app *writes* — keeper slips, the season-one draw, and any draft

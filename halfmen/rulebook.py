@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
-from . import config
+from . import config, pot
 
 
 def _n(path, default=None):
@@ -280,12 +280,18 @@ def sections() -> List[tuple]:
  ("p", "The pot is funded by <b>unspent FAAB</b>. Check out in October and sit on $85 and you pay "
        "the most. Grind waivers all year and you pay nothing."),
  ("table", ["Where it goes", ""], [
-   ["First $%d" % int(ab["pot_cap"]), "to whoever wins the Chase bracket"],
-   ["Everything above that", "to the league champion, on top of the championship money"],
+   ["First $%d — the third-place prize" % _cap(), "to whoever wins the Chase bracket"],
+   ["Everything above that", "rejoins the payout: %d%% champion, %d%% runner-up, %d%% third" % (
+     _split()["first"], _split()["second"], _split()["third"])],
  ]),
  ("note", "<b>The cap is a ceiling, not a discount.</b> Every unspent dollar comes due either "
           "way. The cap only decides <em>who</em> gets paid, which is what keeps the consolation "
           "prize from ever rivalling the title."),
+ ("note", "<b>The cap is the third-place prize, not a fixed number</b> (voted 2026-08-06). At a "
+          "flat $200 against an $800 pool a bubble team in week 14 was close to indifferent "
+          "between sneaking into the bracket and missing on purpose to play for the pot — the "
+          "expected value of each came out around $70. Pinned to third place the consolation can "
+          "never outrank a playoff finish, and it re-derives itself if the buy-in changes."),
  ("p", "The point of all of it: there is no free ride for quitting in November. You either play "
        "or you pay."),
  ("p", "One more waiver rule, and it is about price rather than permission. <b>Anyone can claim "
@@ -363,7 +369,7 @@ def sections() -> List[tuple]:
     "Chase bracket", "The four non-playoff teams play for the pot and for veteran lottery position."),
    ("Right after", "FAAB settles",
     "Unspent budget is totted up and billed. Chase winner takes the first $%d, champion takes the "
-    "rest." % int(ab["pot_cap"])),
+    "rest, split back into the payout." % _cap()),
    ("Then", "Keeper slips",
     "Everyone submits %d: %d regular, %d rookie, franchise tag included if you are using it. "
     "The franchise choice is final at submission." % (
@@ -378,9 +384,8 @@ def sections() -> List[tuple]:
 
 ("open", "Still being argued about", "Two things the rulebook does not settle yet.", [
  ("list", [
-   "<b>The pot cap is $%d</b> as configured. It should be set against the championship payout, "
-   "and that has not been fixed yet. If the title pays less than $%d this is the wrong number."
-   % (int(ab["pot_cap"]), int(ab["pot_cap"])),
+   "<b>Does the buy-in escalate?</b> $%d for 2026 is settled. Whether it rises $10 or $20 a "
+   "year after that is not." % int(config.buy_in() or 0),
    "<b>Year two of the R%d ladder.</b> The written spec gives it as <code>min(5 - 3, adp)</code>, "
    "but taken literally over round numbers that picks the <em>earlier</em>, more expensive round "
    "— which would make a rookie-draft bust cost R%d against an R12 market. It is built as "
@@ -392,6 +397,14 @@ def sections() -> List[tuple]:
  ]),
 ]),
     ]
+
+
+def _cap() -> int:
+    return pot.cap_amount()[0]
+
+
+def _split():
+    return {k: int(v) for k, v in config.payout_split().items()}
 
 
 def _fr_years():

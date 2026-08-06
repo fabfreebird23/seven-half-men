@@ -194,6 +194,40 @@ h3.k{
            background:var(--acc2-soft); }
 .chip.solid{ background:var(--acc2); color:var(--acc2-ink); border-color:var(--acc2); font-weight:600; }
 
+/* ---- the agenda ------------------------------------------------------ */
+/* Year one is nothing but rule questions, and the answers were living in a
+   group chat where they scroll away. Front page, with the real options beside
+   each one so a vote does not open by re-explaining the choice. */
+.agenda{ border:1px solid var(--line2); border-radius:12px; overflow:hidden;
+         background:var(--card); margin:2px 0 8px; }
+.agenda .it{ padding:15px 18px 16px; border-top:1px solid var(--line); }
+.agenda .it:first-child{ border-top:none; }
+.agenda .it .h{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.agenda .it .n{ font-family:var(--f-data); font-size:10px; letter-spacing:.14em;
+                color:var(--dim); }
+.agenda .it .t{ font-family:var(--f-display); font-size:21px; text-transform:uppercase;
+                line-height:1; }
+.agenda .it .why{ font-size:12.5px; color:var(--ink2); line-height:1.55; margin:7px 0 0;
+                  max-width:74ch; }
+.agenda .opts{ display:grid; gap:7px; margin-top:11px; }
+.agenda .o{ display:grid; grid-template-columns:auto 1fr; gap:11px; align-items:baseline;
+            background:var(--card2); border:1px solid var(--line); border-radius:8px;
+            padding:9px 12px; }
+.agenda .o .lab{ font-weight:650; font-size:13px; white-space:nowrap; }
+.agenda .o .d{ font-size:11.5px; color:var(--dim); line-height:1.45; }
+.agenda .it .foot{ font-size:11.5px; color:var(--warn); margin-top:9px; }
+.agenda .done{ display:grid; grid-template-columns:auto 1fr; gap:11px; align-items:baseline;
+               padding:11px 18px; border-top:1px solid var(--line); }
+.agenda .done .t{ font-weight:650; font-size:13px; }
+.agenda .done .d{ font-size:11.5px; color:var(--dim); line-height:1.45; }
+.agenda .done .tick{ color:var(--good); font-family:var(--f-data); font-size:11px; }
+
+@media(max-width:640px){
+  .agenda .o{ grid-template-columns:1fr; gap:3px; }
+  .agenda .o .lab{ white-space:normal; }
+  .agenda .done{ grid-template-columns:1fr; gap:3px; }
+}
+
 /* ---- your-team card -------------------------------------------------- */
 /* One object, not a strip of tiles plus a loose table underneath. A header, a
    band carrying the two numbers that mean the most, three meters, then the
