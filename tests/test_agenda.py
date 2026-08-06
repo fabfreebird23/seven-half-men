@@ -36,16 +36,21 @@ def test_cap_at_tracks_the_real_settlement():
     """If these ever disagree, the agenda is lying about the money."""
     assert agenda._cap_at(config.buy_in()) == pot.cap_amount()[0]
 
+def test_settled_business_is_not_left_on_the_front_page():
+    """Once voted, a decision belongs in the rulebook. Two places to look is one
+    too many, and the front page should be what still needs doing."""
+    assert not hasattr(agenda, "decided")
 
-def test_the_decided_list_carries_the_reasoning_not_just_the_verdict():
-    reasons = " ".join(d["detail"] for d in agenda.decided())
-    assert "indifferent" in reasons, "why the flat cap was wrong is the part people forget"
-    assert "$120" in reasons
 
-
-def test_the_settled_money_matches_the_config():
-    buy_in = config.buy_in()
-    titles = " ".join(d["title"] for d in agenda.decided())
-    assert "$%d" % int(buy_in) in titles
-    split = config.payout_split()
-    assert "%d / %d / %d" % tuple(int(split[k]) for k in ("first", "second", "third")) in titles
+def test_the_rulebook_carries_the_settled_money():
+    """Home is what still needs doing; the rulebook is where anyone looks in
+    March. The money decisions have to be findable there, not only in a commit."""
+    from halfmen import rulebook
+    money = next(s for s in rulebook.sections() if s[0] == "money")
+    flat = str(money)
+    assert "$100" in flat and "$800" in flat, "buy-in and pool"
+    assert "$480" in flat and "$200" in flat and "$120" in flat, "the three prizes"
+    assert "third-place prize, not a fixed number" in flat
+    assert "indifferent" in flat, "why the flat cap was wrong"
+    for pct in ("60%", "20%", "10%"):
+        assert pct in flat, "the overflow split"

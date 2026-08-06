@@ -110,6 +110,14 @@ def payout_split() -> Dict[str, float]:
     return {k: float(sp.get(k, 0)) for k in ("first", "second", "third")}
 
 
+def overflow_split() -> Dict[str, float]:
+    """How money above the pot cap is divided. Distinct from `payout_split` on
+    purpose - the Chase winner takes a slice of overflow but no slice of the
+    buy-in pool."""
+    sp = faab_rules().get("overflow_split") or {}
+    return {k: float(sp.get(k, 0)) for k in ("first", "second", "third", "chase")}
+
+
 def faab_to_dollars() -> float:
     return float(payouts().get("faab_to_dollars", 1.0))
 

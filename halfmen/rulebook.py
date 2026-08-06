@@ -273,6 +273,39 @@ def sections() -> List[tuple]:
  ]),
 ]),
 
+("money", "The money", "$%d a team, and the pot on top of it." % int(config.buy_in() or 0), [
+ ("table", ["", ""], [
+   ["Buy-in", "$%d for 2026" % int(config.buy_in() or 0)],
+   ["Pool", "$%d across %d teams" % (
+     int((config.buy_in() or 0) * int(lg["teams"])), int(lg["teams"]))],
+   ["Champion", "$%d  (%d%%)" % (_prize("first"), _split()["first"])],
+   ["Runner-up", "$%d  (%d%%)" % (_prize("second"), _split()["second"])],
+   ["Third", "$%d  (%d%%)" % (_prize("third"), _split()["third"])],
+ ]),
+ ("note", "Whether the buy-in escalates after 2026 is <b>still an open vote</b> — see the front "
+          "page. Because the pot cap is derived from the third-place prize, raising the buy-in "
+          "raises the consolation ceiling with it automatically."),
+ ("p", "<b>The pot cap is the third-place prize, not a fixed number.</b> It was a flat $200 "
+       "until August 2026, and that turned out to be a mistake: against an $800 pool a bubble "
+       "team in week 14 was close to indifferent between sneaking into the bracket and missing "
+       "on purpose to play for the pot. A 4-seed's shot at the title and the best Chase team's "
+       "shot at $200 both came out around $70 of expected value. Pinned to third place the "
+       "consolation cannot outrank a playoff finish at any buy-in, and it re-derives itself if "
+       "the buy-in ever moves."),
+ ("table", ["Above the cap, split", ""], [
+   ["Champion", "%d%%" % _ov()["first"]],
+   ["Runner-up", "%d%%" % _ov()["second"]],
+   ["Third", "%d%%" % _ov()["third"]],
+   ["Chase winner", "%d%%" % _ov()["chase"]],
+ ]),
+ ("note", "That split lands somewhere neat. The Chase winner takes the cap plus %d%% of "
+          "overflow; third place takes the third-place prize plus %d%% of overflow. Once the pot "
+          "clears the cap those are <b>exactly the same number</b>, and below it the Chase winner "
+          "simply takes the whole smaller pot. So the consolation <em>ties</em> a playoff finish "
+          "at best and can never beat one. Odd dollars go to the champion, so nobody is counting "
+          "out change." % (_ov()["chase"], _ov()["third"])),
+]),
+
 ("faab", "FAAB and the pot", "$%d for the season. Whatever you do not spend, you owe." % int(ab["budget"]), [
  ("p", "The Chase bracket — the four teams that miss the playoffs, playing weeks %s — does two "
        "things. It weights next year's veteran lottery, and it plays for a cash pot." % (
@@ -281,8 +314,9 @@ def sections() -> List[tuple]:
        "the most. Grind waivers all year and you pay nothing."),
  ("table", ["Where it goes", ""], [
    ["First $%d — the third-place prize" % _cap(), "to whoever wins the Chase bracket"],
-   ["Everything above that", "rejoins the payout: %d%% champion, %d%% runner-up, %d%% third" % (
-     _split()["first"], _split()["second"], _split()["third"])],
+   ["Everything above that", "rejoins the payout: %d%% champion, %d%% runner-up, %d%% third, "
+                            "%d%% Chase winner" % (
+     _ov()["first"], _ov()["second"], _ov()["third"], _ov()["chase"])],
  ]),
  ("note", "<b>The cap is a ceiling, not a discount.</b> Every unspent dollar comes due either "
           "way. The cap only decides <em>who</em> gets paid, which is what keeps the consolation "
@@ -382,7 +416,7 @@ def sections() -> List[tuple]:
  ]),
 ]),
 
-("open", "Still being argued about", "Two things the rulebook does not settle yet.", [
+("open", "Still being argued about", "What the rulebook does not settle yet.", [
  ("list", [
    "<b>Does the buy-in escalate?</b> $%d for 2026 is settled. Whether it rises $10 or $20 a "
    "year after that is not." % int(config.buy_in() or 0),
@@ -405,6 +439,14 @@ def _cap() -> int:
 
 def _split():
     return {k: int(v) for k, v in config.payout_split().items()}
+
+
+def _ov():
+    return {k: int(v) for k, v in config.overflow_split().items()}
+
+
+def _prize(place: str) -> int:
+    return int(round(pot.prize(place) or 0))
 
 
 def _fr_years():

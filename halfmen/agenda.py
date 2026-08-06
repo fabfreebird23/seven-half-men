@@ -5,9 +5,10 @@ chat where they scroll away. This is the list, on the front page, with the real
 options next to each one so a vote does not have to start by re-explaining the
 choice.
 
-Items move from OPEN to DECIDED as they are voted. Keeping the decided ones
-visible is deliberate: "we already settled that in August" is worth being able
-to point at, and the reasoning is the part everyone forgets first.
+Only the OPEN ones live here. Once something is voted it belongs in the
+rulebook, not on a running list of recent news - the rulebook is where anyone
+looks in March when they have forgotten what was agreed, and two places to check
+is one too many.
 """
 from __future__ import annotations
 
@@ -112,42 +113,5 @@ def open_items() -> List[Dict[str, Any]]:
             "note": "An escalator is a commitment device — it is easy to agree to in year "
                     "one and awkward to walk back in year four when somebody's circumstances "
                     "have changed. Worth saying out loud whether it can be voted down later.",
-        },
-    ]
-
-
-def decided() -> List[Dict[str, str]]:
-    """Settled, with the reasoning. The reasoning is what everybody forgets."""
-    buy_in = config.buy_in() or 100
-    split = config.payout_split()
-    return [
-        {
-            "title": "Buy-in is $%d for 2026" % int(buy_in),
-            "detail": "Pool of $%d across %d teams." % (
-                int(buy_in * int(config.league()["teams"])), int(config.league()["teams"])),
-        },
-        {
-            "title": "Payout %d / %d / %d" % (
-                int(split["first"]), int(split["second"]), int(split["third"])),
-            "detail": "$%d, $%d, $%d — the champion also takes a share of any pot overflow "
-                      "on top." % (
-                          int(buy_in * 8 * split["first"] / 100),
-                          int(buy_in * 8 * split["second"] / 100),
-                          int(buy_in * 8 * split["third"] / 100)),
-        },
-        {
-            "title": "The pot cap is the third-place prize",
-            "detail": "$%d, not a fixed number. At a flat $200 a bubble team in week 14 was "
-                      "close to indifferent between sneaking into the bracket and missing on "
-                      "purpose to play for the pot — both came out around $70 of expected "
-                      "value. Pinned to third place the consolation can never outrank a "
-                      "playoff finish, at any buy-in." % _cap_at(buy_in),
-        },
-        {
-            "title": "Overflow rejoins the payout",
-            "detail": "Anything above the cap is split %d / %d / %d like the pool itself, "
-                      "rather than landing entirely on the champion, so a low-spend year "
-                      "lifts the whole bracket. Odd dollars go to the champion." % (
-                          int(split["first"]), int(split["second"]), int(split["third"])),
         },
     ]

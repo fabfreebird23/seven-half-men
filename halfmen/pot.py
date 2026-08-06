@@ -11,9 +11,13 @@ and missing on purpose to play for the pot, which is a tanking incentive sitting
 in the foundation. Pinned to third place it cannot outrank a playoff finish at
 any buy-in, and it needs no re-vote when the buy-in changes.
 
-Whatever is left over rejoins the prize pool in the same proportions as the
-payout instead of landing entirely on the champion, so an unspent-FAAB year
-lifts the whole bracket.
+Whatever is left over rejoins the prize pool instead of landing entirely on the
+champion, so an unspent-FAAB year lifts the whole bracket. The Chase winner
+takes a slice of that too, and the arithmetic lands somewhere neat: their total
+is the cap plus 10% of overflow, and third place is the third-place prize plus
+10% of overflow - the same number, once the pot clears the cap. Below the cap
+the Chase winner takes the whole (smaller) pot. So the consolation ties a
+playoff finish at worst and never beats one.
 """
 from __future__ import annotations
 
@@ -45,6 +49,7 @@ class Settlement:
     champion: Optional[str] = None
     to_second: int = 0
     to_third: int = 0
+    to_chase_bonus: int = 0
     cap_is_derived: bool = False
 
     def owed(self, owner_id: str) -> int:
@@ -55,7 +60,19 @@ class Settlement:
 
     @property
     def overflow(self) -> int:
-        return self.to_champion + self.to_second + self.to_third
+        return self.to_champion + self.to_second + self.to_third + self.to_chase_bonus
+
+    @property
+    def chase_total(self) -> int:
+        """What the Chase winner actually walks away with."""
+        return self.to_chase + self.to_chase_bonus
+
+    @property
+    def third_total(self) -> int:
+        """Third place, prize plus their slice of overflow. Equal to
+        `chase_total` once the pot clears the cap - see the module docstring."""
+        base = prize("third")
+        return int(round(base or 0)) + self.to_third
 
 
 def pool() -> Optional[float]:
@@ -111,14 +128,15 @@ def settle(spend_by_owner: Dict[str, int], *, chase_winner: str = None,
     over = total - to_chase
 
     if str(fr.get("overflow_to")) == "bracket":
-        cut = _share(over, config.payout_split())
-        first, second, third = cut["first"], cut["second"], cut["third"]
+        cut = _share(over, config.overflow_split())
+        first, second, third, bonus = (cut["first"], cut["second"],
+                                       cut["third"], cut["chase"])
     else:
-        first, second, third = over, 0, 0
+        first, second, third, bonus = over, 0, 0, 0
 
     return Settlement(bills=bills, total=total, to_chase=to_chase,
                       to_champion=first, to_second=second, to_third=third,
-                      cap=cap, cap_is_derived=derived,
+                      to_chase_bonus=bonus, cap=cap, cap_is_derived=derived,
                       chase_winner=chase_winner, champion=champion)
 
 

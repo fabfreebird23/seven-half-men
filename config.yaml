@@ -92,11 +92,18 @@ rules:
     pot_cap: third_place      # third_place | <a number>
     pot_cap_fallback: 200     # used only while buy_in is unset
     pot_to: chase_winner      # first $cap
-    # Overflow rejoins the prize pool in the SAME proportions as the payout,
-    # rather than landing entirely on the champion. It is a principle instead of
-    # another number to re-argue, and it lifts the whole bracket in a year when
-    # the league leaves money on the table.
+    # Overflow rejoins the prize pool rather than landing entirely on the
+    # champion, so a low-spend year lifts the whole bracket. The Chase winner
+    # takes a slice of it too, which lands somewhere neat: their total becomes
+    # the cap plus 10% of overflow, and third place is the third-place prize
+    # plus 10% of overflow. The two come out EQUAL at every pot size. The
+    # consolation ties a playoff finish and never beats one.
     overflow_to: bracket      # bracket | champion
+    overflow_split:           # percent of whatever sits above the cap
+      first: 60
+      second: 20
+      third: 10
+      chase: 10
     # Dropping a player does not launder his keeper price. There is no re-add
     # lockout - anyone can claim anyone - but he carries whatever round and
     # clock he already had, so a cut-and-re-add cannot reset him to a last-round

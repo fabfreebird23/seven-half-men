@@ -318,17 +318,23 @@ expected value. That is a tanking incentive sitting in the foundation. Pinned to
 third place the consolation can never outrank a playoff finish at any buy-in, and
 it re-derives itself if the buy-in ever moves — no re-vote.
 
-Anything above the cap rejoins the payout in the same proportions as the pool
-(60/25/15) rather than landing entirely on the champion, so a low-spend year
-lifts the whole bracket. Odd dollars go to the champion; nobody counts out change.
+Anything above the cap is split **60 / 20 / 10 / 10** between the champion, the
+runner-up, third place and the Chase winner, rather than landing entirely on the
+champion, so a low-spend year lifts the whole bracket. That split lands somewhere
+neat: the Chase winner takes the cap plus 10% of overflow and third place takes
+the third-place prize plus 10% of overflow, which are **the same number** once
+the pot clears the cap. The consolation ties a playoff finish at best and can
+never beat one. Odd dollars go to the champion; nobody counts out change.
 
 `payouts.buy_in` in `config.yaml` is the single number all of it hangs off. Leave
 it unset and the cap falls back to `rules.faab.pot_cap_fallback` rather than
 capping at zero, which would silently hand the whole pot to the champion.
 
-`halfmen/agenda.py` holds the open votes and the settled ones, rendered on Home.
-Its numbers are read from config, not typed, so the agenda cannot quietly
-disagree with what the engine actually does — a test pins `agenda._cap_at` to
+`halfmen/agenda.py` holds the **open** votes, rendered on Home. Once something is
+voted it moves into the rulebook's *The money* section and off the front page —
+the rulebook is where anyone looks in March, and two places to check is one too
+many. The agenda's numbers are read from config rather than typed, so it cannot
+quietly disagree with what the engine does; a test pins `agenda._cap_at` to
 `pot.cap_amount`.
 
 ## Where the data lives

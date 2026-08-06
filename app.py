@@ -668,15 +668,6 @@ def render_agenda() -> None:
                 ('<div class="foot">%s</div>' % it["note"]) if it.get("note") else "")
             for i, it in enumerate(items)), unsafe_allow_html=True)
 
-    done = agenda.decided()
-    if done:
-        theme.bar("Settled", "%d &middot; with the reasoning" % len(done))
-        st.markdown('<div class="agenda">%s</div>' % "".join(
-            '<div class="done"><span class="tick">&#10003;</span>'
-            '<div><div class="t">%s</div><div class="d">%s</div></div></div>' % (
-                esc(d["title"]), d["detail"])
-            for d in done), unsafe_allow_html=True)
-
 
 def render_home(leaf=None):
     rosters = state["rosters"] or []
@@ -1250,13 +1241,18 @@ def render_pot(leaf=None):
                 {"pct": 1.0, "color": "var(--bad)", "big": "$%d" % settlement.total,
                  "label": "Comes due", "note": "every unspent dollar, all 8 teams"},
                 {"pct": settlement.to_chase / max(1, settlement.cap), "color": "var(--acc)",
-                 "big": "$%d" % settlement.to_chase,
-                 "label": "To the Chase winner", "note": "capped at $%d" % settlement.cap},
+                 "big": "$%d" % settlement.chase_total,
+                 "label": "To the Chase winner",
+                 "note": "$%d capped at the third-place prize, plus $%d of overflow &mdash; "
+                         "the same as third place takes home" % (
+                             settlement.to_chase, settlement.to_chase_bonus)},
                 {"pct": 1.0 if settlement.overflow else 0.0, "color": "var(--acc2)",
                  "big": "$%d" % settlement.overflow,
                  "label": "Back to the bracket",
-                 "note": "above the cap \u2014 $%d champion, $%d runner-up, $%d third" % (
-                     settlement.to_champion, settlement.to_second, settlement.to_third)},
+                 "note": "above the cap \u2014 $%d / $%d / $%d / $%d to champion, runner-up, "
+                         "third and the Chase winner" % (
+                             settlement.to_champion, settlement.to_second,
+                             settlement.to_third, settlement.to_chase_bonus)},
                 {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
                  "label": "Budget", "note": "spend it or owe it"},
             ])
@@ -1327,14 +1323,19 @@ def render_pot(leaf=None):
                 '<span class="mono" style="color:%s;font-weight:700">$%d</span>' % (col, b.owed),
             ])
         ledger_table(["Owner", "Spent", "Burn", "Owed"], rows)
-        _sp = config.payout_split()
+        _ov = config.overflow_split()
         st.markdown(
             '<div class="banner" style="margin-top:12px"><b>The cap is a ceiling, not a discount.</b> '
             'Every unspent dollar comes due. The first <b>$%d</b> goes to whoever wins the Chase '
-            'bracket &mdash; that is the third-place prize, so the consolation can never outrank a '
-            'playoff finish. Everything above it rejoins the payout, %d/%d/%d, which means a '
-            'low-spend year lifts the whole bracket rather than one person.</div>' % (
-                settlement.cap, int(_sp["first"]), int(_sp["second"]), int(_sp["third"])),
+            'bracket &mdash; that is the third-place prize. Everything above it is split '
+            '<b>%d/%d/%d/%d</b> between the champion, the runner-up, third place and the Chase '
+            'winner, so a low-spend year lifts the whole bracket rather than one person. The '
+            'arithmetic lands somewhere neat: once the pot clears the cap the Chase winner and '
+            'third place take home <b>exactly the same amount</b>, and below it the Chase winner '
+            'takes the whole smaller pot. The consolation ties a playoff finish at best and '
+            'never beats one.</div>' % (
+                settlement.cap, int(_ov["first"]), int(_ov["second"]),
+                int(_ov["third"]), int(_ov["chase"])),
             unsafe_allow_html=True)
 
 

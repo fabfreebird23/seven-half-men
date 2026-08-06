@@ -43,11 +43,30 @@ def test_the_cap_falls_back_rather_than_capping_at_zero(monkeypatch):
     assert not derived and cap == 200
 
 
-def test_overflow_rejoins_the_bracket_in_the_payout_proportions():
+def test_overflow_is_split_four_ways():
     s = pot.settle(SPENDS, chase_winner="clay", champion="taco")
     assert s.to_chase == 120, "capped at third-place money"
-    assert (s.to_champion, s.to_second, s.to_third) == (70, 30, 18)
+    over = s.to_champion + s.to_second + s.to_third + s.to_chase_bonus
+    assert over == s.total - s.to_chase
     assert s.to_chase + s.overflow == s.total
+
+
+def test_the_chase_winner_and_third_place_take_home_the_same_amount():
+    """The point of the matching 10/10 at the bottom of the overflow split: once
+    the pot clears the cap, the consolation TIES a playoff finish exactly."""
+    for spends in ({"a": 100, "b": 60, "c": 20, "d": 30},
+                   {"a": 0, "b": 0, "c": 0, "d": 0, "e": 0, "f": 0, "g": 0, "h": 0}):
+        s = pot.settle(spends)
+        assert s.total > s.cap, "this case is meant to clear the cap"
+        assert s.chase_total == s.third_total, spends
+
+
+def test_below_the_cap_the_chase_winner_takes_less_than_third_place():
+    """Not a wrinkle - it is the right way round. A small pot means everyone
+    played, and the consolation should not out-earn a playoff finish for it."""
+    s = pot.settle({"a": 100, "b": 100, "c": 95})
+    assert s.total < s.cap
+    assert s.chase_total == s.total < s.third_total
 
 
 def test_a_pot_smaller_than_the_cap_goes_entirely_to_the_chase_winner():
@@ -61,7 +80,8 @@ def test_a_pot_smaller_than_the_cap_goes_entirely_to_the_chase_winner():
 def test_the_rounding_remainder_goes_to_the_champion():
     """Rather than leaving somebody to count out change at the bar."""
     s = pot.settle(SPENDS)
-    assert s.to_chase + s.to_champion + s.to_second + s.to_third == s.total
+    assert (s.to_chase + s.to_champion + s.to_second + s.to_third
+            + s.to_chase_bonus) == s.total
 
 
 def test_champion_only_overflow_still_works(monkeypatch):
