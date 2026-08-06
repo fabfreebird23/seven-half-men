@@ -1719,21 +1719,17 @@ def render_lottery(leaf=None):
 # ---------------------------------------------------------------------------
 
 def _popover(section: str, label: str) -> str:
-    """A group -> leaf drill-down sheet for one section.
+    """Every leaf in a section, on one sheet, one tap away.
 
-    Two taps to any leaf, and the sheet closes on arrival - which is the point
-    of it over jumping to a page root and scrolling past three other sections.
+    This used to be a drill-down: tap the section, tap the group, tap the leaf.
+    Three taps to reach a page, and the middle one existed only because the
+    sheet could not hold everything. It can - six leaves under Pre-Season, four
+    under In-Season - so the groups became headings and the drill-down went.
     """
     groups = GROUPS[section]
-    root = "".join(
-        '<div class="bb-item" data-show="%s-%s"><span>%s</span>'
-        '<span class="chev">%d &rsaquo;</span></div>' % (section, gk, glabel, len(leaves))
-        for gk, glabel, leaves in groups)
-    panels = "".join(
-        '<div class="bb-panel%s" data-panel="%s-%s">'
-        '<div class="bb-head"><span class="bb-back" data-show="%s-root">&larr; %s</span>'
-        '<span class="bb-title">%s</span></div>%s</div>' % (
-            " on" if gk == GROUP else "", section, gk, section, label, glabel,
+    body = "".join(
+        '<div class="bb-group">%s</div>%s' % (
+            glabel,
             "".join(
                 '<a class="bb-item leaf%s" href="?p=%s&g=%s&t=%s" target="_self">%s</a>' % (
                     " on" if (PAGE == section and GROUP == gk and LEAF == lk) else "",
@@ -1741,9 +1737,8 @@ def _popover(section: str, label: str) -> str:
                 for lk, llabel in leaves))
         for gk, glabel, leaves in groups)
     return ('<div class="bb-pop" id="bb-pop-%s">'
-            '<div class="bb-panel%s" data-panel="%s-root">'
-            '<div class="bb-head"><span class="bb-title">%s</span></div>%s</div>%s</div>' % (
-                section, "" if PAGE == section else " on", section, label, root, panels))
+            '<div class="bb-head"><span class="bb-title">%s</span></div>%s</div>' % (
+                section, label, body))
 
 
 def render_bottom_bar() -> None:
@@ -1788,12 +1783,8 @@ def render_bottom_bar() -> None:
         "  b.addEventListener('click',function(e){e.stopPropagation();"
         "    const pop=doc.getElementById(b.dataset.toggle);"
         "    const was=pop.classList.contains('on'); closeAll();"
-        "    if(!was){pop.classList.add('on');scrim.classList.add('on');}});});"
-        "doc.querySelectorAll('[data-show]').forEach(function(el){"
-        "  el.addEventListener('click',function(){const pop=el.closest('.bb-pop');"
-        "    pop.querySelectorAll('.bb-panel').forEach(p=>p.classList.remove('on'));"
-        "    pop.querySelector('[data-panel=\"'+el.dataset.show+'\"]').classList.add('on');});});"
-        "scrim.addEventListener('click', closeAll);"
+        "    if(!was){pop.classList.add('on');scrim.classList.add('on');""      const cur=pop.querySelector('.bb-item.on');""      if(cur){pop.scrollTop=Math.max(0,cur.offsetTop-pop.clientHeight/2);}}""    });});"
+                "scrim.addEventListener('click', closeAll);"
         "})();</script>", height=0)
 
 

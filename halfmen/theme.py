@@ -494,13 +494,19 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
          box-shadow:0 16px 44px rgba(0,0,0,.6); opacity:0; pointer-events:none;
          transition:opacity .2s ease, transform .2s ease; z-index:999; }
 .bb-pop.on{ opacity:1; pointer-events:auto; transform:translate(-50%,0) scale(1); }
-.bb-panel{ display:none; }
-.bb-panel.on{ display:block; }
-.bb-head{ display:flex; align-items:center; gap:9px; padding:8px 10px 10px; }
-.bb-back{ font-family:var(--f-data); font-size:11px; color:var(--dim); cursor:pointer; }
-.bb-back:hover{ color:var(--ink); }
+/* One flat sheet, no drill-down: the middle tap only ever existed because the
+   sheet could not hold every leaf, and it can. The sheet can outgrow a short
+   phone, so it scrolls rather than running off the top. */
+.bb-pop{ max-height:min(70vh, calc(100vh - 150px)); overflow-y:auto;
+         -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+.bb-head{ display:flex; align-items:center; gap:9px; padding:8px 10px 10px;
+          position:sticky; top:-8px; background:var(--card2); z-index:1; }
 .bb-title{ font-family:var(--f-display); font-weight:700; font-size:15px;
            text-transform:uppercase; letter-spacing:.05em; color:var(--dim); }
+/* group headings, not tappable rows - the leaves under them are the targets */
+.bb-group{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.16em;
+           text-transform:uppercase; color:var(--acc); padding:11px 12px 5px; }
+.bb-group:first-of-type{ padding-top:2px; }
 .bb-item, [data-testid="stMarkdownContainer"] a.bb-item{
   display:flex; align-items:center; justify-content:space-between; padding:12px;
   border-radius:10px; font-size:13.5px; font-weight:600; color:var(--ink) !important;
@@ -508,7 +514,6 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
 .bb-item:hover{ background:rgba(255,255,255,.05); }
 .bb-item.leaf{ font-weight:500; font-size:13px; }
 .bb-item.leaf.on{ background:var(--acc-soft); color:var(--acc) !important; }
-.bb-item .chev{ color:var(--dim); font-family:var(--f-data); font-size:12px; }
 
 /* the bar floats over the page, so the page needs room to scroll clear of it */
 [data-testid="stAppViewContainer"] .main .block-container{

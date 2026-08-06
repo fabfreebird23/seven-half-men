@@ -19,6 +19,7 @@ local copy rather than showing eight people an empty draw.
 from __future__ import annotations
 
 import base64
+import itertools
 import json
 import time
 from typing import Any, Dict, Optional, Tuple
@@ -26,6 +27,15 @@ from typing import Any, Dict, Optional, Tuple
 _API = "https://api.github.com"
 _TTL = 5.0          # seconds; the draw reveal has to feel live to a room
 _cache: Dict[str, Tuple[float, Any]] = {}
+
+# GitHub's contents API is served through a CDN that holds a copy for up to a
+# minute. Writing the draw and immediately reading it back returned the OLD
+# value in testing - which on the night would mean the commissioner opens an
+# envelope and the board rolls back. Two defences: bust the cache on the way
+# out, and trust what we just wrote for longer than we trust the API.
+_OWN_HOLD = 90.0
+_own: Dict[str, Tuple[float, Any]] = {}
+_bust = itertools.count()
 
 
 def config() -> Optional[Tuple[str, str, str]]:
@@ -76,7 +86,8 @@ def _fetch(path: str) -> Tuple[Optional[dict], Optional[str]]:
     import requests
     tok, repo, branch = config()
     r = requests.get("%s/repos/%s/contents/%s" % (_API, repo, path),
-                     headers=_headers(tok), params={"ref": branch}, timeout=15)
+                     headers={"Cache-Control": "no-cache", **_headers(tok)},
+                     params={"ref": branch, "_": next(_bust)}, timeout=15)
     if r.status_code == 404:
         return None, None
     r.raise_for_status()
@@ -88,6 +99,11 @@ def _fetch(path: str) -> Tuple[Optional[dict], Optional[str]]:
 def read(path: str) -> Optional[dict]:
     """Cached read. None means "nothing there" AND "could not tell" - both of
     which the caller handles the same way: use the local copy."""
+    mine = _own.get(path)
+    if mine and time.time() - mine[0] < _OWN_HOLD:
+        # We wrote this. Our copy is definitionally at least as fresh as
+        # anything the API will hand back, and possibly fresher.
+        return mine[1]
     hit = _cache.get(path)
     if hit and time.time() - hit[0] < _TTL:
         return hit[1]
@@ -124,7 +140,9 @@ def write(path: str, data: dict, message: str) -> bool:
             r = requests.put("%s/repos/%s/contents/%s" % (_API, repo, path),
                              headers=_headers(tok), json=body, timeout=20)
             if r.status_code in (200, 201):
-                _cache[path] = (time.time(), data)
+                now = time.time()
+                _cache[path] = (now, data)
+                _own[path] = (now, data)
                 return True
             if r.status_code != 409:   # not a sha conflict, so retrying won't help
                 return False
@@ -134,7 +152,10 @@ def write(path: str, data: dict, message: str) -> bool:
 
 
 def invalidate(path: str = None) -> None:
+    """Forget everything cached, including our own writes. Used by tests."""
     if path is None:
         _cache.clear()
+        _own.clear()
     else:
         _cache.pop(path, None)
+        _own.pop(path, None)

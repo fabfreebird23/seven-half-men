@@ -78,3 +78,46 @@ def test_the_token_never_comes_from_the_public_yaml():
     """config.yaml is in a public repo. If a token could be read from it we
     would have shipped one."""
     assert "github_token" not in (config.CONFIG_PATH.read_text())
+
+
+def test_our_own_write_beats_a_stale_api_read(monkeypatch):
+    """GitHub's contents API is CDN-cached for up to a minute. Writing the draw
+    and reading it straight back returned the OLD value against the real repo -
+    which on the night means the commissioner opens an envelope and the board
+    rolls backwards. What we just wrote wins."""
+    monkeypatch.setattr(remote, "config", lambda: ("t", "r", "b"))
+    monkeypatch.setattr(remote, "_ensure_branch", lambda *a: None)
+    monkeypatch.setattr(remote, "_fetch", lambda p: ({"n": 1}, "sha"))
+
+    class OK:
+        status_code = 200
+    monkeypatch.setattr("requests.put", lambda *a, **k: OK())
+
+    assert remote.write("p", {"n": 2}, "m") is True
+    monkeypatch.setattr(remote, "_TTL", -1)   # even with the read cache expired
+    assert remote.read("p") == {"n": 2}, "not the stale {'n': 1} the API would serve"
+
+
+def test_the_read_carries_a_cache_buster(monkeypatch):
+    """Without it the CDN keeps handing back the same body to every replica."""
+    monkeypatch.setattr(remote, "config", lambda: ("t", "r", "b"))
+    seen = []
+
+    class R:
+        status_code = 200
+        @staticmethod
+        def raise_for_status(): pass
+        @staticmethod
+        def json():
+            import base64, json as j
+            return {"content": base64.b64encode(j.dumps({"ok": 1}).encode()).decode(),
+                    "sha": "s"}
+
+    def get(url, **kw):
+        seen.append(kw.get("params", {}))
+        return R()
+
+    monkeypatch.setattr("requests.get", get)
+    remote._fetch("p"); remote._fetch("p")
+    assert all("_" in p for p in seen)
+    assert seen[0]["_"] != seen[1]["_"], "the buster has to actually change"

@@ -216,9 +216,12 @@ scripts/refresh_adp.py daily consensus refresh
 Grouped by **season phase**, not content type, and routed entirely through
 `?p=&g=&t=`. There is no tab row: the top bar is the wordmark and a phase status
 line, and every route lives in a floating pill **bottom bar** whose sections open
-a group → leaf sheet. Two taps to any of the sixteen leaves, and the sheet closes
-on arrival rather than dropping you at a page root to scroll past three other
-sections. Same pattern the Kreeper and Babies & Boomer apps converged on.
+a sheet listing **every leaf in that phase, one tap away**. The sheet used to
+drill down — section, then group, then leaf — but that middle tap only ever
+existed because the sheet could not hold everything, and it can. Groups are
+headings now, not rows. The sheet scrolls when it outgrows a phone and opens
+scrolled to wherever you already are, so the current page is always visible and
+lit. Same pattern the Kreeper and Babies & Boomer apps converged on.
 
 ```
 Home
@@ -233,7 +236,7 @@ reference document and year one is nothing but rule questions.
 The bar is injected via `components.html` reaching `window.parent.document`,
 because `st.markdown` strips `<script>` and the handlers have to be real. That is
 the most version-fragile thing in the app, which is why `streamlit` is pinned.
-`tests/test_routes.py` walks all eighteen routes through Streamlit's own harness
+`tests/test_routes.py` walks all twenty routes through Streamlit's own harness
 and asserts each renders real content — most of them are dark in year one, so a
 route that silently rendered nothing would not surface until the season started.
 
@@ -304,11 +307,19 @@ github_repo = "fabfreebird23/seven-half-men"   # optional, this is the default
 github_branch = "league-data"                  # optional, this is the default
 ```
 
-The branch is created on the first write. Reads are cached for five seconds so
+The `league-data` branch already exists. Reads are cached for five seconds so
 a room watching the draw sees each envelope open near-live without hammering the
 API, and a read failure serves the last good value rather than an empty board.
 Any push failure degrades to the local file instead of raising — a save is never
-lost, only made fragile. The commissioner surfaces say which mode they are in,
+lost, only made fragile.
+
+Two things guard against GitHub's own staleness, both found by running the real
+round trip against the real repo rather than a mock: the contents API is served
+through a CDN that holds a copy for up to a minute, so **an overwrite read back
+the previous value**. Reads now carry a cache-busting parameter, and for ninety
+seconds after a write this process trusts what it wrote over anything the API
+hands back. On the night, the alternative is the commissioner opening an envelope
+and the board rolling backwards in front of the room. The commissioner surfaces say which mode they are in,
 so nobody types in a draft that is about to evaporate.
 
 The Sleeper cache under `data/` is *not* covered by this and does not need to be:
