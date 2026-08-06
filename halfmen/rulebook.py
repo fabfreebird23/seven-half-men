@@ -343,7 +343,9 @@ def sections() -> List[tuple]:
  ]),
  ("worked", "The guardrails, in the order they apply", [
    ("No sweep", "1st", "The rookie drum draws first. Its winner is held out of first choice in "
-                       "the veteran drum — they can still land second."),
+                       "the veteran drum — they can still land second. Without it one team "
+                       "takes both boards in about 4% of years, which is a bad night for the "
+                       "other seven and pure luck."),
    ("No back-to-back", "2nd", "Win <b>first choice</b> of a drum and you cannot win first choice "
                               "of <b>that same drum</b> next year. The two drums are tracked "
                               "separately — take first of the rookie draft this year and you are "

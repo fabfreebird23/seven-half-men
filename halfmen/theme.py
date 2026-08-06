@@ -503,7 +503,9 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
           position:sticky; top:-8px; background:var(--card2); z-index:1; }
 .bb-title{ font-family:var(--f-display); font-weight:700; font-size:15px;
            text-transform:uppercase; letter-spacing:.05em; color:var(--dim); }
-/* group headings, not tappable rows - the leaves under them are the targets */
+/* group headings, not tappable rows - the leaves under them are the targets.
+   A group may carry an empty label, which renders no heading at all: two
+   destinations do not need sorting into categories. */
 .bb-group{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.16em;
            text-transform:uppercase; color:var(--acc); padding:11px 12px 5px; }
 .bb-group:first-of-type{ padding-top:2px; }

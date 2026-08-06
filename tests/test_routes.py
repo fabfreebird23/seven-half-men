@@ -1,6 +1,6 @@
 """Every route in the bottom bar has to render something.
 
-There are sixteen leaves behind two popovers now, and most of them are dark in
+There are ten leaves behind two sheets now, and most of them are dark in
 year one - an empty roster, no transactions, no keepers. A route that raises or
 renders nothing would be invisible until the season started, so this walks all
 of them with Streamlit's own harness.
@@ -40,7 +40,7 @@ def test_every_leaf_in_the_nav_is_covered_here():
     """The count is deliberately hard-coded: adding a leaf without adding it to
     the walk below would leave a route untested, and most of them are dark in
     year one so nothing else would notice."""
-    assert len(ALL) == 20
+    assert len(ALL) == 12   # 10 leaves + home + rules
 
 
 @pytest.mark.parametrize("qp", ALL, ids=lambda q: "/".join(q.values()))
@@ -252,7 +252,7 @@ def test_entering_a_paper_draft_gets_it_onto_the_board(tmp_path, monkeypatch):
 
     def open_page():
         at = AppTest.from_file(APP, default_timeout=60)
-        at.query_params.update({"p": "preseason", "g": "draft", "t": "enter"})
+        at.query_params.update({"p": "preseason", "g": "draft", "t": "rookie"})
         at.run()
         return at
 
@@ -271,3 +271,38 @@ def test_entering_a_paper_draft_gets_it_onto_the_board(tmp_path, monkeypatch):
     assert len(got) == 3
     assert [p["round"] for p in got] == [1, 1, 1]
     assert picks.rosters(config.season()), "rosters now answer where they did not"
+
+
+@pytest.mark.parametrize("old,expect", [
+    (("wire", "value"), {"p": "inseason", "g": "wire", "t": "wire"}),
+    (("wire", "cheap"), {"p": "inseason", "g": "wire", "t": "wire"}),
+    (("pot", "burn"), {"p": "inseason", "g": "pot", "t": "pot"}),
+    (("pot", "settle"), {"p": "inseason", "g": "pot", "t": "pot"}),
+    (("keepers", "franchise"), {"p": "preseason", "g": "keepers", "t": "slip"}),
+    (("draft", "locks"), {"p": "preseason", "g": "keepers", "t": "matrix"}),
+    (("draft", "enter"), {"p": "preseason", "g": "draft", "t": "rookie"}),
+    (("young", "compliance"), {"p": "preseason", "g": "young", "t": "bay"}),
+    (("young", "counts"), {"p": "rules"}),
+    (("lottery", "guards"), {"p": "rules"}),
+])
+def test_a_retired_link_lands_where_its_content_went(old, expect):
+    """These URLs are in the group chat and in people's bookmarks. Falling back
+    to the first leaf of a group would send someone who clicked "the guardrails"
+    to the drums with no explanation - a broken link that throws no error, which
+    is the worst kind."""
+    at = AppTest.from_file(APP, default_timeout=60)
+    at.query_params.update({"p": "preseason" if old[0] != "wire" and old[0] != "pot"
+                            else "inseason", "g": old[0], "t": old[1]})
+    at.run()
+    assert not at.exception, [e.value for e in at.exception]
+    got = {k: (v[0] if isinstance(v, list) else v)
+           for k, v in dict(at.query_params).items()}
+    for k, v in expect.items():
+        assert got.get(k) == v, "%s -> %s" % (old, got)
+
+
+def test_the_in_season_sheet_carries_no_group_headings():
+    """Two destinations do not need sorting into categories, and a heading
+    reading "The Wire" above an item reading "The Wire" is noise."""
+    assert all(not glabel for _, glabel, _ in _groups()["inseason"])
+    assert any(glabel for _, glabel, _ in _groups()["preseason"])

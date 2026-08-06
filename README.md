@@ -225,10 +225,34 @@ lit. Same pattern the Kreeper and Babies & Boomer apps converged on.
 
 ```
 Home
-Pre-Season   Keepers · Draft · Rookies & Taxi · Lottery
-In-Season    The Wire · The Pot
+Pre-Season   Keepers          What a keeper costs · Set my keepers
+             Draft            Rookie draft · Veteran draft · Draft capital
+             Rookies & Taxi   Taxi bay
+             Lottery          The drums · Simulate
+In-Season    The Wire · The Pot          (no headings — two destinations)
 Rules
 ```
+
+It was eighteen leaves. Measuring what each actually rendered, six were not
+carrying their own tap:
+
+| Retired leaf | Where it went | Why |
+|---|---|---|
+| The guardrails | Rules | 5.9k of prose with **no data in it** — and the rulebook already said all of it |
+| Who counts as a rookie keeper | Rules | ditto, and the rulebook's table was the more complete of the two |
+| What a pick locks you into | What a keeper costs | same `three_year_surplus` maths, one interactive row of the same grid |
+| Cheapest available | The Wire | the tail of the same `valueboard` build |
+| Settlement | The Pot | where the burn-down ends up; two views of one pot |
+| Taxi compliance | Taxi bay | 1.3k about the pods listed directly above it |
+| Franchise tag | Set my keepers | a decision about the same five slots |
+| Enter results | the two draft boards | the page you came from already knew which draft it was |
+
+The two sent to Rules were **word-for-word duplicates** of sections already
+there, which is the argument for the split the nav now makes: Pre-Season is
+things you do, Rules is things you read. `MOVED` in `app.py` redirects every
+retired URL to where its content went — those links are in the group chat and in
+people's bookmarks, and a route that silently rendered the wrong page would be a
+broken link that throws no error.
 
 Rules gets its own slot rather than folding under a phase — it is a twelve-section
 reference document and year one is nothing but rule questions.

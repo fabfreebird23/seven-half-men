@@ -258,27 +258,38 @@ with head_r:
 
 GROUPS = {
     "preseason": [
-        ("keepers", "Keepers", [("matrix", "Where the value is"),
-                                ("slip", "Set my keepers"),
-                                ("franchise", "Franchise tag")]),
+        ("keepers", "Keepers", [("matrix", "What a keeper costs"),
+                                ("slip", "Set my keepers")]),
         ("draft", "Draft", [("rookie", "Rookie draft"),
                             ("board", "Veteran draft"),
-                            ("enter", "Enter results"),
-                            ("locks", "What a pick locks you into"),
                             ("capital", "Draft capital")]),
-        ("young", "Rookies & Taxi", [("bay", "Taxi bay"),
-                                     ("compliance", "Taxi compliance"),
-                                     ("counts", "Who counts as a rookie keeper")]),
+        ("young", "Rookies & Taxi", [("bay", "Taxi bay")]),
         ("lottery", "Lottery", [("drums", "The drums"),
-                                ("sim", "Simulate"),
-                                ("guards", "The guardrails")]),
+                                ("sim", "Simulate")]),
     ],
+    # No group headings in season: two destinations do not need sorting into
+    # categories, and "The Wire" under a heading reading "The Wire" is noise.
     "inseason": [
-        ("wire", "The Wire", [("value", "Value board"),
-                              ("cheap", "Cheapest available")]),
-        ("pot", "The Pot", [("burn", "Burn-down"),
-                            ("settle", "Settlement")]),
+        ("wire", "", [("wire", "The Wire")]),
+        ("pot", "", [("pot", "The Pot")]),
     ],
+}
+
+# Leaves that used to exist, and where their content lives now. Links get pasted
+# into the group chat and bookmarked, so a route that quietly rendered nothing
+# would be a broken link with no error - the worst kind.
+MOVED = {
+    ("wire", "value"): ("inseason", "wire", "wire"),
+    ("wire", "cheap"): ("inseason", "wire", "wire"),
+    ("pot", "burn"): ("inseason", "pot", "pot"),
+    ("pot", "settle"): ("inseason", "pot", "pot"),
+    ("keepers", "franchise"): ("preseason", "keepers", "slip"),
+    ("draft", "locks"): ("preseason", "keepers", "matrix"),
+    ("draft", "enter"): ("preseason", "draft", "rookie"),
+    ("young", "compliance"): ("preseason", "young", "bay"),
+    # These two were duplicates of the rulebook, word for word.
+    ("young", "counts"): ("rules", None, None),
+    ("lottery", "guards"): ("rules", None, None),
 }
 SECTIONS = [("home", "Home"), ("preseason", "Pre-Season"),
             ("inseason", "In-Season"), ("rules", "Rules")]
@@ -292,6 +303,19 @@ def _qp(key: str, default: str = "") -> str:
 PAGE = _qp("p", "home")
 if PAGE not in dict(SECTIONS):
     PAGE = "home"
+
+# A retired route silently falling back to the first leaf of its group would
+# send someone who clicked "the guardrails" to the drums with no explanation.
+# Send them where the content actually went instead.
+_moved = MOVED.get((_qp("g"), _qp("t")))
+if _moved and PAGE in GROUPS:
+    PAGE, _g, _t = _moved
+    st.query_params.clear()
+    st.query_params["p"] = PAGE
+    if _g:
+        st.query_params["g"] = _g
+        st.query_params["t"] = _t
+
 GROUP = LEAF = None
 if PAGE in GROUPS:
     groups = GROUPS[PAGE]
@@ -817,6 +841,65 @@ def render_keepers(leaf=None):
                         unsafe_allow_html=True)
 
         # ---- live slip (only once there is a roster to build one from) ----------
+
+        # The grid above answers "which rounds are worth keeping". This
+        # answers "what am I signing if I spend THIS one", which is the
+        # question you have with a board in front of you.
+
+        theme.bar("What this pick locks you into", "the draft is where keeper value is made")
+        st.markdown(
+            '<div class="note" style="margin-bottom:12px">The draft is offline, so this is the bit '
+            'to have open next to the board. Pick the round you are about to spend and it shows the '
+            'contract you are signing: what he costs to hold each year, and what you bank if he turns '
+            'out better than where you took him.</div>', unsafe_allow_html=True)
+
+        pick_round = st.slider("Round", 1, config.veteran_rounds(), min(9, config.veteran_rounds()),
+                               key="draft_round")
+        path = contract_path(pick_round, None)
+        ladder = [
+            ("Year 1", path[0], "the round you took him, or his market \u2014 whichever is cheaper"),
+            ("Year 2", path[1], "R%d minus %d" % (pick_round, int(config.keeper_rules()["year2_bump"]))),
+            ("Year 3", "ADP", "the market, no choice \u2014 which is why it banks nothing"),
+            ("Year 4", "the wall", "gone unless he is your one franchise player"),
+        ]
+        st.markdown(
+            '<div class="worked"><div class="wh">If you take him in round %d</div>%s</div>' % (
+                pick_round, "".join(
+                    '<div class="wr"><div class="l">%s</div><div class="v">%s</div>'
+                    '<div class="d">%s</div></div>' % (
+                        lbl, ("R%d" % v) if isinstance(v, int) else v, note)
+                    for lbl, v, note in ladder)), unsafe_allow_html=True)
+
+        lev = [(b, three_year_surplus(pick_round, b)) for b in (1, 2, 3, 5, 8)
+               if b < pick_round]
+        if lev:
+            st.markdown(
+                '<div class="card" style="margin-top:10px"><div class="eyebrow">If he outperforms</div>'
+                '<div class="glance" style="grid-template-columns:repeat(%d,minmax(0,1fr));gap:10px">'
+                '%s</div><div class="tiny" style="margin-top:10px">Rounds banked across the whole '
+                'three-year hold. This is the argument for spending a late pick on upside rather than '
+                'a safe floor: the same player is worth far more to hold if you found him late.</div>'
+                '</div>' % (len(lev), "".join(
+                    '<div style="text-align:center"><div style="font-family:var(--f-display);'
+                    'font-weight:800;font-size:30px;color:var(--acc)">%s</div>'
+                    '<div class="tiny">becomes an R%d</div></div>' % (theme.signed(v), b)
+                    for b, v in lev)), unsafe_allow_html=True)
+        else:
+            st.markdown(
+                '<div class="banner">A round-1 pick cannot outperform where you took him, so there is '
+                'no keeper value in it at all. That is not a bug in the maths \u2014 it is the whole '
+                'reason the early rounds are about winning now and the late rounds are about next '
+                'year.</div>', unsafe_allow_html=True)
+
+        here = adp_board.by_round().get(pick_round, [])[:12]
+        if here:
+            st.markdown(
+                '<div class="tiny" style="margin:12px 0 6px">Who the market has in round %d</div>'
+                '<div style="display:flex;gap:6px;flex-wrap:wrap">%s</div>' % (
+                    pick_round, "".join(
+                        '<span class="chip">%s <span style="opacity:.6">%s</span></span>' % (
+                            esc(p["name"]), esc(p["position"])) for p in here)),
+                unsafe_allow_html=True)
     if leaf in (None, "slip"):
         theme.bar("Your slip", "%d regular · %d rookie · %d franchise" % (
             int(kr["regular"]), int(kr["rookie"]), int(config.franchise_rules()["slots"])))
@@ -867,7 +950,7 @@ def render_keepers(leaf=None):
 
 
         # ---------------------------------------------------------------- value board
-    if leaf in (None, "value", "cheap"):
+    if leaf in (None, "wire"):
         # Both destinations price off the same history, so build it once out
         # here - the wire needs it even when the rostered board is not shown.
         try:
@@ -876,7 +959,7 @@ def render_keepers(leaf=None):
         except Exception:
             hist_all, board = None, []
 
-        if leaf in (None, "value"):
+        if True:
             theme.bar("Value board", "what everyone would cost to keep next year")
 
             if board:
@@ -919,9 +1002,10 @@ def render_keepers(leaf=None):
                     'week 6, because a claim here is the first year of a three-year contract.</div>',
                     unsafe_allow_html=True)
 
-        if leaf in (None, "cheap") and (
-                not FIRST or (state["rosters"]
-                              and any(r.get("players") for r in state["rosters"]))):
+        # The cheap list is the tail of the same board, off the same history
+        # build - it was never worth its own tap.
+        if (not FIRST or (state["rosters"]
+                          and any(r.get("players") for r in state["rosters"]))):
             theme.bar("Cheapest available", "unrostered, priced as if you claimed him today")
             try:
                 fa = valueboard.free_agents(LG, limit=20, hist=hist_all)
@@ -946,7 +1030,9 @@ def render_keepers(leaf=None):
                 unsafe_allow_html=True)
 
         # ---------------------------------------------------------------- franchise
-    if leaf in (None, "franchise"):
+    # The tag is a decision made about the same five slots, so it belongs on the
+    # slip rather than a page of its own.
+    if leaf in (None, "slip"):
         try:
             hist_all = history.build(LG)
         except Exception:
@@ -1077,7 +1163,8 @@ def render_taxi(leaf=None):
         # Sleeper's taxi_allow_vets only blocks veterans - it will let someone stash
         # a rookie they took in the VETERAN draft, which our rules do not allow.
         # Nothing prevents it at the source, so we police it here.
-    if leaf in (None, "compliance"):
+    # Compliance is one short table about the pods listed above it.
+    if leaf in (None, "bay"):
         theme.bar("Taxi compliance", "Sleeper cannot enforce this rule for us")
         try:
             flagged = taxi.compliance(bays, history.build(LG))
@@ -1099,43 +1186,6 @@ def render_taxi(leaf=None):
                 'standing between the rule and the honour system. It runs against the rookie-draft '
                 'log every time this page loads.</div>', unsafe_allow_html=True)
 
-    if leaf in (None, "counts"):
-        theme.bar("Who counts as a rookie keeper", "any NFL rookie you drafted · not waivers")
-        st.markdown(
-            '<div class="card"><div class="note">A %d-round rookie draft is %d picks. A '
-            'fantasy-relevant NFL class is closer to thirty. So every year a dozen-plus real rookies '
-            'reach the veteran draft or the waiver wire, and the rule has to say what happens to '
-            'them.</div>'
-            '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));'
-            'gap:12px;margin-top:14px">%s</div>'
-            '<div class="banner" style="margin-top:14px;border-style:solid;border-color:var(--acc)">'
-            '<b>The rule: any NFL rookie you drafted, in either draft. Not waivers.</b> '
-            'It does not dilute rookie picks the way it looks like it might — you only get two rookie '
-            'keeper slots either way, so the binding constraint is the slots, not the entry route. '
-            'What a rookie pick really buys is first crack at the class.</div></div>' % (
-                config.rookie_rounds(), config.rookie_rounds() * 8,
-                "".join(
-                    '<div style="border:1px solid var(--line);border-radius:9px;padding:13px;'
-                    'background:var(--card2)"><div class="eyebrow">%s</div>'
-                    '<div style="font-family:var(--f-display);font-size:18px;text-transform:uppercase;'
-                    'letter-spacing:.03em">%s</div>%s<div class="tiny" style="margin-top:8px">%s</div>'
-                    '</div>' % (a, b, c, d)
-                    for a, b, c, d in [
-                        ("Scenario 1", "The rookie pick", '<span class="chip good">eligible</span>',
-                         "Taken at 1.03 in the rookie draft. Last pick to keep, no clock, his whole career."),
-                        ("Scenario 2", "The 17th man", '<span class="chip good">eligible</span>',
-                         "Rookie draft ends, he is still on the board, you take him in round 12 of the "
-                         "veteran draft. He counts — this is the case the rule turns on."),
-                        ("Scenario 3", "The waiver find", '<span class="chip bad">not eligible</span>',
-                         "Undrafted in both drafts, explodes in week 4, you win him on FAAB. Normal "
-                         "keeper on the three-year clock. The cheapest permanent asset in the league "
-                         "should not be won at auction."),
-                        ("Scenario 4", "The trade", '<span class="chip warn">status is lost</span>',
-                         "Trading a rookie keeper kills the status forever. For his new owner he is a "
-                         "regular keeper at his original draft round, clock back at year one."),
-                    ])), unsafe_allow_html=True)
-
-
 # ---------------------------------------------------------------------------
 # THE POT
 # ---------------------------------------------------------------------------
@@ -1152,7 +1202,7 @@ def render_pot(leaf=None):
     settlement = pot.settle(spends)
     complete = (lg.get("status") or "") == "complete"
 
-    if leaf in (None, "burn"):
+    if leaf in (None, "pot"):
         theme.bar("The pot", "unspent FAAB comes due")
         played = sum(b.spent for b in settlement.bills) > 0
 
@@ -1228,7 +1278,8 @@ def render_pot(leaf=None):
                 'above your line at week %d is what you will owe.</div>' % (
                     int(fr["budget"]), WEEKS), unsafe_allow_html=True)
 
-    if leaf in (None, "settle"):
+    # Settlement is where the burn-down ends up; two views of one pot.
+    if leaf in (None, "pot"):
         theme.bar("Settlement", "who owes what")
         rows = []
         for b in settlement.bills:
@@ -1252,6 +1303,71 @@ def render_pot(leaf=None):
 # ---------------------------------------------------------------------------
 # DRAFT
 # ---------------------------------------------------------------------------
+
+
+def draft_entry(which: str, pick_order, rounds: int, snake: bool) -> None:
+    """Record a draft held in a room, under the board it belongs to.
+
+    This had its own nav leaf, which meant choosing rookie-or-veteran from
+    a radio when the page you came from already knew the answer.
+    """
+    theme.bar("Enter results", "%d rounds &middot; %d picks" % (
+        rounds, rounds * len(pick_order)))
+    unlocked = draw_lock_ui(
+        "password to record picks",
+        "Reading only. Anyone can see what has been entered; only the commissioner types it "
+        "in, so eight people cannot overwrite the board at once.")
+    st.markdown(
+        '<div class="banner" style="margin-top:14px">Every live board in this app reads rosters from Sleeper. If '
+        'the draft happened in a room and never got keyed in anywhere, the value board, the '
+        'wire, the taxi bay and every keeper price stay empty <b>permanently</b>. Enter the '
+        'results in Sleeper if you can &mdash; that is the real record. This is here so a '
+        'paper draft is not a dead end.</div>', unsafe_allow_html=True)
+
+    existing = picks.load(which, SEASON)
+    st.markdown('<div class="tiny" style="margin:6px 0">%d of %d picks recorded. Paste one '
+                'player per line, in pick order &mdash; or prefix a line with its slot '
+                '(<code>3.05 Bijan Robinson</code>) to place it exactly. Round and pick are '
+                'optional; everything else is read as a name.</div>' % (
+                    len(existing), rounds * len(pick_order)), unsafe_allow_html=True)
+
+    pasted = st.text_area("Results", height=180, key="paste_%s" % which,
+                          placeholder="Ja'Marr Chase\nBijan Robinson\n3.05 Puka Nacua",
+                          label_visibility="collapsed", disabled=not unlocked)
+    c1, c2 = st.columns([1, 4])
+    with c1:
+        do_import = st.button("Import", key="imp_%s" % which,
+                                 disabled=not unlocked or not pasted.strip())
+    with c2:
+        if st.button("Clear this draft", key="clr_%s" % which,
+                         disabled=not unlocked or not existing):
+            picks.clear(which, SEASON); st.rerun()
+    storage_note(check=unlocked)
+
+    if do_import:
+        got = picks.parse(pasted, pick_order, rounds, snake)
+        if got["problems"]:
+            st.markdown("".join(
+                '<div class="banner" style="border-color:var(--bad);color:var(--bad);'
+                'margin-bottom:6px">%s</div>' % esc(p) for p in got["problems"][:12]),
+                unsafe_allow_html=True)
+        if got["picks"]:
+            picks.save(which, got["picks"], SEASON)
+            st.markdown('<div class="banner" style="border-color:var(--acc)">Recorded '
+                        '<b>%d</b> of %d picks. Anything flagged above was skipped &mdash; '
+                        'fix the name and paste those lines again.</div>' % (
+                            len(got["picks"]), len(got["picks"]) + len(got["problems"])),
+                        unsafe_allow_html=True)
+            st.rerun()
+
+    if existing:
+        ledger_table(["Pick", "Player", "To"], [[
+            '<span class="mono">%d.%02d</span>' % (p["round"], p["pick"]),
+            '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
+                esc(p["name"]), esc(p.get("position", ""))),
+            '<span class="tiny">%s</span>' % esc(who(p["owner_id"])),
+        ] for p in existing])
+
 
 def render_draft(leaf=None):
     # Page-level: the capital strip needs the same order the board draws in.
@@ -1316,6 +1432,9 @@ def render_draft(leaf=None):
                 int(config.keeper_rules()["rookie"]), draftboard.rookie_pick_count(), prem),
             unsafe_allow_html=True)
 
+        draft_entry("rookie", rk_order, config.rookie_rounds(),
+                    bool(config.drafts().get("rookie_snake", True)))
+
     if leaf in (None, "board"):
         theme.bar("Veteran draft", "%d rounds · snake · keeper costs burned in" % config.veteran_rounds())
         if FIRST:
@@ -1364,127 +1483,8 @@ def render_draft(leaf=None):
             '<span><b style="background:var(--card2);border:1px solid var(--line2)"></b> Open</span>'
             '</div>', unsafe_allow_html=True)
 
-        # ------------------------------------------------- what a pick locks you into
-    if leaf in (None, "enter"):
-        theme.bar("Enter results", "for a draft held off Sleeper")
-        unlocked = draw_lock_ui(
-            "password to record picks",
-            "Reading only. Anyone can see what has been entered; only the commissioner types it "
-            "in, so eight people cannot overwrite the board at once.")
-        st.markdown(
-            '<div class="banner" style="margin-top:14px">Every live board in this app reads rosters from Sleeper. If '
-            'the draft happened in a room and never got keyed in anywhere, the value board, the '
-            'wire, the taxi bay and every keeper price stay empty <b>permanently</b>. Enter the '
-            'results in Sleeper if you can &mdash; that is the real record. This is here so a '
-            'paper draft is not a dead end.</div>', unsafe_allow_html=True)
-
-        which = st.radio("Which draft", [("rookie", "Rookie draft"), ("veteran", "Veteran draft")],
-                         format_func=lambda x: x[1], horizontal=True,
-                         label_visibility="collapsed", key="pick_kind")[0]
-        rounds = (config.rookie_rounds() if which == "rookie"
-                  else config.veteran_rounds(SEASON))
-        snake = (bool(config.drafts().get("rookie_snake", True)) if which == "rookie"
-                 else bool(config.drafts().get("snake", True)))
-        pick_order = ((draw.get("rookie") or owner_ids()) if which == "rookie"
-                      else (draw.get("veteran") or owner_ids()))
-
-        existing = picks.load(which, SEASON)
-        st.markdown('<div class="tiny" style="margin:6px 0">%d of %d picks recorded. Paste one '
-                    'player per line, in pick order &mdash; or prefix a line with its slot '
-                    '(<code>3.05 Bijan Robinson</code>) to place it exactly. Round and pick are '
-                    'optional; everything else is read as a name.</div>' % (
-                        len(existing), rounds * len(pick_order)), unsafe_allow_html=True)
-
-        pasted = st.text_area("Results", height=180, key="paste_picks",
-                              placeholder="Ja'Marr Chase\nBijan Robinson\n3.05 Puka Nacua",
-                              label_visibility="collapsed", disabled=not unlocked)
-        c1, c2 = st.columns([1, 4])
-        with c1:
-            do_import = st.button("Import", disabled=not unlocked or not pasted.strip())
-        with c2:
-            if st.button("Clear this draft", disabled=not unlocked or not existing):
-                picks.clear(which, SEASON); st.rerun()
-        storage_note(check=unlocked)
-
-        if do_import:
-            got = picks.parse(pasted, pick_order, rounds, snake)
-            if got["problems"]:
-                st.markdown("".join(
-                    '<div class="banner" style="border-color:var(--bad);color:var(--bad);'
-                    'margin-bottom:6px">%s</div>' % esc(p) for p in got["problems"][:12]),
-                    unsafe_allow_html=True)
-            if got["picks"]:
-                picks.save(which, got["picks"], SEASON)
-                st.markdown('<div class="banner" style="border-color:var(--acc)">Recorded '
-                            '<b>%d</b> of %d picks. Anything flagged above was skipped &mdash; '
-                            'fix the name and paste those lines again.</div>' % (
-                                len(got["picks"]), len(got["picks"]) + len(got["problems"])),
-                            unsafe_allow_html=True)
-                st.rerun()
-
-        if existing:
-            ledger_table(["Pick", "Player", "To"], [[
-                '<span class="mono">%d.%02d</span>' % (p["round"], p["pick"]),
-                '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
-                    esc(p["name"]), esc(p.get("position", ""))),
-                '<span class="tiny">%s</span>' % esc(who(p["owner_id"])),
-            ] for p in existing])
-
-    if leaf in (None, "locks"):
-        theme.bar("What this pick locks you into", "the draft is where keeper value is made")
-        st.markdown(
-            '<div class="note" style="margin-bottom:12px">The draft is offline, so this is the bit '
-            'to have open next to the board. Pick the round you are about to spend and it shows the '
-            'contract you are signing: what he costs to hold each year, and what you bank if he turns '
-            'out better than where you took him.</div>', unsafe_allow_html=True)
-
-        pick_round = st.slider("Round", 1, config.veteran_rounds(), min(9, config.veteran_rounds()),
-                               key="draft_round")
-        path = contract_path(pick_round, None)
-        ladder = [
-            ("Year 1", path[0], "the round you took him, or his market \u2014 whichever is cheaper"),
-            ("Year 2", path[1], "R%d minus %d" % (pick_round, int(config.keeper_rules()["year2_bump"]))),
-            ("Year 3", "ADP", "the market, no choice \u2014 which is why it banks nothing"),
-            ("Year 4", "the wall", "gone unless he is your one franchise player"),
-        ]
-        st.markdown(
-            '<div class="worked"><div class="wh">If you take him in round %d</div>%s</div>' % (
-                pick_round, "".join(
-                    '<div class="wr"><div class="l">%s</div><div class="v">%s</div>'
-                    '<div class="d">%s</div></div>' % (
-                        lbl, ("R%d" % v) if isinstance(v, int) else v, note)
-                    for lbl, v, note in ladder)), unsafe_allow_html=True)
-
-        lev = [(b, three_year_surplus(pick_round, b)) for b in (1, 2, 3, 5, 8)
-               if b < pick_round]
-        if lev:
-            st.markdown(
-                '<div class="card" style="margin-top:10px"><div class="eyebrow">If he outperforms</div>'
-                '<div class="glance" style="grid-template-columns:repeat(%d,minmax(0,1fr));gap:10px">'
-                '%s</div><div class="tiny" style="margin-top:10px">Rounds banked across the whole '
-                'three-year hold. This is the argument for spending a late pick on upside rather than '
-                'a safe floor: the same player is worth far more to hold if you found him late.</div>'
-                '</div>' % (len(lev), "".join(
-                    '<div style="text-align:center"><div style="font-family:var(--f-display);'
-                    'font-weight:800;font-size:30px;color:var(--acc)">%s</div>'
-                    '<div class="tiny">becomes an R%d</div></div>' % (theme.signed(v), b)
-                    for b, v in lev)), unsafe_allow_html=True)
-        else:
-            st.markdown(
-                '<div class="banner">A round-1 pick cannot outperform where you took him, so there is '
-                'no keeper value in it at all. That is not a bug in the maths \u2014 it is the whole '
-                'reason the early rounds are about winning now and the late rounds are about next '
-                'year.</div>', unsafe_allow_html=True)
-
-        here = adp_board.by_round().get(pick_round, [])[:12]
-        if here:
-            st.markdown(
-                '<div class="tiny" style="margin:12px 0 6px">Who the market has in round %d</div>'
-                '<div style="display:flex;gap:6px;flex-wrap:wrap">%s</div>' % (
-                    pick_round, "".join(
-                        '<span class="chip">%s <span style="opacity:.6">%s</span></span>' % (
-                            esc(p["name"]), esc(p["position"])) for p in here)),
-                unsafe_allow_html=True)
+        draft_entry("veteran", order, config.veteran_rounds(SEASON),
+                    bool(config.drafts().get("snake", True)))
 
     if leaf in (None, "capital"):
         theme.bar("Draft capital", "which rounds each team actually holds")
@@ -1723,30 +1723,6 @@ def render_lottery(leaf=None):
                     'no-sweep guardrail is doing its job.</div>' % (res["n"], res["sweeps"]),
                     unsafe_allow_html=True)
 
-    if leaf in (None, "guards"):
-        theme.bar("The guardrails", "in the order they apply")
-        cols = st.columns(3)
-        for col, (title, body) in zip(cols, [
-            ("No sweep", "The rookie drum draws first. Whoever wins first choice there is pulled out "
-                         "of contention for first choice in the veteran drum <em>that same year</em> "
-                         "— they can still land second. Without it, one team takes both boards in "
-                         "about 4% of years."),
-            ("No back-to-back, per drum", "Win <b>first choice</b> of a drum and you cannot win first "
-                                          "choice of <b>that drum</b> next year. The two are tracked "
-                                          "separately: take first of the rookie draft this year and "
-                                          "you are still free to take first of the veteran draft next "
-                                          "year, and second choice of the rookie drum stays open to "
-                                          "you. Landing a pick by trade does not burn your "
-                                          "eligibility — only winning it does."),
-            ("Champion at the floor", "Whoever wins the title takes the smallest ball weight in both "
-                                      "drums no matter what their record was."),
-        ]):
-            with col:
-                st.markdown('<div class="card"><div class="eyebrow">Guardrail</div>'
-                            '<h3 class="k">%s</h3><div class="note">%s</div></div>' % (title, body),
-                            unsafe_allow_html=True)
-
-
 # ---------------------------------------------------------------------------
 # the bottom bar
 # ---------------------------------------------------------------------------
@@ -1761,8 +1737,8 @@ def _popover(section: str, label: str) -> str:
     """
     groups = GROUPS[section]
     body = "".join(
-        '<div class="bb-group">%s</div>%s' % (
-            glabel,
+        '%s%s' % (
+            ('<div class="bb-group">%s</div>' % glabel) if glabel else "",
             "".join(
                 '<a class="bb-item leaf%s" href="?p=%s&g=%s&t=%s" target="_self">%s</a>' % (
                     " on" if (PAGE == section and GROUP == gk and LEAF == lk) else "",
