@@ -103,8 +103,21 @@ def storage_note(check: bool = False) -> None:
     if not check:
         return
     if st.button("Test the connection", key="probe_%s" % st.session_state.get("_probe_n", 0)):
+        # Streamlit Cloud can re-run app.py while keeping an already-imported
+        # module in memory, so new code calls into an old module. This button is
+        # the one people press when something is ALREADY wrong; it must not add
+        # a red traceback to the pile. Name the condition instead.
+        run = getattr(remote, "probe", None)
+        if run is None:
+            st.markdown(
+                '<div class="banner" style="margin-top:8px;border-color:var(--warn);'
+                'color:var(--warn)"><b>The app is running old code.</b> Streamlit Cloud '
+                're-ran this page against a stale copy of the storage module. Reboot app '
+                'from the Cloud menu &mdash; the storage itself is fine, this check just '
+                'is not there yet.</div>', unsafe_allow_html=True)
+            return
         with st.spinner("Writing to the data branch and reading it back\u2026"):
-            got = remote.probe()
+            got = run()
         st.markdown(
             '<div class="banner" style="margin-top:8px;border-color:%s;color:%s">'
             '<b>%s</b> %s</div>' % (

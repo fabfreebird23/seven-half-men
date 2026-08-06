@@ -188,3 +188,14 @@ def test_a_stale_read_back_is_still_a_pass(monkeypatch):
     monkeypatch.setattr(remote, "write", lambda *a: True)
     monkeypatch.setattr(remote, "read", lambda p: {"checked_at": "an older stamp"})
     assert remote.probe()["ok"]
+
+
+def test_the_check_button_survives_a_stale_module(monkeypatch):
+    """Streamlit Cloud re-runs app.py while keeping already-imported modules, so
+    new code can call into an old module. This button is the one people press
+    when something is already wrong - it must not add a traceback to the pile."""
+    import importlib
+    from pathlib import Path
+    src = Path(__file__).resolve().parent.parent / "app.py"
+    assert 'getattr(remote, "probe", None)' in src.read_text()
+    assert "running old code" in src.read_text()
