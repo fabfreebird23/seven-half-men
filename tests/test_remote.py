@@ -121,3 +121,70 @@ def test_the_read_carries_a_cache_buster(monkeypatch):
     remote._fetch("p"); remote._fetch("p")
     assert all("_" in p for p in seen)
     assert seen[0]["_"] != seen[1]["_"], "the buster has to actually change"
+
+
+def test_the_probe_names_the_actual_failure(monkeypatch):
+    """"Is my token set up right" has four different wrong answers and they need
+    four different fixes. Reading config can only distinguish one of them."""
+    monkeypatch.setattr(remote, "config", lambda: None)
+    assert "TOML" in remote.probe()["detail"], "unparsed secrets is the common one"
+
+    monkeypatch.setattr(remote, "config", lambda: ("t", "r/x", "b"))
+
+    class Resp:
+        def __init__(self, code): self.status_code = code
+
+    monkeypatch.setattr("requests.get", lambda url, **k: Resp(401))
+    assert "revoked" in remote.probe()["detail"]
+
+    monkeypatch.setattr("requests.get",
+                        lambda url, **k: Resp(200 if url.endswith("/user") else 404))
+    assert "Repository access" in remote.probe()["detail"]
+
+    monkeypatch.setattr("requests.get", lambda url, **k: Resp(200))
+    monkeypatch.setattr(remote, "write", lambda *a: False)
+    assert "read and write" in remote.probe()["detail"]
+
+
+def test_the_probe_confirms_a_real_round_trip(monkeypatch):
+    monkeypatch.setattr(remote, "config", lambda: ("t", "fab/repo", "league-data"))
+
+    class Resp:
+        status_code = 200
+
+    monkeypatch.setattr("requests.get", lambda url, **k: Resp())
+    store = {}
+    monkeypatch.setattr(remote, "write",
+                        lambda p, d, m: bool(store.__setitem__(p, d)) or True)
+    monkeypatch.setattr(remote, "read", lambda p: store.get(p))
+    got = remote.probe()
+    assert got["ok"]
+    assert "league-data" in got["detail"]
+
+
+def test_a_write_that_cannot_be_read_back_at_all_fails(monkeypatch):
+    monkeypatch.setattr(remote, "config", lambda: ("t", "fab/repo", "b"))
+
+    class Resp:
+        status_code = 200
+
+    monkeypatch.setattr("requests.get", lambda url, **k: Resp())
+    monkeypatch.setattr(remote, "write", lambda *a: True)
+    monkeypatch.setattr(remote, "read", lambda p: None)
+    assert not remote.probe()["ok"]
+
+
+def test_a_stale_read_back_is_still_a_pass(monkeypatch):
+    """GitHub's CDN can serve the previous body for another minute and the
+    cache-buster does not reliably beat it - measured against the real repo. A
+    probe that failed on that would cry wolf every time; freshness is the
+    own-write hold's job, not this check's."""
+    monkeypatch.setattr(remote, "config", lambda: ("t", "fab/repo", "b"))
+
+    class Resp:
+        status_code = 200
+
+    monkeypatch.setattr("requests.get", lambda url, **k: Resp())
+    monkeypatch.setattr(remote, "write", lambda *a: True)
+    monkeypatch.setattr(remote, "read", lambda p: {"checked_at": "an older stamp"})
+    assert remote.probe()["ok"]

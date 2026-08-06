@@ -313,13 +313,24 @@ API, and a read failure serves the last good value rather than an empty board.
 Any push failure degrades to the local file instead of raising — a save is never
 lost, only made fragile.
 
-Two things guard against GitHub's own staleness, both found by running the real
-round trip against the real repo rather than a mock: the contents API is served
-through a CDN that holds a copy for up to a minute, so **an overwrite read back
-the previous value**. Reads now carry a cache-busting parameter, and for ninety
+GitHub's own staleness is the thing to design around, and it was found by running
+the real round trip against the real repo rather than a mock: the contents API is
+served through a CDN that holds a copy for up to a minute, so **an overwrite read
+back the previous value**. Reads carry a cache-busting parameter, but measurement
+says that does not reliably beat it — so the real defence is that for ninety
 seconds after a write this process trusts what it wrote over anything the API
 hands back. On the night, the alternative is the commissioner opening an envelope
-and the board rolling backwards in front of the room. The commissioner surfaces say which mode they are in,
+and the board rolling backwards in front of the room.
+
+**Testing it**: Pre-Season → Draft → Enter results has a *Test the connection*
+button behind the commissioner password. "Is my token set up right" is not
+answerable by reading config — a token can be present and expired, present and
+scoped to the wrong repository, or the secrets file can have failed to parse and
+left nothing at all — so the button does the real thing and names the actual
+failure. It deliberately does **not** require the read-back to be byte-fresh; a
+stale-but-present body still proves the read path works, and a probe that failed
+on CDN lag would cry wolf. Each run leaves a `connection check` commit on the
+branch, which doubles as a record of when it was last known good. The commissioner surfaces say which mode they are in,
 so nobody types in a draft that is about to evaporate.
 
 The Sleeper cache under `data/` is *not* covered by this and does not need to be:

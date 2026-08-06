@@ -82,16 +82,36 @@ def draw_lock_ui(placeholder: str = "password to run the draw",
     return False
 
 
-def storage_note() -> str:
-    """One line telling the commissioner whether what they are about to type in
-    will still be here tomorrow. Streamlit Cloud deletes the container's disk on
-    every reboot, so this is not a detail worth hiding."""
+def storage_note(check: bool = False) -> None:
+    """Whether what you are about to type in will still be here tomorrow.
+
+    Streamlit Cloud deletes the container's disk on every reboot, so this is not
+    a detail worth hiding. `check` adds a button that actually tries it, because
+    a token can be present and expired, present and scoped to the wrong
+    repository, or the whole secrets file can have failed to parse - and none of
+    those are visible from config alone.
+    """
     if remote.enabled():
-        return ('<div class="tiny" style="margin-top:8px">Saved to the league data branch '
-                '&mdash; this survives a reboot or a redeploy.</div>')
-    return ('<div class="tiny" style="margin-top:8px;color:var(--warn)">Saved to this '
-            'container only. Set <code>github_token</code> in the app secrets to make it '
-            'durable &mdash; otherwise a Streamlit reboot wipes it.</div>')
+        st.markdown('<div class="tiny" style="margin-top:8px">Saved to the league data '
+                    'branch &mdash; this survives a reboot or a redeploy.</div>',
+                    unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="tiny" style="margin-top:8px;color:var(--warn)">Saved to '
+                    'this container only. Set <code>github_token</code> in the app secrets '
+                    'to make it durable &mdash; otherwise a Streamlit reboot wipes it.</div>',
+                    unsafe_allow_html=True)
+    if not check:
+        return
+    if st.button("Test the connection", key="probe_%s" % st.session_state.get("_probe_n", 0)):
+        with st.spinner("Writing to the data branch and reading it back\u2026"):
+            got = remote.probe()
+        st.markdown(
+            '<div class="banner" style="margin-top:8px;border-color:%s;color:%s">'
+            '<b>%s</b> %s</div>' % (
+                "var(--acc)" if got["ok"] else "var(--bad)",
+                "var(--ink)" if got["ok"] else "var(--bad)",
+                "Durable." if got["ok"] else "Not durable.", esc(got["detail"])),
+            unsafe_allow_html=True)
 
 
 def first_draw() -> dict:
@@ -1371,7 +1391,7 @@ def render_draft(leaf=None):
         with c2:
             if st.button("Clear this draft", disabled=not unlocked or not existing):
                 picks.clear(which, SEASON); st.rerun()
-        st.markdown(storage_note(), unsafe_allow_html=True)
+        storage_note(check=unlocked)
 
         if do_import:
             got = picks.parse(pasted, pick_order, rounds, snake)
@@ -1532,7 +1552,7 @@ def render_lottery(leaf=None):
                     'something you have to take on trust. Re-drawing overwrites it.</div>' % (
                         existing.get("seed"), esc((existing.get("drawn_at") or "")[:10])),
                     unsafe_allow_html=True)
-            st.markdown(storage_note(), unsafe_allow_html=True)
+            storage_note()
         draw = first_draw()
 
     if FIRST and draw:

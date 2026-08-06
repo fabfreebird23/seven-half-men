@@ -151,6 +151,68 @@ def write(path: str, data: dict, message: str) -> bool:
     return False
 
 
+PROBE_PATH = "data/_connection.json"
+
+
+def probe() -> Dict[str, Any]:
+    """Actually try it, and say what happened.
+
+    "Is my token set up right" is not answerable by reading config - a token can
+    be present and expired, present and scoped to the wrong repo, or the secrets
+    file can have failed to parse and left nothing behind at all. So this does
+    the real thing: writes a small file to the data branch and reads it back.
+
+    Returns {ok, detail}. `detail` is written to be read by whoever is standing
+    in front of the app, not by a log.
+    """
+    conf = config()
+    if not conf:
+        return {"ok": False, "detail":
+                "No token is reaching the app. Either github_token is missing from the "
+                "secrets, or the secrets failed to parse \u2014 the value has to be "
+                "wrapped in double quotes, because that box is TOML."}
+    tok, repo, branch = conf
+
+    try:
+        import requests
+        who = requests.get("%s/user" % _API, headers=_headers(tok), timeout=15)
+        if who.status_code == 401:
+            return {"ok": False, "detail":
+                    "GitHub rejected the token (401). It has been revoked, or it expired, "
+                    "or part of it was lost in the paste."}
+        r = requests.get("%s/repos/%s" % (_API, repo), headers=_headers(tok), timeout=15)
+        if r.status_code == 404:
+            return {"ok": False, "detail":
+                    "The token cannot see %s. A fine-grained token has to name this "
+                    "repository under Repository access." % repo}
+    except Exception as exc:
+        return {"ok": False, "detail": "Could not reach GitHub: %s" % exc}
+
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    if not write(PROBE_PATH, {"checked_at": stamp, "branch": branch},
+                 "connection check: %s" % stamp):
+        return {"ok": False, "detail":
+                "The token reaches %s but cannot write to it. It needs Contents: read and "
+                "write, not just read." % repo}
+
+    # Read it back over the wire, ignoring what we just cached. Deliberately NOT
+    # comparing the timestamp: GitHub's CDN can still be serving the previous
+    # body for another minute, and the cache-buster does not reliably defeat it
+    # (measured, not assumed). A stale-but-present body proves the read path
+    # works, which is the only thing a token check can honestly claim. Freshness
+    # is the job of the own-write hold in read(), not of this probe.
+    invalidate(PROBE_PATH)
+    back = read(PROBE_PATH)
+    if not back or "checked_at" not in back:
+        return {"ok": False, "detail":
+                "The write landed but reading it back returned nothing. The token can "
+                "write to %s and not read it, which should not be possible \u2014 check "
+                "the permissions." % repo}
+    return {"ok": True, "detail":
+            "Wrote to %s on the %s branch and read it back. Keeper slips, the draw and any "
+            "entered picks will survive a reboot." % (repo, branch)}
+
+
 def invalidate(path: str = None) -> None:
     """Forget everything cached, including our own writes. Used by tests."""
     if path is None:
