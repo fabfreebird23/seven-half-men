@@ -194,6 +194,41 @@ h3.k{
            background:var(--acc2-soft); }
 .chip.solid{ background:var(--acc2); color:var(--acc2-ink); border-color:var(--acc2); font-weight:600; }
 
+/* ---- minutes --------------------------------------------------------- */
+/* Set in the data face rather than the body face: these are typed notes, not
+   prose, and they should not look like the rulebook they sit under. Hanging
+   dashes and real indentation, because an outline that loses its levels stops
+   being funny. */
+.mins{ border:1px solid var(--line2); border-radius:12px; background:var(--card);
+       overflow:hidden; margin:2px 0 8px; }
+.mins .head{ padding:14px 18px; border-bottom:1px solid var(--line);
+             background:linear-gradient(90deg,var(--card2),transparent 70%);
+             display:flex; align-items:baseline; justify-content:space-between;
+             gap:14px; flex-wrap:wrap; }
+.mins .head .t{ font-family:var(--f-display); font-size:21px; text-transform:uppercase;
+                line-height:1; }
+.mins .head .t small{ display:block; font-family:var(--f-data); font-size:9.5px;
+                      letter-spacing:.16em; color:var(--dim); margin-bottom:5px; }
+.mins .head .by{ font-family:var(--f-data); font-size:10px; letter-spacing:.12em;
+                 text-transform:uppercase; color:var(--acc); white-space:nowrap; }
+.mins .note{ padding:12px 18px 0; font-size:12.5px; color:var(--dim); }
+.mins ul{ list-style:none; margin:0; padding:14px 18px 18px; font-family:var(--f-data);
+          font-size:13px; line-height:1.65; }
+.mins ul ul{ padding:2px 0 2px 20px; font-size:12.5px; }
+.mins ul ul ul{ font-size:12px; }
+.mins li{ position:relative; padding-left:17px; margin:3px 0; color:var(--ink);
+          font-family:var(--f-data); font-size:inherit; line-height:1.65; }
+.mins li::before{ content:"–"; position:absolute; left:0; color:var(--line2); }
+.mins ul ul > li{ color:var(--ink2); }
+.mins ul ul > li::before{ content:"○"; font-size:9px; top:.25em; }
+.mins ul ul ul > li{ color:var(--dim); }
+.mins ul ul ul > li::before{ content:"▪"; font-size:9px; top:.15em; }
+
+@media(max-width:640px){
+  .mins ul{ font-size:12.5px; padding:12px 14px 15px; }
+  .mins ul ul{ padding-left:15px; }
+}
+
 /* ---- the agenda ------------------------------------------------------ */
 /* Year one is nothing but rule questions, and the answers were living in a
    group chat where they scroll away. Front page, with the real options beside

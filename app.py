@@ -20,6 +20,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from halfmen import (adp_board, agenda, config, draftboard, engine, history, lottery,
+                     minutes,
                      picks, pot, remote, rulebook, sleeper, storage, taxi, theme,
                      valueboard)
 
@@ -817,8 +818,10 @@ def render_rules(leaf=None):
         'actually enforces — the numbers are read out of the same config the engine runs on, so '
         'the two cannot drift apart. It is our first season, so treat the last section as '
         'genuinely open.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="toc">%s</div>' % "".join(
-        '<a href="#%s">%s</a>' % (a, esc(t)) for a, t, _, _ in secs), unsafe_allow_html=True)
+    st.markdown('<div class="toc">%s%s</div>' % (
+        "".join('<a href="#%s">%s</a>' % (a, esc(t)) for a, t, _, _ in secs),
+        '<a href="#minutes-%s">Minutes</a>' % esc(minutes.latest().get("date", ""))
+        if minutes.count() else ""), unsafe_allow_html=True)
 
     for anchor_id, title, stand, blocks in secs:
         theme.bar(title, "")
@@ -826,6 +829,35 @@ def render_rules(leaf=None):
             '<div class="rule" id="%s"><div class="stand">%s</div>%s</div>' % (
                 anchor_id, stand, "".join(render_block(*b) for b in blocks)),
             unsafe_allow_html=True)
+
+    render_minutes()
+
+
+def outline(items) -> str:
+    """Nested list, kept at whatever depth it was written at."""
+    return "<ul>%s</ul>" % "".join(
+        "<li>%s%s</li>" % (line, outline(kids) if kids else "") for line, kids in items)
+
+
+def render_minutes() -> None:
+    """The other record of a meeting.
+
+    The rulebook above says what was decided. This says what it was like, which
+    is the one anybody will actually reread in three years. Transcribed verbatim
+    - tidying somebody else's jokes is how you kill them.
+    """
+    if not minutes.count():
+        return
+    theme.bar("Minutes", "%d meeting%s &middot; verbatim" % (
+        minutes.count(), "" if minutes.count() == 1 else "s"))
+    for m in minutes.MEETINGS:
+        st.markdown(
+            '<div class="mins" id="minutes-%s"><div class="head">'
+            '<div class="t"><small>%s</small>%s</div>'
+            '<div class="by">minuted by %s</div></div>%s%s</div>' % (
+                esc(m["date"]), esc(m["date"]), esc(m["title"]), esc(m["minuted_by"]),
+                ('<div class="note">%s</div>' % m["note"]) if m.get("note") else "",
+                outline(m["items"])), unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------

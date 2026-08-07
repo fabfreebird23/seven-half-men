@@ -421,6 +421,27 @@ it rebuilds itself from the API.
 - The pot cap is $200 as configured; worth re-checking against the championship
   payout once that is set.
 
+## Minutes
+
+`halfmen/minutes.py` holds the record of league meetings, rendered at the foot of
+the Rules page. The rulebook above it says what was decided; this says what it
+was like, and it is the one anybody will actually reread in three years.
+
+Transcribed **verbatim** — nothing tidied, paraphrased or improved, because
+editing somebody else's jokes is how you kill them. A test pins four of the lines
+for exactly that reason. The outline keeps whatever depth it was written at, and
+is set in the data face rather than the body face so it reads as typed notes
+rather than as more rulebook.
+
+It rides along on an existing page rather than buying a nav leaf — ten leaves was
+the whole point of the last navigation pass.
+
+> Watch the CSS escapes here. `content:"\2013"` inside a Python string is an
+> *octal* escape (`\201` + `"3"`) long before CSS sees it, which rendered the
+> bullets as garbage. The markers are literal characters now. Streamlit also
+> styles `li` directly inside its markdown container, which beats a font-family
+> inherited from the parent `ul` — so the face is set on the `li`.
+
 ## The Rules page
 
 `halfmen/rulebook.py` holds the rulebook as structured prose — eleven sections
