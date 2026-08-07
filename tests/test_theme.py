@@ -278,3 +278,14 @@ def test_the_bottom_bar_clears_the_home_indicator():
     css = theme.css()
     assert "env(safe-area-inset-bottom)" in css
     assert css.count("env(safe-area-inset-bottom)") >= 3, "bar, sheet and page padding"
+
+
+def test_the_fingerprint_is_still_reachable_after_leaving_the_masthead():
+    """It came off the face of the masthead as clutter, not as a capability.
+    Diagnosing a stale Streamlit Cloud module still needs it, so it moved to the
+    title attribute rather than being deleted."""
+    from pathlib import Path
+    src = (Path(__file__).resolve().parent.parent / "halfmen" / "theme.py").read_text()
+    mast = src[src.index("def masthead"):src.index("def bar(")]
+    assert 'title="build %s"' in mast
+    assert "&middot; build" not in mast, "not on the face of it any more"

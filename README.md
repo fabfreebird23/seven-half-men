@@ -531,12 +531,16 @@ it rebuilds itself from the API.
 - Sleeper's own `is_keeper` flag has been unreliable across seasons in the
   sibling leagues, so keeper years are counted from our own submitted ledger
   (`storage.load`) rather than trusted from the API.
-- **The masthead carries a six-character build fingerprint**, a hash of the
+- **The masthead carries a six-character build fingerprint** in its `title`
+  attribute — hover the wordmark to read it. It is a hash of the
   injected stylesheet. Streamlit Cloud can re-run `app.py` while keeping an
   already-imported module in memory, so a deploy lands with the *old* CSS still
   being injected and nothing on the page says so — it has bitten all three of
   these dashboards. If the page looks wrong and the fingerprint has not moved,
   the process needs a **Reboot app** from the Cloud menu, not another commit.
+  It used to be printed on the face of the masthead; that was diagnostic clutter
+  sitting on the brand band, so it moved to the tooltip rather than being
+  deleted — the capability is the point, not the placement.
 - The league is still configured as **dynasty** on Sleeper (`type: 2`), which is
   why `max_keepers` reads 1 and the draft shows 2 rounds. Switch it to keeper
   after the two 2026 drafts and set `max_keepers` to 5.

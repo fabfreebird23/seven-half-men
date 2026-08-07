@@ -162,9 +162,11 @@ html, body, [class*="css"], .stMarkdown, p, li, span, label{
    put that space back inside the band. */
 .mast{ display:flex; align-items:baseline; gap:9px; line-height:1;
        background:var(--acc); color:#fff;
-       margin:-96px -1.2rem 18px; padding:22px 1.2rem 16px;
+       margin:-96px calc(50% - 50vw) 18px; padding:22px max(1.2rem, calc(50vw - 50%)) 16px;
        border-radius:0 0 14px 14px; flex-wrap:wrap; }
 @media (max-width:640px){ .mast{ margin-top:-72px; padding-top:16px; } }
+/* full-bleed: pull out to the viewport edges, then pad back in to the
+   content column so the wordmark still lines up with everything below. */
 .mast .the{ font-family:var(--f-script); font-size:24px; color:rgba(255,255,255,.94);
             transform:translateY(3px); line-height:1; }
 .mast .name{
@@ -872,11 +874,16 @@ def inject(palette: str = None) -> str:
 
 
 def masthead(subtitle: str) -> None:
-    subtitle = "%s &middot; build %s" % (subtitle, fingerprint())
+    # The build fingerprint is off the face of the masthead - it was diagnostic
+    # clutter sitting on the brand band - but it is not gone. It rides in the
+    # title attribute, so hovering the wordmark still answers the only question
+    # it was ever there for: is Streamlit Cloud serving this build, or a stale
+    # module with the old stylesheet still in memory?
     st.markdown(
-        '<div class="mast"><span class="the">the</span>'
+        '<div class="mast" title="build %s"><span class="the">the</span>'
         '<span class="name">7<span class="half">&frac12;</span> Men</span>'
-        '<span class="yr">%s</span></div>' % subtitle, unsafe_allow_html=True)
+        '<span class="yr">%s</span></div>' % (fingerprint(), subtitle),
+        unsafe_allow_html=True)
 
 
 def bar(title: str, note: str = "") -> None:

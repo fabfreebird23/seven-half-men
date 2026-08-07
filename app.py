@@ -288,9 +288,11 @@ lg = state["league"] or {}
 # Floodlight mock has it.
 theme.inject()
 
+# The masthead is a full-bleed band now, so it cannot live inside a column -
+# a column would clip it to three fifths of the page and leave the band
+# stopping in mid-air.
+theme.masthead("%d \u00b7 %s" % (SEASON, "season one" if FIRST else "offseason"))
 head_l, head_r = st.columns([3, 2])
-with head_l:
-    theme.masthead("%d \u00b7 %s" % (SEASON, "season one" if FIRST else "offseason"))
 with head_r:
     _ids = owner_ids()
     VIEW = _viewer()
