@@ -649,24 +649,85 @@ def my_card(view: str) -> None:
 
 
 def render_agenda() -> None:
-    """The open votes, on the front page.
+    """The open votes, as actual polls.
 
-    Year one is nothing but rule questions and the answers were living in a
-    group chat where they scroll away. The options sit next to each question so
-    a vote does not have to open by re-explaining the choice.
+    Everyone is holding a phone anyway, so the room can answer on the page
+    instead of shouting over each other and somebody trying to remember the
+    count. Votes are stored on the data branch, so every manager sees the tally
+    move as it happens rather than each browser keeping its own idea of it.
+
+    There is no login here - identity comes from the team picker at the top,
+    which any of eight friends could change. That is fine for this; it is a
+    tally to argue over, not a ballot box.
     """
     items = agenda.open_items()
-    if items:
-        theme.bar("On the table", "%d to vote on" % len(items))
-        st.markdown('<div class="agenda">%s</div>' % "".join(
-            '<div class="it"><div class="h"><span class="n">%02d</span>'
-            '<span class="t">%s</span></div><div class="why">%s</div>'
-            '<div class="opts">%s</div>%s</div>' % (
-                i + 1, esc(it["title"]), it["why"],
-                "".join('<div class="o"><div class="lab">%s</div><div class="d">%s</div></div>'
-                        % (esc(lab), note) for lab, note in it["options"]),
-                ('<div class="foot">%s</div>' % it["note"]) if it.get("note") else "")
-            for i, it in enumerate(items)), unsafe_allow_html=True)
+    if not items:
+        return
+
+    try:
+        tallies = storage.votes(SEASON)
+    except Exception:
+        tallies = {}
+    everyone = owner_ids()
+    answered = sum(1 for it in items if len(tallies.get(it["id"]) or {}) >= len(everyone))
+
+    theme.bar("On the table", "%d to vote on &middot; %d closed" % (len(items), answered))
+    st.markdown(
+        '<div class="banner">Tap your answer. Everyone sees the tally move, and you can change '
+        'your mind until we call it. Who you are voting as comes from the picker at the top of '
+        'the page &mdash; check it says <b>you</b> before you start.</div>',
+        unsafe_allow_html=True)
+
+    for n, it in enumerate(items, 1):
+        cast = dict(tallies.get(it["id"]) or {})
+        mine = cast.get(str(VIEW))
+        labels = [lab for lab, _ in it["options"]]
+
+        st.markdown(
+            '<div class="agenda"><div class="it"><div class="h"><span class="n">%02d</span>'
+            '<span class="t">%s</span></div><div class="why">%s</div></div></div>' % (
+                n, esc(it["title"]), it["why"]), unsafe_allow_html=True)
+
+        picked = st.radio(
+            it["title"], list(range(len(labels))),
+            index=mine if mine is not None and mine < len(labels) else None,
+            format_func=lambda i, _l=labels: _l[i],
+            key="vote_%s" % it["id"], label_visibility="collapsed")
+        if picked is not None and picked != mine:
+            try:
+                storage.record_vote(it["id"], VIEW, int(picked), SEASON)
+            except Exception:
+                st.markdown('<div class="tiny" style="color:var(--bad)">That did not save '
+                            '&mdash; try again.</div>', unsafe_allow_html=True)
+            else:
+                st.rerun()
+
+        # The reasoning under each option, plus wherever the room has landed.
+        counts = [sum(1 for v in cast.values() if v == i) for i in range(len(labels))]
+        top = max(counts) if counts else 0
+        st.markdown('<div class="agenda"><div class="it" style="padding-top:2px">'
+                    '<div class="opts">%s</div>%s%s</div></div>' % (
+            "".join(
+                '<div class="o%s"><div class="lab">%s%s</div><div class="d">%s</div>'
+                '<div class="tally"><span class="bar"><i style="width:%d%%"></i></span>'
+                '<span class="c">%d</span></div></div>' % (
+                    " lead" if counts[i] and counts[i] == top else "",
+                    esc(labels[i]),
+                    ' <span class="you">yours</span>' if mine == i else "",
+                    note, (counts[i] * 100 // max(1, len(everyone))), counts[i])
+                for i, (_lab, note) in enumerate(it["options"])),
+            ('<div class="foot">%s</div>' % it["note"]) if it.get("note") else "",
+            '<div class="waiting">%s</div>' % _waiting_on(cast, everyone)),
+            unsafe_allow_html=True)
+
+
+def _waiting_on(cast: dict, everyone: list) -> str:
+    missing = [o for o in everyone if str(o) not in cast]
+    if not missing:
+        return "All %d in." % len(everyone)
+    if len(missing) > 3:
+        return "%d of %d voted." % (len(everyone) - len(missing), len(everyone))
+    return "Waiting on %s." % esc(", ".join(who(o) for o in missing))
 
 
 def render_home(leaf=None):

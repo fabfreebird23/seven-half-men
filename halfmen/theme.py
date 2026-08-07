@@ -210,11 +210,25 @@ h3.k{
 .agenda .it .why{ font-size:12.5px; color:var(--ink2); line-height:1.55; margin:7px 0 0;
                   max-width:74ch; }
 .agenda .opts{ display:grid; gap:7px; margin-top:11px; }
-.agenda .o{ display:grid; grid-template-columns:auto 1fr; gap:11px; align-items:baseline;
-            background:var(--card2); border:1px solid var(--line); border-radius:8px;
-            padding:9px 12px; }
-.agenda .o .lab{ font-weight:650; font-size:13px; white-space:nowrap; }
+/* An option row is label, reasoning, and where the room has landed. The tally
+   is a bar rather than a bare count so a split reads at a glance from across a
+   table, which is the only place anyone will be looking at this tonight. */
+.agenda .o{ display:grid; grid-template-columns:minmax(0,auto) 1fr 84px; gap:11px;
+            align-items:center; background:var(--card2); border:1px solid var(--line);
+            border-radius:8px; padding:9px 12px; }
+.agenda .o.lead{ border-color:color-mix(in srgb,var(--acc) 40%,transparent); }
+.agenda .o .lab{ font-weight:650; font-size:13px; }
 .agenda .o .d{ font-size:11.5px; color:var(--dim); line-height:1.45; }
+.agenda .o .you{ font-family:var(--f-data); font-size:9px; letter-spacing:.12em;
+                 text-transform:uppercase; color:var(--acc); margin-left:6px; }
+.agenda .tally{ display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+.agenda .tally .bar{ flex:1; height:6px; border-radius:99px; background:var(--card);
+                     border:1px solid var(--line); overflow:hidden; }
+.agenda .tally .bar i{ display:block; height:100%; background:var(--acc); }
+.agenda .tally .c{ font-family:var(--f-data); font-size:12px; color:var(--ink);
+                   font-variant-numeric:tabular-nums; min-width:1ch; text-align:right; }
+.agenda .waiting{ font-family:var(--f-data); font-size:10px; letter-spacing:.12em;
+                  text-transform:uppercase; color:var(--dim); margin-top:9px; }
 .agenda .it .foot{ font-size:11.5px; color:var(--warn); margin-top:9px; }
 .agenda .done{ display:grid; grid-template-columns:auto 1fr; gap:11px; align-items:baseline;
                padding:11px 18px; border-top:1px solid var(--line); }
@@ -223,8 +237,9 @@ h3.k{
 .agenda .done .tick{ color:var(--good); font-family:var(--f-data); font-size:11px; }
 
 @media(max-width:640px){
-  .agenda .o{ grid-template-columns:1fr; gap:3px; }
-  .agenda .o .lab{ white-space:normal; }
+  .agenda .o{ grid-template-columns:1fr auto; gap:3px 10px; }
+  .agenda .o .d{ grid-column:1/-1; }
+  .agenda .tally{ grid-row:1; grid-column:2; width:72px; }
   .agenda .done{ grid-template-columns:1fr; gap:3px; }
 }
 

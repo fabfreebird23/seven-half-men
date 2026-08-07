@@ -104,6 +104,68 @@ def lock(season: int = None) -> None:
 
 
 # --------------------------------------------------------------------------
+# league votes
+# --------------------------------------------------------------------------
+
+def votes(season: int = None) -> Dict[str, Dict[str, int]]:
+    """item id -> {owner_id: option index}."""
+    return dict((load(season) or {}).get("votes") or {})
+
+
+def record_vote(item: str, owner_id: str, choice: int, season: int = None) -> Dict[str, int]:
+    """One manager's answer to one question.
+
+    Goes through remote.mutate rather than load-then-save, because eight people
+    voting from a bar at the same moment each hold a copy of the file from before
+    the others voted - and a plain write would drop whichever ones landed in
+    between. The mutation re-reads inside the retry loop, so a vote is only ever
+    added on top of the current file.
+    """
+    season = int(season or config.season())
+
+    def apply(data):
+        data = dict(data or {})
+        data.setdefault("season", season)
+        v = dict(data.get("votes") or {})
+        row = dict(v.get(item) or {})
+        row[str(owner_id)] = int(choice)
+        v[item] = row
+        data["votes"] = v
+        return data
+
+    if remote.enabled():
+        got = remote.mutate(_remote_path(season), apply, "vote: %s" % item)
+        if got is not None:
+            # keep the container copy in step so a Cloud restart has something
+            config.DATA_DIR.mkdir(exist_ok=True)
+            _path(season).write_text(json.dumps(got, indent=2, sort_keys=True))
+            return dict(got.get("votes", {}).get(item) or {})
+
+    data = apply(load(season))
+    save(data, season)
+    return dict(data.get("votes", {}).get(item) or {})
+
+
+def clear_votes(item: str = None, season: int = None) -> None:
+    def apply(data):
+        data = dict(data or {})
+        if item is None:
+            data["votes"] = {}
+        else:
+            v = dict(data.get("votes") or {})
+            v.pop(item, None)
+            data["votes"] = v
+        return data
+
+    if remote.enabled():
+        got = remote.mutate(_remote_path(int(season or config.season())), apply,
+                            "clear vote: %s" % (item or "all"))
+        if got is not None:
+            return
+    save(apply(load(season)), season)
+
+
+# --------------------------------------------------------------------------
 # the year-one draw
 # --------------------------------------------------------------------------
 

@@ -213,6 +213,50 @@ def probe() -> Dict[str, Any]:
             "entered picks will survive a reboot." % (repo, branch)}
 
 
+def mutate(path: str, fn, message: str) -> Optional[dict]:
+    """Read-modify-write against the live file, retrying a lost race.
+
+    `write` sends whatever the caller already had in hand, which is fine for a
+    blob one person edits. It is wrong for votes: eight managers tapping at once
+    each hold a copy from before the others voted, and last-write-wins would eat
+    the ones in between. This re-fetches inside the retry loop so `fn` always
+    applies to the current file, and a 409 means somebody beat us - so we go
+    round again on top of their version rather than over it.
+
+    Returns the stored data, or None if it could not be written.
+    """
+    conf = config()
+    if not conf:
+        return None
+    tok, repo, branch = conf
+    try:
+        import requests
+        _ensure_branch(repo, branch, tok)
+        for _ in range(5):
+            current, sha = _fetch(path)
+            data = fn(current or {})
+            body = {
+                "message": message,
+                "content": base64.b64encode(
+                    json.dumps(data, indent=2, sort_keys=True).encode()).decode(),
+                "branch": branch,
+            }
+            if sha:
+                body["sha"] = sha
+            r = requests.put("%s/repos/%s/contents/%s" % (_API, repo, path),
+                             headers=_headers(tok), json=body, timeout=20)
+            if r.status_code in (200, 201):
+                now = time.time()
+                _cache[path] = (now, data)
+                _own[path] = (now, data)
+                return data
+            if r.status_code != 409:
+                return None
+    except Exception:
+        return None
+    return None
+
+
 def invalidate(path: str = None) -> None:
     """Forget everything cached, including our own writes. Used by tests."""
     if path is None:
