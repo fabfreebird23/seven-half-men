@@ -155,6 +155,44 @@ Draft-pick caching drops from fifteen minutes to about one while a draft is
 live, and the drafts list from an hour to five minutes — an hour of the board
 insisting nothing has started is an hour of people refreshing.
 
+## The draft room
+
+**Pre-Season → Draft → Draft room**, behind the commissioner password. This is
+where the veteran draft actually happens: eight people round a table, one
+screen, somebody walks up and says or types a name and it goes on the board. No
+ADP, no suggestions, no rankings — that is the whole brief.
+
+**This app is the record.** Picks are written to the season blob, which the value
+board, the wire and every keeper price already read from, so nothing needs
+re-entering anywhere afterwards.
+
+**Voice.** Hold the button or hold `V`, say the name, and the pick is entered.
+The browser only captures audio: the transcript comes back through the URL and
+`halfmen/voice.py` does the matching, so the part that can get a pick wrong is
+the part that is unit-tested rather than a lump of JavaScript nobody can run
+assertions against.
+
+The matching is the hard bit, because speech mangles these names badly and
+predictably. Two rules, both learned by watching the first version get it wrong:
+
+- **Compare word by word, never against one flattened string.** "puka nakua"
+  concatenates to `pukanakua`, which contains `kanak` — and the first version
+  drafted Jaren Kanak off exactly that.
+- **Use the first name to break surname ties.** "amon ra saint brown" hits Brown
+  twice, and A.J. Brown is not who anyone meant.
+
+Adjacent words are joined as candidates too, because speech splits names as
+readily as it runs them together — "Achane" comes back as "a shane" about as
+often as not.
+
+It commits outright only when the match is strong **and** nothing else is close
+(`score ≥ 0.80`, `margin ≥ 0.08`). A thin margin means two players it cannot
+separate, which is the one case where asking beats acting — there it fills the
+picker and waits. Undo is one button, because somebody will say the wrong name.
+
+Voice needs **Chrome or Edge**; Safari and Firefox get a disabled button that
+says so. It also needs HTTPS or localhost, which Streamlit Cloud satisfies.
+
 ## The two draft boards
 
 **Pre-Season → Draft → Rookie draft** is the one that runs first: 2 rounds, 16

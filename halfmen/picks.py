@@ -40,6 +40,53 @@ def clear(kind: str, season: int = None) -> None:
     save(kind, [], season)
 
 
+def board_seats(order: List[str], rounds: int, snake: bool = True) -> List[dict]:
+    """Every seat on the board, in the order picks are actually made.
+
+    `label` is the pick number within its round, NOT the seat number. In a snake
+    those are opposites on even rounds, and mixing them is how a board ends up
+    labelled one way and read out another.
+    """
+    seats = []
+    n = len(order)
+    for rnd in range(1, rounds + 1):
+        row = list(order) if (not snake or rnd % 2 == 1) else list(reversed(order))
+        for i, owner in enumerate(row):
+            seats.append({"round": rnd, "pick": i + 1, "owner_id": owner,
+                          "label": "%d.%02d" % (rnd, i + 1)})
+    return seats
+
+
+def add(kind: str, player: dict, order: List[str], rounds: int,
+        snake: bool = True, season: int = None) -> dict:
+    """Put one player in the next open seat. Returns the pick, or {} if full."""
+    made = load(kind, season)
+    seats = board_seats(order, rounds, snake)
+    if len(made) >= len(seats):
+        return {}
+    seat = seats[len(made)]
+    pick = {"round": seat["round"], "pick": seat["pick"], "owner_id": seat["owner_id"],
+            "player_id": str(player["id"]), "name": player["name"],
+            "position": player.get("position", "")}
+    save(kind, made + [pick], season)
+    return pick
+
+
+def undo(kind: str, season: int = None) -> dict:
+    """Take the last pick back. Somebody will say the wrong name."""
+    made = load(kind, season)
+    if not made:
+        return {}
+    last = made[-1]
+    save(kind, made[:-1], season)
+    return last
+
+
+def taken_ids(kind: str = None, season: int = None) -> set:
+    kinds = (kind,) if kind else (ROOKIE, VETERAN)
+    return {str(p["player_id"]) for k in kinds for p in load(k, season)}
+
+
 def recorded(season: int = None) -> int:
     return sum(len(load(k, season)) for k in (ROOKIE, VETERAN))
 

@@ -20,7 +20,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from halfmen import (adp_board, agenda, config, draftboard, engine, history, lottery,
-                     live, minutes,
+                     live, minutes, voice,
                      picks, pot, remote, rulebook, sleeper, storage, taxi, theme,
                      valueboard)
 
@@ -261,7 +261,8 @@ GROUPS = {
     "preseason": [
         ("keepers", "Keepers", [("matrix", "What a keeper costs"),
                                 ("slip", "Set my keepers")]),
-        ("draft", "Draft", [("rookie", "Rookie draft"),
+        ("draft", "Draft", [("room", "Draft room"),
+                            ("rookie", "Rookie draft"),
                             ("board", "Veteran draft"),
                             ("capital", "Draft capital")]),
         ("young", "Rookies & Taxi", [("bay", "Taxi bay")]),
@@ -1559,6 +1560,204 @@ def live_draft(kind: int) -> None:
         ] for r in got[:40]])
 
 
+def player_pool() -> List[dict]:
+    """Everyone draftable, once. Built from Sleeper's map, skinny on purpose -
+    this list is searched on every keystroke in a room full of people."""
+    try:
+        pmap = players_map()
+    except Exception:
+        pmap = {}
+    out = []
+    for pid, m in (pmap or {}).items():
+        pos = (m.get("position") or "").upper()
+        if pos not in ("QB", "RB", "WR", "TE"):
+            continue
+        if not m.get("full_name") or not m.get("team"):
+            continue
+        out.append({"id": str(pid), "name": m["full_name"], "position": pos,
+                    "team": m.get("team") or ""})
+    out.sort(key=lambda r: r["name"])
+    return out
+
+
+def draft_room(leaf=None) -> None:
+    """Eight people round a table, one screen, one pick at a time.
+
+    No ADP, no suggestions, no rankings - somebody walks up, says or types a
+    name, and it goes on the board. Everything here is the record: picks are
+    written to the season blob, which the value board and every keeper price
+    read from.
+    """
+    kind = picks.VETERAN
+    rounds = config.veteran_rounds(SEASON)
+    snake = bool(config.drafts().get("snake", True))
+    order = _live_order(live.VETERAN) or first_draw().get("veteran") or owner_ids()
+    seats = picks.board_seats(order, rounds, snake)
+    made = picks.load(kind, SEASON)
+    taken = {str(p["player_id"]) for p in made}
+    unlocked = draw_unlocked()
+
+    theme.bar("Draft room", "%d rounds &middot; %d picks &middot; this app is the record" % (
+        rounds, len(seats)))
+
+    # ---------------------------------------------------------------- clock
+    if len(made) >= len(seats):
+        st.markdown('<div class="banner" style="border-color:var(--good)"><b>Draft complete.</b> '
+                    'All %d picks are in.</div>' % len(seats), unsafe_allow_html=True)
+        seat = None
+    else:
+        seat = seats[len(made)]
+        st.markdown(
+            '<div class="clockcard"><div class="l"><div class="k">On the clock</div>'
+            '<div class="w">%s</div><div class="tm">%s</div></div>'
+            '<div class="r"><div class="k">Pick</div><div class="v">%s</div>'
+            '<div class="tm">%d of %d &middot; round %d %s</div></div></div>' % (
+                esc(who(seat["owner_id"])), esc(team_of(seat["owner_id"])), seat["label"],
+                len(made), len(seats), seat["round"],
+                "&larr; snaking back" if (snake and seat["round"] % 2 == 0) else "&rarr;"),
+            unsafe_allow_html=True)
+
+    # ------------------------------------------------------ voice, then hands
+    pool = player_pool()
+    heard = _qp("say")
+    if heard and seat and unlocked:
+        st.query_params.pop("say", None)
+        got = voice.match(heard, pool, exclude=taken)
+        if got and got["sure"]:
+            picks.add(kind, got["player"], order, rounds, snake, SEASON)
+            st.rerun()
+        elif got:
+            st.session_state["room_pick"] = got["player"]["name"]
+            st.markdown('<div class="heardline"><span class="k">Heard</span>&ldquo;%s&rdquo; '
+                        '&rarr; <b>%s</b> &mdash; not sure enough, confirm below.</div>' % (
+                            esc(heard), esc(got["player"]["name"])), unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="heardline bad"><span class="k">Heard</span>&ldquo;%s&rdquo; '
+                        '&mdash; no match. Say the surname again, or type it.</div>' % esc(heard),
+                        unsafe_allow_html=True)
+
+    if seat:
+        if not unlocked:
+            draw_lock_ui("password to run the board",
+                         "Watching only. The board updates here for everyone as picks go in.")
+        else:
+            voice_button()
+            avail = [p for p in pool if p["id"] not in taken]
+            labels = {"%s  ·  %s %s" % (p["name"], p["position"], p["team"]): p
+                      for p in avail}
+            keys = list(labels)
+            pre = st.session_state.pop("room_pick", None)
+            idx = next((i for i, k in enumerate(keys) if k.startswith(pre + "  ·")), None) \
+                if pre else None
+            chosen = st.selectbox(
+                "Player", keys, index=idx, placeholder="Say the name, or start typing\u2026",
+                label_visibility="collapsed", key="room_search_%d" % len(made))
+            c1, c2 = st.columns([1, 3])
+            with c1:
+                if st.button("Lock it in", type="primary", disabled=not chosen,
+                             use_container_width=True):
+                    picks.add(kind, labels[chosen], order, rounds, snake, SEASON)
+                    st.rerun()
+            with c2:
+                if st.button("Undo last pick", disabled=not made):
+                    picks.undo(kind, SEASON)
+                    st.rerun()
+        storage_note()
+
+    # ---------------------------------------------------------------- board
+    st.markdown('<div class="poskey">%s</div>' % "".join(
+        '<span><i style="background:var(--%s)"></i>%s</span>' % (p.lower(), p)
+        for p in ("QB", "RB", "WR", "TE")), unsafe_allow_html=True)
+
+    by_seat = {}
+    for i, p in enumerate(made):
+        by_seat[i] = p
+    cells = []
+    for r in range(1, rounds + 1):
+        row = ["<td class='rh'>R%d</td>" % r]
+        for c, owner in enumerate(order):
+            i = (r - 1) * len(order) + (
+                (len(order) - 1 - c) if (snake and r % 2 == 0) else c)
+            got = by_seat.get(i)
+            lbl = seats[i]["label"] if i < len(seats) else ""
+            cls = []
+            if got:
+                cls += ["dhas", "p-%s" % (got.get("position") or "")]
+            if seat and i == len(made):
+                cls.append("dnow")
+            if owner == VIEW:
+                cls.append("dmine")
+            row.append(
+                "<td class='%s'><div class='dcell'><div class='l'>%s</div>%s</div></td>" % (
+                    " ".join(cls), lbl,
+                    ("<div class='n'>%s</div><div class='p pos-%s'>%s</div>" % (
+                        esc(got["name"]), got.get("position", ""),
+                        esc("%s &middot; " % got.get("position", "")))) if got else ""))
+        cells.append("<tr>%s</tr>" % "".join(row))
+    st.markdown(
+        '<div class="dboard"><table class="dboard"><colgroup><col class="rh">%s</colgroup>'
+        '<tr><th class="rh"></th>%s</tr>%s</table></div>' % (
+            "".join("<col>" for _ in order),
+            "".join("<th title='%s'>%s</th>" % (esc(team_of(o)), esc(who(o).split()[0]))
+                    for o in order),
+            "".join(cells)), unsafe_allow_html=True)
+
+
+def voice_button() -> None:
+    """Hold to talk. The browser only captures audio - the transcript goes back
+    through the URL and Python does the matching, so the part that can get a
+    pick wrong is the part that is unit-tested."""
+    components.html(
+        """<style>
+        body{margin:0;font-family:ui-monospace,Menlo,monospace}
+        #m{width:100%;height:52px;border-radius:11px;border:1px solid #313847;background:#101218;
+           color:#a6b1c2;font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;
+           text-transform:uppercase;cursor:pointer;touch-action:none;user-select:none}
+        #m:hover{border-color:#ccff44;color:#ccff44}
+        #m.hot{background:#ccff44;color:#0a0d05;border-color:#ccff44}
+        #m:disabled{opacity:.35;cursor:not-allowed}
+        </style>
+        <button id="m">Hold to talk &middot; or hold V</button>
+        <script>
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const b = document.getElementById('m');
+        let rec = null, on = false;
+        function send(t){
+          const u = new URL(window.parent.location.href);
+          u.searchParams.set('say', t);
+          window.parent.location.href = u.toString();
+        }
+        function start(){
+          if (!SR || on) return;
+          rec = new SR(); rec.lang='en-US'; rec.interimResults=false; rec.continuous=false;
+          rec.onresult = e => { let t=''; for (const r of e.results) t += r[0].transcript;
+                                if (t.trim()) send(t.trim()); };
+          rec.onend = () => { on=false; b.classList.remove('hot');
+                              b.textContent='Hold to talk \u00b7 or hold V'; };
+          rec.onerror = ev => { b.textContent = ev.error==='not-allowed'
+                                ? 'Mic blocked' : 'Try again'; on=false;
+                                b.classList.remove('hot'); };
+          try{ rec.start(); on=true; b.classList.add('hot'); b.textContent='Listening\u2026'; }
+          catch(e){ on=false; }
+        }
+        function stop(){ if (rec && on){ try{ rec.stop(); }catch(e){} } }
+        if (!SR){ b.disabled = true; b.textContent = 'No voice in this browser'; }
+        else {
+          b.addEventListener('pointerdown', e => { e.preventDefault(); start(); });
+          ['pointerup','pointerleave','pointercancel'].forEach(ev =>
+            b.addEventListener(ev, stop));
+          const doc = window.parent.document;
+          doc.addEventListener('keydown', e => {
+            if (e.key && e.key.toLowerCase()==='v' && !e.repeat &&
+                !/INPUT|TEXTAREA/.test((doc.activeElement||{}).tagName||'')) start();
+          });
+          doc.addEventListener('keyup', e => {
+            if (e.key && e.key.toLowerCase()==='v') stop();
+          });
+        }
+        </script>""", height=60)
+
+
 def draft_entry(which: str, pick_order, rounds: int, snake: bool) -> None:
     """Record a draft held in a room, under the board it belongs to.
 
@@ -1627,6 +1826,9 @@ def render_draft(leaf=None):
     # Page-level: the capital strip needs the same order the board draws in.
     draw = first_draw()
     order = _live_order(live.VETERAN) or draw.get("veteran") or owner_ids()
+    if leaf in (None, "room"):
+        draft_room()
+
     if leaf in (None, "rookie"):
         # Sleeper's own order wins once the draft exists there. The drum decides
         # what the order SHOULD be; Sleeper is what the picks are actually

@@ -34,6 +34,14 @@ PALETTES: Dict[str, dict] = {
   --ink:#f2f5f9; --ink2:#a6b1c2; --dim:#8593a6;
   --acc:#ccff44; --acc-ink:#0a0d05; --acc-soft:rgba(204,255,68,.13);
   --acc2:#5b8cff; --acc2-ink:#020a1f; --acc2-soft:rgba(91,140,255,.15);
+  /* Positions are CATEGORICAL, so they get their own scale rather than
+     borrowing one that already means something. Lime is state (on the clock,
+     your column) and mint/amber/coral are meaning (good/warning/bad) - a green
+     cell would read as "good" before it read as "RB". Positions take the cool
+     arc instead: sky, blue, violet, magenta. A smooth hue progression, so it
+     reads as one system; every step clears 5.5:1 on both card backgrounds and
+     sits at least 35deg off every reserved hue. */
+  --qb:#7ce0ff; --rb:#5b8cff; --wr:#a98bff; --te:#e879c7;
   --warn-soft:rgba(245,197,66,.07);
   --good:#48e39a; --warn:#f5c542; --bad:#ff6b7d;
   --shadow:0 10px 30px -18px rgba(0,0,0,.95);
@@ -193,6 +201,47 @@ h3.k{
 .chip.mag{ color:var(--acc2); border-color:color-mix(in srgb,var(--acc2) 45%,transparent);
            background:var(--acc2-soft); }
 .chip.solid{ background:var(--acc2); color:var(--acc2-ink); border-color:var(--acc2); font-weight:600; }
+
+/* ---- the draft board ------------------------------------------------- */
+.dboard{ overflow-x:auto; margin-top:10px; }
+table.dboard{ border-collapse:separate; border-spacing:0; width:100%; min-width:940px;
+              table-layout:fixed; }
+/* One explicit column width and fixed layout: percentage widths across eight
+   columns plus a row header left the last one visibly short of the rest. */
+table.dboard col.rh{ width:44px; }
+table.dboard th{ font-family:var(--f-display); font-size:15px; text-transform:uppercase;
+                 color:var(--ink2); font-weight:700; padding:6px 5px; text-align:center;
+                 border-bottom:1px solid var(--line2); white-space:nowrap; }
+table.dboard th.rh{ font-family:var(--f-data); font-size:9.5px; color:var(--dim); }
+table.dboard td{ border:1px solid var(--line); padding:0; height:46px;
+                 background:var(--card); vertical-align:top; }
+table.dboard td.rh{ background:transparent; border:none; font-family:var(--f-data);
+                    font-size:10px; color:var(--dim); text-align:center;
+                    vertical-align:middle; }
+.dcell{ height:100%; padding:5px 7px; display:flex; flex-direction:column;
+        justify-content:center; gap:1px; }
+.dcell .l{ font-family:var(--f-data); font-size:8.5px; color:var(--dim); }
+.dcell .n{ font-weight:650; font-size:12px; line-height:1.15; }
+.dcell .p{ font-family:var(--f-data); font-size:9px; color:var(--dim); }
+td.dnow{ background:var(--acc-soft); border-color:var(--acc); }
+td.dnow .l{ color:var(--acc); }
+td.dmine{ box-shadow:inset 3px 0 0 var(--acc2); }
+td.dhas{ border-left-width:3px; }
+td.dhas.p-QB{ border-left-color:var(--qb); }
+td.dhas.p-RB{ border-left-color:var(--rb); }
+td.dhas.p-WR{ border-left-color:var(--wr); }
+td.dhas.p-TE{ border-left-color:var(--te); }
+.pos-QB{ color:var(--qb); } .pos-RB{ color:var(--rb); }
+.pos-WR{ color:var(--wr); } .pos-TE{ color:var(--te); }
+.poskey{ display:flex; gap:13px; flex-wrap:wrap; margin:8px 0 2px; }
+.poskey span{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.13em;
+              color:var(--dim); display:inline-flex; align-items:center; gap:5px; }
+.poskey i{ width:8px; height:8px; border-radius:2px; display:block; }
+.heardline{ border:1px solid var(--line2); border-radius:10px; background:var(--card);
+            padding:10px 14px; margin:8px 0; font-size:14px; }
+.heardline.bad{ border-color:var(--bad); color:var(--bad); }
+.heardline .k{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.14em;
+               text-transform:uppercase; color:var(--dim); margin-right:10px; }
 
 /* ---- on the clock ---------------------------------------------------- */
 /* A day-long pick timer means this is the only thing most people open the page
