@@ -71,7 +71,9 @@ def get_traded_picks(league_id: str) -> List[Dict[str, Any]]:
 
 
 def get_drafts(league_id: str) -> List[Dict[str, Any]]:
-    return _disk("drafts_%s" % league_id, 3600,
+    # 5 minutes, not an hour: a draft going live flips `status`, and an hour of
+    # the board insisting nothing has started is an hour of people refreshing.
+    return _disk("drafts_%s" % league_id, 300,
                  lambda: _get("league/%s/drafts" % league_id) or [])
 
 
@@ -79,8 +81,10 @@ def get_draft(draft_id: str) -> Dict[str, Any]:
     return _disk("draft_%s" % draft_id, 3600, lambda: _get("draft/%s" % draft_id))
 
 
-def get_draft_picks(draft_id: str) -> List[Dict[str, Any]]:
-    return _disk("picks_%s" % draft_id, 900, lambda: _get("draft/%s/picks" % draft_id) or [])
+def get_draft_picks(draft_id: str, ttl: int = 900) -> List[Dict[str, Any]]:
+    """`ttl` drops to about a minute while a draft is live - fifteen minutes is
+    fine for a finished board and useless when somebody is on the clock."""
+    return _disk("picks_%s" % draft_id, ttl, lambda: _get("draft/%s/picks" % draft_id) or [])
 
 
 def get_matchups(league_id: str, week: int) -> List[Dict[str, Any]]:

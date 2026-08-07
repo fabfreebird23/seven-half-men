@@ -194,6 +194,30 @@ h3.k{
            background:var(--acc2-soft); }
 .chip.solid{ background:var(--acc2); color:var(--acc2-ink); border-color:var(--acc2); font-weight:600; }
 
+/* ---- on the clock ---------------------------------------------------- */
+/* A day-long pick timer means this is the only thing most people open the page
+   for. It gets to be the loudest object on it. */
+.clockcard{ display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center;
+            border:1px solid var(--acc); border-radius:12px; padding:15px 18px;
+            background:linear-gradient(100deg,var(--acc-soft),transparent 65%); }
+.clockcard.late{ border-color:var(--bad);
+                 background:linear-gradient(100deg,rgba(255,107,125,.12),transparent 65%); }
+.clockcard .k{ font-family:var(--f-data); font-size:9.5px; letter-spacing:.15em;
+               text-transform:uppercase; color:var(--dim); }
+.clockcard .w{ font-family:var(--f-display); font-size:34px; line-height:1; margin-top:5px;
+               text-transform:uppercase; color:var(--acc); }
+.clockcard.late .w{ color:var(--bad); }
+.clockcard .v{ font-family:var(--f-display); font-size:34px; line-height:1; margin-top:5px;
+               font-variant-numeric:tabular-nums; }
+.clockcard .tm{ font-size:12px; color:var(--dim); margin-top:5px; }
+.clockcard .r{ text-align:right; }
+
+@media(max-width:640px){
+  .clockcard{ grid-template-columns:1fr; gap:11px; }
+  .clockcard .r{ text-align:left; }
+  .clockcard .w,.clockcard .v{ font-size:28px; }
+}
+
 /* ---- minutes --------------------------------------------------------- */
 /* Set in the data face rather than the body face: these are typed notes, not
    prose, and they should not look like the rulebook they sit under. Hanging

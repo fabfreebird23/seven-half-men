@@ -20,7 +20,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from halfmen import (adp_board, agenda, config, draftboard, engine, history, lottery,
-                     minutes,
+                     live, minutes,
                      picks, pot, remote, rulebook, sleeper, storage, taxi, theme,
                      valueboard)
 
@@ -1437,6 +1437,62 @@ def render_pot(leaf=None):
 # ---------------------------------------------------------------------------
 
 
+def live_draft(kind: int) -> None:
+    """The board while it is running.
+
+    A 24-hour pick clock makes the draft a fortnight-long background event, so
+    the two things worth putting at the top are whose pick it is and how long
+    they have left. Everything below it is the board as drawn.
+    """
+    try:
+        s = live.state(kind, LG)
+    except Exception:
+        return
+    if not s:
+        return
+
+    for warn in live.disagreements(s, kind):
+        st.markdown('<div class="banner" style="border-color:var(--bad);color:var(--bad)">'
+                    '<b>Sleeper and the rulebook disagree.</b> %s Sleeper is what the league '
+                    'actually drafts on, so it wins until somebody changes it.</div>' % warn,
+                    unsafe_allow_html=True)
+
+    if s["status"] == "pre_draft":
+        st.markdown('<div class="tiny" style="margin-bottom:8px">Not started on Sleeper yet.</div>',
+                    unsafe_allow_html=True)
+        return
+
+    if s["on_clock"]:
+        left = live.countdown(s["deadline"])
+        late = left.startswith("on the clock past")
+        st.markdown(
+            '<div class="clockcard%s"><div class="l">'
+            '<div class="k">On the clock</div><div class="w">%s</div>'
+            '<div class="tm">%s</div></div>'
+            '<div class="r"><div class="k">Pick</div><div class="v">%d.%02d</div>'
+            '<div class="tm">%d of %d made</div></div></div>' % (
+                " late" if late else "", esc(who(s["on_clock"])),
+                esc(team_of(s["on_clock"])), s["round"], s["pick"], s["made"], s["total"]),
+            unsafe_allow_html=True)
+        st.markdown('<div class="tiny" style="margin:6px 0 10px;color:%s">%s</div>' % (
+            "var(--bad)" if late else "var(--warn)",
+            esc(left) if left else "no pick timer set"), unsafe_allow_html=True)
+    elif s["made"] >= s["total"] and s["total"]:
+        st.markdown('<div class="banner" style="border-color:var(--good)"><b>Draft complete.</b> '
+                    'All %d picks are in.</div>' % s["total"], unsafe_allow_html=True)
+
+    got = live.rows(s, players_map())
+    if got:
+        theme.bar("Picks so far", "newest first")
+        ledger_table(["Pick", "Player", "To"], [[
+            '<span class="mono">%d.%02d</span>' % (r["round"], r["pick"] or 0),
+            '<div style="font-weight:650">%s</div><div class="tiny">%s%s</div>' % (
+                esc(r["name"]), esc(r["position"]),
+                (" &middot; " + esc(r["team"])) if r["team"] else ""),
+            '<span class="tiny">%s</span>' % esc(who(r["owner_id"]) if r["owner_id"] else "&mdash;"),
+        ] for r in got[:40]])
+
+
 def draft_entry(which: str, pick_order, rounds: int, snake: bool) -> None:
     """Record a draft held in a room, under the board it belongs to.
 
@@ -1509,6 +1565,7 @@ def render_draft(leaf=None):
         rk_order = draw.get("rookie") or owner_ids()
         theme.bar("Rookie draft", "%d rounds &middot; %d picks &middot; held first" % (
             config.rookie_rounds(), draftboard.rookie_pick_count()))
+        live_draft(live.ROOKIE)
         if not draw.get("rookie"):
             st.markdown(
                 '<div class="banner">Order is provisional until the drum runs &mdash; this is '
@@ -1569,6 +1626,7 @@ def render_draft(leaf=None):
 
     if leaf in (None, "board"):
         theme.bar("Veteran draft", "%d rounds · snake · keeper costs burned in" % config.veteran_rounds())
+        live_draft(live.VETERAN)
         if FIRST:
             st.markdown(
                 '<div class="banner">Year one: no keepers, so every pick is live. Order is drawn flat '

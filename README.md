@@ -112,6 +112,29 @@ worthless. Three guardrails, in order:
 Each drum produces a **selection order**, not a draft slot: first choice takes
 any spot on the board they want.
 
+## The draft while it is running
+
+`halfmen/live.py` reads whichever Sleeper draft is live and puts two things at
+the top of the board: **who is on the clock** and **how long they have left**. A
+24-hour pick timer makes the draft a fortnight-long background event rather than
+an evening, so nobody is going to sit watching Sleeper — the phone check is
+"is it me yet".
+
+It also checks Sleeper against the rulebook and says so in red when they differ.
+That is not hypothetical: the 2026 rookie draft went live configured for **16
+rounds** rather than 16 picks, which at a day a pick is 128 days instead of 16. A
+board that quietly rendered the league's *intention* while Sleeper ran something
+else would have hidden exactly the mistake worth catching. Sleeper wins — it is
+what the league actually drafts on — but it does not get to win silently.
+
+The snake maths is the part with teeth: get it wrong and the wrong name sits on
+the clock for a whole day. `tests/test_live.py` walks both directions of a
+two-round board pick by pick.
+
+Draft-pick caching drops from fifteen minutes to about one while a draft is
+live, and the drafts list from an hour to five minutes — an hour of the board
+insisting nothing has started is an hour of people refreshing.
+
 ## The two draft boards
 
 **Pre-Season → Draft → Rookie draft** is the one that runs first: 2 rounds, 16
