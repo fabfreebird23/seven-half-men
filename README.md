@@ -137,10 +137,15 @@ rookie-vs-veteran by *round count*, so a 16-round rookie draft read as a veteran
 draft — which would have priced every rookie against a veteran round, with no R5
 premium and no rookie-keeper status. It asks Sleeper's `player_type` first now.
 
-The board draws in **Sleeper's** slot order, falling back to the drum's. The drum
-decides what the order should be; Sleeper is what the picks are actually landing
-against, and a board disagreeing with the picks listed above it just looks
-broken.
+The board draws in **Sleeper's** slot order, falling back to the drum's — and the
+distinction matters more than it looks. The drum draws a **selection order**: who
+gets to pick a slot first, not who picks where. First choice takes any spot on
+the board they want, so Sleeper's board is *expected* to differ from the draw,
+and an earlier version of this flagged that as a disagreement — crying wolf on
+the rules working as designed. The board now says which of three things it is
+showing: the slots people actually chose, the drum order standing in until they
+have, or config order because neither exists yet. A *Who took what* table records
+what each manager did with their choice, which is the only record of it anywhere.
 
 The snake maths is the part with teeth: get it wrong and the wrong name sits on
 the clock for a whole day. `tests/test_live.py` walks both directions of a
@@ -308,6 +313,14 @@ Whose team the "your" views show comes from `?team=<sleeper_id>` in the URL,
 falling back to `me` in config. Each manager can bookmark their own, and a link
 pasted in the group chat opens on whatever the sender was looking at. The picker
 sits beside the masthead.
+
+Every nav link has to carry it. The bottom bar rebuilds the query string from
+scratch, so anything it does not explicitly name is dropped — which meant picking
+another manager and then tapping any page silently put you back on your own team.
+`_keep()` is the single place that decides what survives a navigation; the
+redirect table honours it too, because being sent to a page's new home should not
+also change who you are. It is omitted when you are viewing yourself, so a shared
+URL stays short.
 
 ## Home
 

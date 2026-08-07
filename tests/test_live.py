@@ -92,12 +92,24 @@ def test_agreement_is_silent(monkeypatch):
     assert live.disagreements(live.state(live.ROOKIE, "lg"), live.ROOKIE) == []
 
 
-def test_a_draft_order_that_is_not_the_drawn_one_is_flagged(monkeypatch):
+def test_a_board_order_unlike_the_drum_is_not_a_problem(monkeypatch):
+    """The drum sets a SELECTION order - who picks a slot first - and first
+    choice takes any spot they want. So Sleeper's board is expected to differ,
+    and flagging it would cry wolf on the rules working as designed."""
     d, p = fake(rounds=config.rookie_rounds())
     wire(monkeypatch, d, p)
     monkeypatch.setattr(live, "_drawn_order", lambda kind: ["d", "c", "b", "a"])
-    warn = live.disagreements(live.state(live.ROOKIE, "lg"), live.ROOKIE)
-    assert any("not the order the drum drew" in w for w in warn)
+    assert live.disagreements(live.state(live.ROOKIE, "lg"), live.ROOKIE) == []
+
+
+def test_the_slots_show_what_each_manager_did_with_their_choice(monkeypatch):
+    """The only record anywhere of who took which spot off the board."""
+    d, p = fake(rounds=config.rookie_rounds())
+    wire(monkeypatch, d, p)
+    monkeypatch.setattr(live, "_drawn_order", lambda kind: ["d", "c", "b", "a"])
+    got = live.slots_chosen(live.state(live.ROOKIE, "lg"), live.ROOKIE)
+    assert got[0] == (1, "a", 4), "a drew last in the drum and took the 1 slot"
+    assert got[3] == (4, "d", 1), "d had first choice and took the 4 slot"
 
 
 # --------------------------------------------------------------------------

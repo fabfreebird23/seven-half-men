@@ -310,12 +310,15 @@ if PAGE not in dict(SECTIONS):
 # Send them where the content actually went instead.
 _moved = MOVED.get((_qp("g"), _qp("t")))
 if _moved and PAGE in GROUPS:
+    _team = _qp("team")
     PAGE, _g, _t = _moved
     st.query_params.clear()
     st.query_params["p"] = PAGE
     if _g:
         st.query_params["g"] = _g
         st.query_params["t"] = _t
+    if _team:                     # a redirect must not change who you are
+        st.query_params["team"] = _team
 
 GROUP = LEAF = None
 if PAGE in GROUPS:
@@ -1437,6 +1440,33 @@ def render_pot(leaf=None):
 # ---------------------------------------------------------------------------
 
 
+def board_note(kind: int, drawn: bool) -> None:
+    """Say which of the three things this board is showing.
+
+    The drum draws a SELECTION order - who picks a slot first - and first choice
+    takes any spot they want. So there are three states, and conflating them is
+    how you get somebody arguing that the board is wrong: the slots people
+    actually chose, the drum order standing in before they have, or nothing at
+    all.
+    """
+    chosen = _live_order(kind)
+    if chosen:
+        st.markdown(
+            '<div class="tiny" style="margin-bottom:8px">These are the slots managers '
+            '<b>actually chose</b>, straight off Sleeper. The drum decided who picked a slot '
+            'first, not who picks where &mdash; so this is not meant to match the draw.</div>',
+            unsafe_allow_html=True)
+    elif drawn:
+        st.markdown(
+            '<div class="tiny" style="margin-bottom:8px">Standing in the drum\'s <b>selection '
+            'order</b> until managers pick their slots. First choice can take any spot on the '
+            'board, so this will change.</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(
+            '<div class="banner">No drum and no board yet &mdash; this is config order. Draw it '
+            'on <b>Pre-Season &rsaquo; Lottery</b>.</div>', unsafe_allow_html=True)
+
+
 def _live_order(kind: int) -> List[str]:
     """The slot order Sleeper is actually running, if it has one."""
     try:
@@ -1504,6 +1534,18 @@ def live_draft(kind: int) -> None:
     elif s["made"] >= s["league_total"] and s["league_total"]:
         st.markdown('<div class="banner" style="border-color:var(--good)"><b>Draft complete.</b> '
                     'All %d picks are in.</div>' % s["league_total"], unsafe_allow_html=True)
+
+    picked = live.slots_chosen(s, kind)
+    if picked and any(p for _, _, p in picked):
+        theme.bar("Who took what", "the drum picked the order &middot; they picked the spot")
+        ledger_table(["Slot", "Manager", "Drum"], [[
+            '<span class="mono">%d</span>' % slot,
+            '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
+                esc(who(owner)), esc(team_of(owner))),
+            ('<span class="chip acc">%s choice</span>' % ordinal(pos)) if pos
+            else '<span class="tiny">&mdash;</span>',
+        ] for slot, owner, pos in picked],
+            me_row=next((i for i, (_, o, _) in enumerate(picked) if o == VIEW), None))
 
     got = live.rows(s, players_map())
     if got:
@@ -1594,11 +1636,7 @@ def render_draft(leaf=None):
         theme.bar("Rookie draft", "%d rounds &middot; %d picks &middot; held first" % (
             config.rookie_rounds(), draftboard.rookie_pick_count()))
         live_draft(live.ROOKIE)
-        if not draw.get("rookie"):
-            st.markdown(
-                '<div class="banner">Order is provisional until the drum runs &mdash; this is '
-                'showing config order. Draw it on <b>Pre-Season &rsaquo; Lottery</b> and the '
-                'board fills in.</div>', unsafe_allow_html=True)
+        board_note(live.ROOKIE, bool(draw.get("rookie")))
 
         rk = draftboard.rookie_grid(rk_order, SEASON)
         head = "".join('<th title="%s">%s</th>' % (esc(team_of(o)), esc(who(o).split(" ")[0]))
@@ -1667,10 +1705,7 @@ def render_draft(leaf=None):
                     config.active_roster_size(), int(config.taxi_rules()["slots"])),
                 unsafe_allow_html=True)
 
-        if draw.get("veteran"):
-            st.markdown('<div class="tiny" style="margin-bottom:8px">Board is showing the selection '
-                        'order drawn on the Lottery tab. Once managers actually pick their slots, '
-                        'those choices override it.</div>', unsafe_allow_html=True)
+        board_note(live.VETERAN, bool(draw.get("veteran")))
         grid = draftboard.grid(order, season=SEASON, keepers={}, league_id=LG)
         head = "<th></th>" + "".join(
             '<th title="%s">%s</th>' % (esc(team_of(o)), esc(who(o).split()[0])) for o in order)
@@ -1945,6 +1980,16 @@ def render_lottery(leaf=None):
 # the bottom bar
 # ---------------------------------------------------------------------------
 
+def _keep() -> str:
+    """The query bits that have to survive a navigation.
+
+    The bottom bar rebuilds the whole query string from scratch, so anything not
+    named here is dropped - which is how choosing a team and then tapping a page
+    silently put you back on your own.
+    """
+    return ("&team=%s" % VIEW) if VIEW and VIEW != DEFAULT_VIEW else ""
+
+
 def _popover(section: str, label: str) -> str:
     """Every leaf in a section, on one sheet, one tap away.
 
@@ -1958,9 +2003,9 @@ def _popover(section: str, label: str) -> str:
         '%s%s' % (
             ('<div class="bb-group">%s</div>' % glabel) if glabel else "",
             "".join(
-                '<a class="bb-item leaf%s" href="?p=%s&g=%s&t=%s" target="_self">%s</a>' % (
+                '<a class="bb-item leaf%s" href="?p=%s&g=%s&t=%s%s" target="_self">%s</a>' % (
                     " on" if (PAGE == section and GROUP == gk and LEAF == lk) else "",
-                    section, gk, lk, llabel)
+                    section, gk, lk, _keep(), llabel)
                 for lk, llabel in leaves))
         for gk, glabel, leaves in groups)
     return ('<div class="bb-pop" id="bb-pop-%s">'
@@ -1976,8 +2021,8 @@ def render_bottom_bar() -> None:
             links.append('<div class="bb-link%s" data-toggle="bb-pop-%s">%s</div>' % (
                 cls, key, label))
         else:
-            links.append('<a class="bb-link%s" href="?p=%s" target="_self">%s</a>' % (
-                cls, key, label))
+            links.append('<a class="bb-link%s" href="?p=%s%s" target="_self">%s</a>' % (
+                cls, key, _keep(), label))
     bar = ('<div class="bb-scrim" id="bb-scrim"></div>'
            + "".join(_popover(k, l) for k, l in SECTIONS if k in GROUPS)
            + '<div class="bb-wrap"><div class="bb">%s</div></div>' % "".join(links))

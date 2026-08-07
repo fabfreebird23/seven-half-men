@@ -117,20 +117,37 @@ def disagreements(s: Dict[str, Any], kind: int = ROOKIE) -> List[str]:
         out.append(
             "Sleeper is set to <b>%d rounds</b>; the rulebook says <b>%d</b>." % (
                 s["rounds"], want))
-    drawn = _drawn_order(kind)
-    if drawn and all(s["order"]) and [str(o) for o in drawn] != [str(o) for o in s["order"]]:
-        out.append("Sleeper's draft order is <b>not the order the drum drew</b>. "
-                   "Sleeper is what you are actually drafting on.")
     return out
 
 
 def _drawn_order(kind: int) -> List[str]:
+    """The order the drum drew. This is a SELECTION order - who chooses a slot
+    first - and is deliberately NOT compared against Sleeper's board order.
+    First choice takes any spot they want, so the two are expected to differ;
+    flagging that as a disagreement would cry wolf on the rules working."""
     from . import storage
     try:
         draw = storage.load_draw() or {}
     except Exception:
         return []
     return list(draw.get("rookie" if kind == ROOKIE else "veteran") or [])
+
+
+def slots_chosen(s: Dict[str, Any], kind: int = ROOKIE) -> List[tuple]:
+    """(slot, owner, where they came in the drum) once Sleeper has a board.
+
+    The interesting column is the third one: it shows what each manager did with
+    their pick of the board, which is the only record of it anywhere.
+    """
+    order = s.get("order") or []
+    if not order or not all(order):
+        return []
+    drawn = [str(o) for o in _drawn_order(kind)]
+    out = []
+    for i, owner in enumerate(order):
+        pos = drawn.index(str(owner)) + 1 if str(owner) in drawn else None
+        out.append((i + 1, str(owner), pos))
+    return out
 
 
 def countdown(deadline: float, now: float = None) -> str:

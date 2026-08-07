@@ -306,3 +306,33 @@ def test_the_in_season_sheet_carries_no_group_headings():
     reading "The Wire" above an item reading "The Wire" is noise."""
     assert all(not glabel for _, glabel, _ in _groups()["inseason"])
     assert any(glabel for _, glabel, _ in _groups()["preseason"])
+
+
+def test_every_nav_link_carries_the_viewer():
+    """The bottom bar rebuilds the query string from scratch, so anything it does
+    not name is dropped - which put you back on your own team the moment you
+    tapped a page. The bar is injected through components.html, which AppTest
+    does not surface, so this reads the two href builders directly."""
+    hrefs = re.findall(r'href="\?p=[^"]*"', SRC)
+    assert hrefs == ['href="?p=%s&g=%s&t=%s%s"', 'href="?p=%s%s"'], (
+        "a link builder changed shape - does it still carry _keep()? %s" % hrefs)
+    # each href is followed, within a couple of lines, by the args that fill it
+    for m in re.finditer(r'href="\?p=[^"]*"', SRC):
+        tail = SRC[m.end():m.end() + 320]
+        assert "_keep()" in tail, "this link drops the viewer: %s" % tail[:120]
+
+
+def test_the_viewer_is_only_in_the_url_when_it_is_not_you():
+    """Putting the default in every link would just make a shared URL noisier."""
+    keep = re.search(r"def _keep\(\).*?return[^\n]*\n", SRC, re.S).group(0)
+    assert "VIEW != DEFAULT_VIEW" in keep
+
+
+def test_a_redirect_does_not_change_who_you_are():
+    from halfmen import config
+    other = next(o for o in config.managers() if o != config.me())
+    at = AppTest.from_file(APP, default_timeout=60)
+    at.query_params.update({"p": "inseason", "g": "pot", "t": "burn", "team": other})
+    at.run()
+    got = {k: (v[0] if isinstance(v, list) else v) for k, v in dict(at.query_params).items()}
+    assert got.get("t") == "pot" and got.get("team") == other
