@@ -26,6 +26,19 @@
   },
   "kept": [],
   "locked": false,
+  "picks": {
+    "veteran": [
+      {
+        "name": "Bijan Robinson",
+        "owner_id": "980569987930804224",
+        "pick": 1,
+        "player_id": "9509",
+        "position": "RB",
+        "round": 1,
+        "team": "ATL"
+      }
+    ]
+  },
   "rookie_kept": [],
   "season": 2026,
   "teams": {},
