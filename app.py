@@ -1437,6 +1437,16 @@ def render_pot(leaf=None):
 # ---------------------------------------------------------------------------
 
 
+def _live_order(kind: int) -> List[str]:
+    """The slot order Sleeper is actually running, if it has one."""
+    try:
+        s = live.state(kind, LG)
+    except Exception:
+        return []
+    order = s.get("order") or []
+    return [str(o) for o in order] if order and all(order) else []
+
+
 def live_draft(kind: int) -> None:
     """The board while it is running.
 
@@ -1462,7 +1472,17 @@ def live_draft(kind: int) -> None:
                     unsafe_allow_html=True)
         return
 
-    if s["on_clock"]:
+    # Count against what the LEAGUE is running, not what Sleeper is set to.
+    if s["stop_now"]:
+        st.markdown(
+            '<div class="clockcard late"><div class="l"><div class="k">Stop the draft</div>'
+            '<div class="w">All %d picks are in</div>'
+            '<div class="tm">Pause it on Sleeper &mdash; anything from here is not a pick in '
+            'this league, and the boards below ignore it.</div></div>'
+            '<div class="r"><div class="k">Overrun</div><div class="v">%d</div>'
+            '<div class="tm">picks past the rulebook</div></div></div>' % (
+                s["league_total"], s["voided"]), unsafe_allow_html=True)
+    elif s["on_clock"]:
         left = live.countdown(s["deadline"])
         late = left.startswith("on the clock past")
         st.markdown(
@@ -1472,14 +1492,18 @@ def live_draft(kind: int) -> None:
             '<div class="r"><div class="k">Pick</div><div class="v">%d.%02d</div>'
             '<div class="tm">%d of %d made</div></div></div>' % (
                 " late" if late else "", esc(who(s["on_clock"])),
-                esc(team_of(s["on_clock"])), s["round"], s["pick"], s["made"], s["total"]),
+                esc(team_of(s["on_clock"])), s["round"], s["pick"],
+                s["made"], s["league_total"]),
             unsafe_allow_html=True)
+        bits = [esc(left) if left else "no pick timer set"]
+        if s["last_before_stop"]:
+            bits.append("<b>last pick before you pause it</b>")
         st.markdown('<div class="tiny" style="margin:6px 0 10px;color:%s">%s</div>' % (
-            "var(--bad)" if late else "var(--warn)",
-            esc(left) if left else "no pick timer set"), unsafe_allow_html=True)
-    elif s["made"] >= s["total"] and s["total"]:
+            "var(--bad)" if late else "var(--warn)", " &middot; ".join(bits)),
+            unsafe_allow_html=True)
+    elif s["made"] >= s["league_total"] and s["league_total"]:
         st.markdown('<div class="banner" style="border-color:var(--good)"><b>Draft complete.</b> '
-                    'All %d picks are in.</div>' % s["total"], unsafe_allow_html=True)
+                    'All %d picks are in.</div>' % s["league_total"], unsafe_allow_html=True)
 
     got = live.rows(s, players_map())
     if got:
@@ -1560,9 +1584,13 @@ def draft_entry(which: str, pick_order, rounds: int, snake: bool) -> None:
 def render_draft(leaf=None):
     # Page-level: the capital strip needs the same order the board draws in.
     draw = first_draw()
-    order = draw.get("veteran") or owner_ids()
+    order = _live_order(live.VETERAN) or draw.get("veteran") or owner_ids()
     if leaf in (None, "rookie"):
-        rk_order = draw.get("rookie") or owner_ids()
+        # Sleeper's own order wins once the draft exists there. The drum decides
+        # what the order SHOULD be; Sleeper is what the picks are actually
+        # landing against, and a board that disagreed with the picks listed
+        # above it would just look broken.
+        rk_order = _live_order(live.ROOKIE) or draw.get("rookie") or owner_ids()
         theme.bar("Rookie draft", "%d rounds &middot; %d picks &middot; held first" % (
             config.rookie_rounds(), draftboard.rookie_pick_count()))
         live_draft(live.ROOKIE)

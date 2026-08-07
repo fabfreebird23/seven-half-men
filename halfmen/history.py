@@ -109,15 +109,38 @@ class History:
         return pid in self.drafted_as_rookie
 
 
-def _picks_for(draft: dict) -> List[dict]:
-    return sleeper.get_draft_picks(str(draft["draft_id"])) or []
-
-
 def _draft_kind(draft: dict, first_season: bool) -> str:
-    rounds = int((draft.get("settings") or {}).get("rounds") or 0)
+    """Rookie draft or veteran draft.
+
+    `player_type` is asked first because it is what Sleeper actually enforces -
+    1 means a rookie-only board. Round count was the original test and it is not
+    safe: the 2026 rookie draft went up configured for 16 rounds instead of 16
+    picks, which made it look like a veteran draft to this function and would
+    have priced every rookie against a veteran round with no R5 premium and no
+    rookie-keeper status.
+    """
+    st = draft.get("settings") or {}
+    if int(st.get("player_type", 0)) == 1:
+        return "rookie"
+    rounds = int(st.get("rounds") or 0)
     if rounds and rounds <= config.rookie_rounds():
         return "rookie"
     return "first_season" if first_season else "veteran"
+
+
+def _picks_for(draft: dict, kind: str = None) -> List[dict]:
+    """Picks that count, which is not always the picks that happened.
+
+    Sleeper would not let the rookie draft be set to two rounds, so it runs long
+    and gets stopped by hand. Anything past the rulebook's round count is not a
+    pick in this league, and letting it through would put players on rosters and
+    keeper clocks that nobody agreed to.
+    """
+    picks = sleeper.get_draft_picks(str(draft["draft_id"])) or []
+    cap = config.rookie_rounds() if kind == "rookie" else None
+    if cap:
+        picks = [p for p in picks if int(p.get("round") or 0) <= cap]
+    return picks
 
 
 def build(league_id: str = None) -> History:
@@ -158,7 +181,7 @@ def build(league_id: str = None) -> History:
         drafts = sleeper.get_drafts(link["league_id"]) or []
         for d in drafts:
             kind = _draft_kind(d, first)
-            for pick in _picks_for(d):
+            for pick in _picks_for(d, kind):
                 pid = str(pick.get("player_id") or "")
                 if not pid:
                     continue

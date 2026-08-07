@@ -98,3 +98,70 @@ def test_a_draft_order_that_is_not_the_drawn_one_is_flagged(monkeypatch):
     monkeypatch.setattr(live, "_drawn_order", lambda kind: ["d", "c", "b", "a"])
     warn = live.disagreements(live.state(live.ROOKIE, "lg"), live.ROOKIE)
     assert any("not the order the drum drew" in w for w in warn)
+
+
+# --------------------------------------------------------------------------
+# Sleeper would not accept a 2-round rookie draft, so it runs long and gets
+# stopped by hand. Everything past pick 16 is not a pick in this league.
+# --------------------------------------------------------------------------
+
+def over(made):
+    """A 16-round Sleeper draft against a 2-round rulebook, at 4 teams."""
+    d, _ = fake(rounds=16)
+    picks = [{"round": i // 4 + 1, "draft_slot": i % 4 + 1, "pick_no": i + 1,
+              "player_id": str(i), "metadata": {"first_name": "P%d" % i, "last_name": "X"}}
+             for i in range(made)]
+    return d, picks
+
+
+def test_progress_counts_against_the_rulebook_not_sleeper(monkeypatch):
+    d, p = over(3)
+    wire(monkeypatch, d, p)
+    s = live.state(live.ROOKIE, "lg")
+    assert s["total"] == 64, "what Sleeper is running"
+    assert s["league_total"] == config.rookie_rounds() * 4, "what the league is running"
+    assert s["over_run"]
+
+
+def test_the_pick_before_the_end_is_flagged(monkeypatch):
+    league_total = config.rookie_rounds() * 4
+    d, p = over(league_total - 1)
+    wire(monkeypatch, d, p)
+    assert live.state(live.ROOKIE, "lg")["last_before_stop"]
+
+
+def test_stop_now_fires_the_moment_the_last_pick_lands(monkeypatch):
+    league_total = config.rookie_rounds() * 4
+    d, p = over(league_total)
+    wire(monkeypatch, d, p)
+    s = live.state(live.ROOKIE, "lg")
+    assert s["stop_now"] and s["voided"] == 0
+
+
+def test_picks_past_the_stop_point_are_counted_as_overrun(monkeypatch):
+    league_total = config.rookie_rounds() * 4
+    d, p = over(league_total + 3)
+    wire(monkeypatch, d, p)
+    s = live.state(live.ROOKIE, "lg")
+    assert s["voided"] == 3
+    assert len(live.rows(s)) == league_total, "the overrun picks are not shown as real"
+    assert len(live.rows(s, counted_only=False)) == league_total + 3
+
+
+def test_history_classifies_a_rookie_draft_by_player_type_not_round_count():
+    """The bug the misconfiguration would have caused: 16 rounds made the rookie
+    draft look like a veteran draft, which would have priced every rookie against
+    a veteran round with no R5 premium and no rookie-keeper status."""
+    from halfmen import history
+    d = {"settings": {"rounds": 16, "player_type": 1}}
+    assert history._draft_kind(d, first_season=True) == "rookie"
+
+
+def test_history_drops_picks_past_the_rulebook_rounds(monkeypatch):
+    from halfmen import history
+    d = {"draft_id": "d1", "settings": {"rounds": 16, "player_type": 1}}
+    monkeypatch.setattr(history.sleeper, "get_draft_picks",
+                        lambda did, **k: [{"round": r} for r in range(1, 17)])
+    kept = history._picks_for(d, "rookie")
+    assert len(kept) == config.rookie_rounds()
+    assert max(p["round"] for p in kept) == config.rookie_rounds()

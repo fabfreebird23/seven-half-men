@@ -122,10 +122,25 @@ an evening, so nobody is going to sit watching Sleeper — the phone check is
 
 It also checks Sleeper against the rulebook and says so in red when they differ.
 That is not hypothetical: the 2026 rookie draft went live configured for **16
-rounds** rather than 16 picks, which at a day a pick is 128 days instead of 16. A
-board that quietly rendered the league's *intention* while Sleeper ran something
-else would have hidden exactly the mistake worth catching. Sleeper wins — it is
-what the league actually drafts on — but it does not get to win silently.
+rounds** rather than 16 picks, which at a day a pick is 128 days instead of 16 —
+and Sleeper would not accept being reset to two rounds afterwards. So it runs
+long and gets **paused by hand** after pick 16.
+
+Everything downstream is built around that. Progress counts against the
+*rulebook's* 16, not Sleeper's 128; the board shouts **Stop the draft** the
+moment the last real pick lands, and flags the one before it; and any pick past
+that point is dropped rather than shown — letting it through would put players
+on rosters and keeper clocks nobody agreed to.
+
+That misconfiguration also exposed a genuine bug. `history._draft_kind` decided
+rookie-vs-veteran by *round count*, so a 16-round rookie draft read as a veteran
+draft — which would have priced every rookie against a veteran round, with no R5
+premium and no rookie-keeper status. It asks Sleeper's `player_type` first now.
+
+The board draws in **Sleeper's** slot order, falling back to the drum's. The drum
+decides what the order should be; Sleeper is what the picks are actually landing
+against, and a board disagreeing with the picks listed above it just looks
+broken.
 
 The snake maths is the part with teeth: get it wrong and the wrong name sits on
 the clock for a whole day. `tests/test_live.py` walks both directions of a

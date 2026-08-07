@@ -60,6 +60,13 @@ def state(kind: int = ROOKIE, league_id: str = None) -> Dict[str, Any]:
 
     made = len(picks)
     total = rounds * teams
+    # What the LEAGUE is running, which is not always what Sleeper is set to.
+    # Sleeper would not accept a two-round rookie draft, so it runs long and
+    # gets stopped by hand - the board counts against the rulebook and says when
+    # to pause it, because 24 hours a pick makes it very easy to sail past.
+    want_rounds = config.rookie_rounds() if kind == ROOKIE else config.veteran_rounds()
+    league_total = want_rounds * teams
+    over_run = rounds > want_rounds
     on_clock = None
     rnd = pick_in_round = None
     if d.get("status") == "drafting" and made < total and all(order):
@@ -80,6 +87,10 @@ def state(kind: int = ROOKIE, league_id: str = None) -> Dict[str, Any]:
         "draft": d, "picks": picks, "status": d.get("status"),
         "rounds": rounds, "teams": teams, "timer": timer, "snake": snake,
         "order": order, "made": made, "total": total,
+        "league_total": league_total, "over_run": over_run,
+        "voided": max(0, made - league_total) if over_run else 0,
+        "stop_now": bool(over_run and made >= league_total),
+        "last_before_stop": bool(over_run and made == league_total - 1),
         "on_clock": on_clock, "round": rnd, "pick": pick_in_round,
         "deadline": deadline,
     }
@@ -96,10 +107,16 @@ def disagreements(s: Dict[str, Any], kind: int = ROOKIE) -> List[str]:
         return []
     out = []
     want = config.rookie_rounds() if kind == ROOKIE else config.veteran_rounds()
-    if s["rounds"] and s["rounds"] != want:
+    if s["rounds"] and s["rounds"] > want:
         out.append(
-            "Sleeper is set to <b>%d rounds</b> (%d picks); the rulebook says <b>%d</b> "
-            "(%d picks)." % (s["rounds"], s["rounds"] * s["teams"], want, want * s["teams"]))
+            "Sleeper is set to <b>%d rounds</b> (%d picks) and will not stop at %d. This "
+            "draft has to be <b>paused by hand</b> after pick %d. Everything past that is "
+            "not a pick in this league &mdash; the boards here ignore it." % (
+                s["rounds"], s["rounds"] * s["teams"], want, s["league_total"]))
+    elif s["rounds"] and s["rounds"] < want:
+        out.append(
+            "Sleeper is set to <b>%d rounds</b>; the rulebook says <b>%d</b>." % (
+                s["rounds"], want))
     drawn = _drawn_order(kind)
     if drawn and all(s["order"]) and [str(o) for o in drawn] != [str(o) for o in s["order"]]:
         out.append("Sleeper's draft order is <b>not the order the drum drew</b>. "
@@ -134,12 +151,20 @@ def countdown(deadline: float, now: float = None) -> str:
     return "%dm left" % m
 
 
-def rows(s: Dict[str, Any], pmap: Dict[str, Any] = None) -> List[dict]:
+def rows(s: Dict[str, Any], pmap: Dict[str, Any] = None, counted_only: bool = True) -> List[dict]:
     """Picks made so far, newest first - which is the order you want when the
-    draft has been running for a week."""
+    draft has been running for a week.
+
+    `counted_only` drops anything past the rulebook's round count. Sleeper will
+    keep taking picks after the league's draft is over, and showing those as
+    real would put players on rosters nobody agreed to.
+    """
     pmap = pmap if pmap is not None else {}
+    cap = s.get("league_total") if counted_only else None
     out = []
     for p in reversed(s.get("picks") or []):
+        if cap and int(p.get("pick_no") or 0) > cap:
+            continue
         md = p.get("metadata") or {}
         name = (" ".join(x for x in (md.get("first_name"), md.get("last_name")) if x)).strip()
         if not name:
