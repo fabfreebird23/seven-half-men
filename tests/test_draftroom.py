@@ -81,15 +81,15 @@ def test_a_drafted_player_cannot_be_taken_twice():
 
 
 def test_speech_that_is_certain_drafts_without_asking():
-    """The whole point of voice: say it and it is entered. The transcript comes
-    back through the URL and Python does the matching, so the part that can get
-    a pick wrong is the part that is unit-tested."""
+    """The whole point of voice: say it and it is entered. The transcript is
+    matched in Python, so that half is exercised here; the browser half only
+    captures audio."""
+    from halfmen import voice
     at = unlock(room())
     name = picker(at).options[0].split("  \u00b7")[0]
-    at.query_params["say"] = name
-    at.run()
-    made = picks.load(picks.VETERAN, config.season())
-    assert len(made) == 1 and made[0]["name"] == name
+    pool = [{"id": "x", "name": name, "position": "RB", "team": "MIA"}]
+    got = voice.match(name, pool)
+    assert got and got["sure"] and got["player"]["name"] == name
 
 
 def test_the_seats_label_by_pick_number_not_seat():
@@ -100,32 +100,49 @@ def test_the_seats_label_by_pick_number_not_seat():
     assert seats[7]["label"] == "2.04" and seats[7]["owner_id"] == "a"
 
 
-def test_voice_never_navigates_from_inside_the_sandbox():
+VOICE_HTML = (Path(APP).parent / "halfmen" / "components" / "voice" / "index.html")
+
+
+def test_voice_never_navigates_the_page():
     """Streamlit sandboxes component frames without allow-top-navigation, so
     `window.parent.location = ...` is silently dropped - recognition works, the
-    transcript goes nowhere, and it looks exactly like a dead microphone. The
-    navigation has to be an anchor the PARENT owns and clicks."""
-    src = Path(APP).read_text()
-    room = src[src.index("def voice_button"):src.index("def draft_entry")]
-    assert "P.location.href" not in room.replace("new URL(P.location.href)", ""), room[:0]
-    assert "P.document.createElement('a')" in room, "navigate via a parent-owned anchor"
-    assert "a.click()" in room
-    assert "window.parent.location.href =" not in room, "this is the thing that fails silently"
+    transcript goes nowhere, and it looks exactly like a dead microphone. It
+    also meant a full page load between picks. The value goes back over the
+    websocket instead."""
+    src = VOICE_HTML.read_text()
+    assert "streamlit:setComponentValue" in src, "hand the value back, do not navigate"
+    assert "location.href" not in src and "location =" not in src
+    assert "streamlit:componentReady" in src, "the component has to announce itself"
+
+
+def test_saying_the_same_name_twice_still_counts():
+    """Streamlit swallows an unchanged component value, so a repeated transcript
+    would silently do nothing the second time."""
+    src = VOICE_HTML.read_text()
+    assert "seq: ++seq" in src
 
 
 def test_the_mic_reports_what_it_heard():
     """A silent failure is the worst outcome here - if it hears something and
     cannot deliver it, the button still has to show that it heard."""
-    src = Path(APP).read_text()
-    room = src[src.index("def voice_button"):src.index("def draft_entry")]
-    assert "Mic blocked" in room and "Did not catch that" in room
-    assert "Voice needs Chrome or Edge" in room
+    src = VOICE_HTML.read_text()
+    assert "Mic blocked" in src and "Did not catch that" in src
+    assert "Voice needs Chrome or Edge" in src
 
 
 def test_holding_v_does_not_fire_while_somebody_is_typing_a_name():
+    src = VOICE_HTML.read_text()
+    assert "role') === 'combobox'" in src, "the player picker is a combobox, not an input"
+
+
+def test_a_pick_never_uses_a_fragment_rerun_it_is_not_allowed_to():
+    """`scope="fragment"` is only legal DURING a fragment rerun. On the first
+    full run that renders the fragment it raises - so the very first pick of the
+    night would have thrown instead of landing."""
     src = Path(APP).read_text()
-    room = src[src.index("def voice_button"):src.index("def draft_entry")]
-    assert "role') === 'combobox'" in room, "the player picker is a combobox, not an input"
+    body = src[src.index("def room_controls"):src.index("def room_board")]
+    assert 'st.rerun(scope="fragment")' not in body, "go through rerun_here()"
+    assert body.count("rerun_here()") >= 3
 
 
 def test_the_room_unlock_survives_a_full_page_load():

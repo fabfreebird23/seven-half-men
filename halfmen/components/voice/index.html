@@ -1,0 +1,104 @@
+<!doctype html><meta charset="utf-8">
+<style>
+  body{margin:0;font-family:ui-monospace,Menlo,monospace;background:transparent}
+  #m{width:100%;height:52px;border-radius:11px;border:1px solid #313847;background:#101218;
+     color:#a6b1c2;font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;
+     text-transform:uppercase;cursor:pointer;touch-action:none;user-select:none}
+  #m:hover{border-color:#ccff44;color:#ccff44}
+  #m.hot{background:#ccff44;color:#0a0d05;border-color:#ccff44}
+  #m.err{border-color:#ff6b7d;color:#ff6b7d}
+  #m:disabled{opacity:.35;cursor:not-allowed}
+</style>
+<button id="m">Hold to talk &middot; or hold V</button>
+<script>
+/* A real Streamlit component, by hand - no build step.
+ *
+ * The point of the exercise is the LAST line of this file: setComponentValue
+ * sends the transcript back over the websocket Streamlit already has open, so
+ * the app reruns the way it does for any widget. The previous version handed
+ * the transcript back by navigating the page, which meant a full reload, a
+ * white flash, and a brand new session between every single pick.
+ *
+ * Streamlit's component protocol is only postMessage, so it does not need the
+ * npm package to speak it.
+ */
+const IDLE = 'Hold to talk · or hold V';
+const b = document.getElementById('m');
+let seq = 0;
+
+function post(type, data){
+  window.parent.postMessage(Object.assign({isStreamlitMessage: true, type: type}, data), '*');
+}
+function ready(){ post('streamlit:componentReady', {apiVersion: 1}); }
+function height(h){ post('streamlit:setFrameHeight', {height: h}); }
+function send(text){
+  // seq rises every time, so saying the same name twice in a row still counts
+  // as a new value rather than being swallowed as "unchanged".
+  post('streamlit:setComponentValue', {value: {text: text, seq: ++seq}, dataType: 'json'});
+}
+
+function say(t, cls){ b.textContent = t; b.className = cls || ''; }
+
+/* Recognition runs in THIS frame. Streamlit's component iframe carries
+ * allow="...microphone..." and allow-same-origin, so the mic grant reaches it;
+ * what it does not carry is allow-top-navigation, which is why nothing may
+ * navigate from in here. */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, on = false;
+
+function start(){
+  if (!SR || on) return;
+  rec = new SR(); rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = false;
+  rec.onresult = e => {
+    let t = '', done = false;
+    for (let i = 0; i < e.results.length; i++){
+      t += e.results[i][0].transcript;
+      if (e.results[i].isFinal) done = true;
+    }
+    t = t.trim();
+    if (t) say('“' + t + '”', 'hot');
+    if (done && t) send(t);
+  };
+  rec.onend = () => { on = false; if (!/“/.test(b.textContent)) say(IDLE); };
+  rec.onerror = ev => {
+    on = false;
+    say(ev.error === 'not-allowed' ? 'Mic blocked — allow it in the address bar'
+                                   : 'Did not catch that', 'err');
+  };
+  try { rec.start(); on = true; say('Listening…', 'hot'); }
+  catch (err){ on = false; say('Could not start', 'err'); }
+}
+function stop(){ if (rec && on){ try { rec.stop(); } catch(e){} } }
+
+if (!SR){
+  b.disabled = true;
+  say('Voice needs Chrome or Edge');
+} else {
+  b.addEventListener('pointerdown', e => { e.preventDefault(); start(); });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+
+  // Hold V from anywhere on the page. The listener has to go on the PARENT
+  // document - nobody is going to click into a 52px iframe first - and the
+  // player picker is a combobox rather than an input, so guard on both.
+  let doc = null;
+  try { doc = window.parent.document; } catch (e) { doc = null; }
+  if (doc){
+    const typing = () => {
+      const el = doc.activeElement || {};
+      return /INPUT|TEXTAREA/.test(el.tagName || '') ||
+             (el.getAttribute && el.getAttribute('role') === 'combobox');
+    };
+    doc.addEventListener('keydown', e => {
+      if (e.key && e.key.toLowerCase() === 'v' && !e.repeat && !typing()) start();
+    });
+    doc.addEventListener('keyup', e => {
+      if (e.key && e.key.toLowerCase() === 'v') stop();
+    });
+  }
+}
+
+window.addEventListener('message', e => {
+  if (e.data && e.data.type === 'streamlit:render') height(60);
+});
+ready(); height(60);
+</script>

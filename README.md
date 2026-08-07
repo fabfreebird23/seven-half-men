@@ -207,11 +207,28 @@ says so. It also needs HTTPS or localhost, which Streamlit Cloud satisfies.
 > echoes the transcript back, so "it heard me but nothing happened" can never
 > again look the same as "it did not hear me".
 
-Handing the transcript back means **navigating the page**, and a new page is a
-new Streamlit session with an empty `session_state` — so a session-only unlock
-asked for the password after every spoken pick. The room carries a token in the
-URL instead (`?k=`), a hash rather than the password, and `_keep()` drags it
-through every navigation.
+Handing the transcript back used to mean **navigating the page** — a white
+flash, a full reload and a brand new session between every pick. It is a real
+component now: `halfmen/components/voice/` is a single static HTML file that
+speaks Streamlit's postMessage protocol by hand (`componentReady`,
+`setFrameHeight`, `setComponentValue`) with no build step, so the transcript
+arrives over the websocket like any widget. The value carries a rising `seq`,
+because Streamlit swallows an unchanged component value and saying the same name
+twice in a row would otherwise do nothing the second time.
+
+The clock, the entry controls and the board all live in one `@st.fragment`, so a
+pick repaints that block and leaves the masthead, the nav and the rest of the
+page alone.
+
+> `st.rerun(scope="fragment")` is only legal **during** a fragment rerun. On the
+> first full script run that happens to render the fragment it raises — so the
+> very first pick of the night would have thrown instead of landing. Everything
+> goes through `rerun_here()`, which tries the cheap repaint and falls back to
+> the page.
+
+The unlock still has to survive a reload, since one may happen for other
+reasons: the room carries a token in the URL (`?k=`), a hash rather than the
+password, and `_keep()` drags it through every navigation.
 
 Be clear about what that buys: **anyone with the link can run the board.** Same
 speed bump as before, except it now travels. It deliberately does *not* unlock

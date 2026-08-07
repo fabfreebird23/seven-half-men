@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import html
+from pathlib import Path
 import json
 import time
 import math
@@ -1616,6 +1617,15 @@ def live_draft(kind: int) -> None:
         ] for r in got[:40]])
 
 
+@st.cache_resource(show_spinner=False)
+def _voice_component():
+    """A real component, so the transcript arrives over the websocket Streamlit
+    already has open instead of by navigating the page. Cached because
+    declare_component registers a route and must not run twice."""
+    return components.declare_component(
+        "hm_voice", path=str(Path(__file__).resolve().parent / "halfmen" / "components" / "voice"))
+
+
 def player_pool() -> List[dict]:
     """Everyone draftable, once. Built from Sleeper's map, skinny on purpose -
     this list is searched on every keystroke in a room full of people."""
@@ -1648,21 +1658,32 @@ def draft_room(leaf=None) -> None:
     rounds = config.veteran_rounds(SEASON)
     snake = bool(config.drafts().get("snake", True))
     order = _live_order(live.VETERAN) or first_draw().get("veteran") or owner_ids()
-    seats = picks.board_seats(order, rounds, snake)
-    made = picks.load(kind, SEASON)
-    taken = {str(p["player_id"]) for p in made}
-    unlocked = room_unlocked()
 
     theme.bar("Draft room", "%d rounds &middot; %d picks &middot; this app is the record" % (
-        rounds, len(seats)))
+        rounds, rounds * len(order)))
+    room_live(kind, order, rounds, snake)
 
-    # ---------------------------------------------------------------- clock
-    if len(made) >= len(seats):
+
+@st.fragment
+def room_live(kind, order, rounds, snake) -> None:
+    """Clock, entry and board, all in one fragment.
+
+    Everything that changes when a pick lands lives in here, so
+    `st.rerun(scope="fragment")` repaints exactly this and leaves the masthead,
+    the nav and the rest of the page alone. Together with the voice component
+    handing its transcript back over the websocket, entering a pick stopped
+    being a page load and became a small update to the part that changed.
+    """
+    made = picks.load(kind, SEASON)
+    taken = {str(p["player_id"]) for p in made}
+    seats = picks.board_seats(order, rounds, snake)
+    seat = seats[len(made)] if len(made) < len(seats) else None
+    unlocked = room_unlocked()
+
+    if seat is None:
         st.markdown('<div class="banner" style="border-color:var(--good)"><b>Draft complete.</b> '
                     'All %d picks are in.</div>' % len(seats), unsafe_allow_html=True)
-        seat = None
     else:
-        seat = seats[len(made)]
         st.markdown(
             '<div class="clockcard"><div class="l"><div class="k">On the clock</div>'
             '<div class="w">%s</div><div class="tm">%s</div></div>'
@@ -1673,15 +1694,43 @@ def draft_room(leaf=None) -> None:
                 "&larr; snaking back" if (snake and seat["round"] % 2 == 0) else "&rarr;"),
             unsafe_allow_html=True)
 
-    # ------------------------------------------------------ voice, then hands
+    if seat is not None:
+        if not unlocked:
+            room_lock_ui()
+        else:
+            room_controls(kind, order, rounds, snake, made, taken)
+        storage_note()
+
+    room_board(kind, order, rounds, snake)
+
+
+def rerun_here() -> None:
+    """Repaint the fragment if we are inside a fragment rerun, else the page.
+
+    `st.rerun(scope="fragment")` is only legal DURING a fragment rerun - on the
+    first full script run that happens to render the fragment it raises, which
+    means the very first pick of the night would have thrown rather than
+    landing. Try the cheap repaint, fall back to the whole page.
+    """
+    try:
+        st.rerun(scope="fragment")
+    except Exception:
+        st.rerun()
+
+
+def room_controls(kind, order, rounds, snake, made, taken) -> None:
+    """Say it or type it. Called from inside the fragment, so every path here
+    reruns the fragment rather than the page."""
     pool = player_pool()
-    heard = _qp("say")
-    if heard and seat and unlocked:
-        st.query_params.pop("say", None)
+
+    said = _voice_component()(key="hm_voice", default=None)
+    if said and said.get("seq") != st.session_state.get("voice_seq"):
+        st.session_state["voice_seq"] = said.get("seq")
+        heard = said.get("text", "")
         got = voice.match(heard, pool, exclude=taken)
         if got and got["sure"]:
             picks.add(kind, got["player"], order, rounds, snake, SEASON)
-            st.rerun()
+            rerun_here()
         elif got:
             st.session_state["room_pick"] = got["player"]["name"]
             st.markdown('<div class="heardline"><span class="k">Heard</span>&ldquo;%s&rdquo; '
@@ -1689,37 +1738,35 @@ def draft_room(leaf=None) -> None:
                             esc(heard), esc(got["player"]["name"])), unsafe_allow_html=True)
         else:
             st.markdown('<div class="heardline bad"><span class="k">Heard</span>&ldquo;%s&rdquo; '
-                        '&mdash; no match. Say the surname again, or type it.</div>' % esc(heard),
-                        unsafe_allow_html=True)
+                        '&mdash; no match. Say the surname again, or type it.</div>'
+                        % esc(heard), unsafe_allow_html=True)
 
-    if seat:
-        if not unlocked:
-            room_lock_ui()
-        else:
-            voice_button()
-            avail = [p for p in pool if p["id"] not in taken]
-            labels = {"%s  ·  %s %s" % (p["name"], p["position"], p["team"]): p
-                      for p in avail}
-            keys = list(labels)
-            pre = st.session_state.pop("room_pick", None)
-            idx = next((i for i, k in enumerate(keys) if k.startswith(pre + "  ·")), None) \
-                if pre else None
-            chosen = st.selectbox(
-                "Player", keys, index=idx, placeholder="Say the name, or start typing\u2026",
-                label_visibility="collapsed", key="room_search_%d" % len(made))
-            c1, c2 = st.columns([1, 3])
-            with c1:
-                if st.button("Lock it in", type="primary", disabled=not chosen,
-                             use_container_width=True):
-                    picks.add(kind, labels[chosen], order, rounds, snake, SEASON)
-                    st.rerun()
-            with c2:
-                if st.button("Undo last pick", disabled=not made):
-                    picks.undo(kind, SEASON)
-                    st.rerun()
-        storage_note()
+    labels = {"%s  \u00b7  %s %s" % (p["name"], p["position"], p["team"]): p
+              for p in pool if p["id"] not in taken}
+    keys = list(labels)
+    pre = st.session_state.pop("room_pick", None)
+    idx = next((i for i, k in enumerate(keys) if k.startswith(pre + "  \u00b7")), None) \
+        if pre else None
+    chosen = st.selectbox("Player", keys, index=idx,
+                          placeholder="Say the name, or start typing\u2026",
+                          label_visibility="collapsed", key="room_search_%d" % len(made))
+    c1, c2 = st.columns([1, 3])
+    with c1:
+        if st.button("Lock it in", type="primary", disabled=not chosen,
+                     use_container_width=True):
+            picks.add(kind, labels[chosen], order, rounds, snake, SEASON)
+            rerun_here()
+    with c2:
+        if st.button("Undo last pick", disabled=not made):
+            picks.undo(kind, SEASON)
+            rerun_here()
 
-    # ---------------------------------------------------------------- board
+
+def room_board(kind, order, rounds, snake) -> None:
+    """The grid. Split out so the fragment can repaint it without the page."""
+    made = picks.load(kind, SEASON)
+    seats = picks.board_seats(order, rounds, snake)
+    seat = seats[len(made)] if len(made) < len(seats) else None
     st.markdown('<div class="poskey">%s</div>' % "".join(
         '<span><i style="background:var(--%s)"></i>%s</span>' % (p.lower(), p)
         for p in ("QB", "RB", "WR", "TE")), unsafe_allow_html=True)
@@ -1758,98 +1805,6 @@ def draft_room(leaf=None) -> None:
             "".join("<th title='%s'>%s</th>" % (esc(team_of(o)), esc(who(o).split()[0]))
                     for o in order),
             "".join(cells)), unsafe_allow_html=True)
-
-
-def voice_button() -> None:
-    """Hold to talk.
-
-    Both halves of this run in the PARENT document, not in the component iframe,
-    and that is not a style choice. Streamlit sandboxes its component frames
-    without `allow-top-navigation`, so `window.parent.location = ...` is silently
-    dropped - the first version of this recognised speech perfectly and then had
-    nowhere to put the answer, which looked exactly like a dead microphone. The
-    iframe is only a place to hang a button; it calls into the parent, where
-    there is no sandbox and where the page already holds the mic permission.
-
-    Recognition only captures audio. The matching is Python, in voice.py, so the
-    part that can get a pick wrong is the part with tests around it.
-    """
-    components.html(
-        """<style>
-        body{margin:0;font-family:ui-monospace,Menlo,monospace}
-        #m{width:100%;height:52px;border-radius:11px;border:1px solid #313847;background:#101218;
-           color:#a6b1c2;font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;
-           text-transform:uppercase;cursor:pointer;touch-action:none;user-select:none}
-        #m:hover{border-color:#ccff44;color:#ccff44}
-        #m.hot{background:#ccff44;color:#0a0d05;border-color:#ccff44}
-        #m.err{border-color:#ff6b7d;color:#ff6b7d}
-        #m:disabled{opacity:.35;cursor:not-allowed}
-        </style>
-        <button id="m">Hold to talk &middot; or hold V</button>
-        <script>
-        const b = document.getElementById('m');
-        const P = window.parent;                 // same-origin: allow-same-origin is set
-        const SR = P.SpeechRecognition || P.webkitSpeechRecognition;
-        const IDLE = 'Hold to talk \u00b7 or hold V';
-        let rec = null, on = false;
-
-        function say(t, cls){ b.textContent = t; b.className = cls || ''; }
-
-        function go(text){
-          // Navigate from the PARENT's own document. A sandboxed frame cannot
-          // drive the top window, but an anchor the parent owns can.
-          const u = new URL(P.location.href);
-          u.searchParams.set('say', text);
-          const a = P.document.createElement('a');
-          a.href = u.toString(); a.target = '_self';
-          P.document.body.appendChild(a); a.click(); a.remove();
-        }
-
-        function start(){
-          if (!SR || on) return;
-          rec = new SR(); rec.lang='en-US'; rec.interimResults=true; rec.continuous=false;
-          rec.onresult = e => {
-            let t = '', done = false;
-            for (let i = 0; i < e.results.length; i++){
-              t += e.results[i][0].transcript;
-              if (e.results[i].isFinal) done = true;
-            }
-            t = t.trim();
-            if (t) say('\u201c' + t + '\u201d', 'hot');
-            if (done && t) go(t);
-          };
-          rec.onend = () => { on = false; if (!/\u201c/.test(b.textContent)) say(IDLE); };
-          rec.onerror = ev => {
-            on = false;
-            say(ev.error === 'not-allowed' ? 'Mic blocked \u2014 allow it in the address bar'
-                                           : 'Did not catch that', 'err');
-          };
-          try { rec.start(); on = true; say('Listening\u2026', 'hot'); }
-          catch(err){ on = false; say('Could not start', 'err'); }
-        }
-        function stop(){ if (rec && on){ try { rec.stop(); } catch(e){} } }
-
-        if (!SR){
-          b.disabled = true;
-          say('Voice needs Chrome or Edge');
-        } else {
-          b.addEventListener('pointerdown', e => { e.preventDefault(); start(); });
-          ['pointerup','pointerleave','pointercancel'].forEach(ev =>
-            b.addEventListener(ev, stop));
-          // Hold V from anywhere on the page, unless somebody is typing a name.
-          const typing = () => {
-            const el = P.document.activeElement || {};
-            return /INPUT|TEXTAREA/.test(el.tagName || '') ||
-                   el.getAttribute && el.getAttribute('role') === 'combobox';
-          };
-          P.document.addEventListener('keydown', e => {
-            if (e.key && e.key.toLowerCase() === 'v' && !e.repeat && !typing()) start();
-          });
-          P.document.addEventListener('keyup', e => {
-            if (e.key && e.key.toLowerCase() === 'v') stop();
-          });
-        }
-        </script>""", height=60)
 
 
 def draft_entry(which: str, pick_order, rounds: int, snake: bool) -> None:
