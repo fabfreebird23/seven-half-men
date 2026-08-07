@@ -67,7 +67,7 @@ def add(kind: str, player: dict, order: List[str], rounds: int,
     seat = seats[len(made)]
     pick = {"round": seat["round"], "pick": seat["pick"], "owner_id": seat["owner_id"],
             "player_id": str(player["id"]), "name": player["name"],
-            "position": player.get("position", "")}
+            "position": player.get("position", ""), "team": player.get("team", "")}
     save(kind, made + [pick], season)
     return pick
 

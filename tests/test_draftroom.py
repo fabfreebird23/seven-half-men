@@ -157,3 +157,29 @@ def test_the_room_key_does_not_unlock_the_lottery_draw():
     lot.query_params.update({"p": "preseason", "g": "lottery", "t": "drums", "k": key})
     lot.run()
     assert any(i.key == "draw_pw" for i in lot.text_input), "the draw still asks"
+
+
+def test_no_html_entity_is_ever_passed_through_esc():
+    """esc() on a string that already contains an entity escapes the ampersand,
+    so "RB &middot;" renders as literal text under the player's name."""
+    import re
+    from pathlib import Path as P
+    for f in list(P("halfmen").glob("*.py")) + [P("app.py")]:
+        hits = re.findall(r"esc\([^()]*&[a-zA-Z]+;[^()]*\)", f.read_text())
+        assert not hits, "%s escapes an entity: %s" % (f, hits[:2])
+
+
+def test_a_recorded_pick_keeps_the_nfl_team():
+    """The board shows "RB · MIA". Without the team it showed "RB ·" with a
+    dangling separator and nothing after it."""
+    got = picks.add(picks.VETERAN,
+                    {"id": "1", "name": "De'Von Achane", "position": "RB", "team": "MIA"},
+                    ["a", "b"], 1, snake=True, season=config.season())
+    assert got["team"] == "MIA" and got["position"] == "RB"
+    assert picks.load(picks.VETERAN, config.season())[0]["team"] == "MIA"
+
+
+def test_a_pick_with_no_team_does_not_leave_a_dangling_separator():
+    got = picks.add(picks.VETERAN, {"id": "2", "name": "Somebody", "position": "WR"},
+                    ["a", "b"], 1, snake=True, season=config.season())
+    assert got["team"] == ""

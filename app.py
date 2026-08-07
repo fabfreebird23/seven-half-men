@@ -1747,7 +1747,9 @@ def draft_room(leaf=None) -> None:
                     " ".join(cls), lbl,
                     ("<div class='n'>%s</div><div class='p pos-%s'>%s</div>" % (
                         esc(got["name"]), got.get("position", ""),
-                        esc("%s &middot; " % got.get("position", "")))) if got else ""))
+                        " &middot; ".join(
+                            esc(x) for x in (got.get("position"), got.get("team")) if x)))
+                    if got else ""))
         cells.append("<tr>%s</tr>" % "".join(row))
     st.markdown(
         '<div class="dboard"><table class="dboard"><colgroup><col class="rh">%s</colgroup>'
