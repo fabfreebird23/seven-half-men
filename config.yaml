@@ -168,7 +168,7 @@ draw:
   password: cliffdog
 
 theme:
-  default_palette: lights_off   # lights_off | newsprint
+  default_palette: bloodysunday   # the draft-dashboard brand, dark
 
 # ADP providers. League-independent; the scrapers were carried over from the
 # kreeper-league tool rather than rewritten (they are generic).

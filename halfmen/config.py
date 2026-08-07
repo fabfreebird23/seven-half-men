@@ -152,7 +152,7 @@ def me() -> str:
 
 
 def palette() -> str:
-    return load().get("theme", {}).get("default_palette", "lights_off")
+    return load().get("theme", {}).get("default_palette", "bloodysunday")
 
 
 def lottery_weights(alt: bool = False) -> List[int]:

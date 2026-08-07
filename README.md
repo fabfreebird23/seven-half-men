@@ -328,7 +328,7 @@ halfmen/
   adp_board.py         consensus ADP -> a round in an 8-team draft
   rulebook.py          the league rulebook, rendered on the Rules page
   valueboard.py        every roster priced for next year, plus the franchise tag
-  theme.py             the Acid palette, the type, the Streamlit chrome overrides
+  theme.py             the Bloody Sunday palette, the type, the Streamlit chrome
   adp/, names.py       ADP scrapers, carried over from the kreeper tool
 tests/                 218 tests
 scripts/refresh_adp.py daily consensus refresh
@@ -588,20 +588,35 @@ order-of-operations for the offseason.
 
 ## Type and colour
 
-**Floodlight / Acid**, one dark ground. Big Shoulders Display — a condensed
-industrial cut — does the display work: masthead, section heads, nav pills and
-every large number. It is the face Impact was standing in for in the mockup,
-which only fell back to Impact because the artifact CSP blocks font CDNs. Archivo
-sets the body, IBM Plex Mono carries anything with digits in it.
+**Bloody Sunday**, one dark ground — the draft-dashboard brand carried over so
+the two apps read as one family. Big Shoulders Display — a condensed industrial
+cut — does the display work: masthead, section heads, nav pills and every large
+number. It is the face Impact was standing in for in the mockup, which only fell
+back to Impact because the artifact CSP blocks font CDNs. Archivo sets the body,
+IBM Plex Mono carries anything with digits in it.
 
-Acid lime does all the accent work on a near-black ground; electric blue is the
-second voice and marks things that are *special* rather than merely good —
-franchise tags, champions, the year you are currently in.
+The whole palette turns on one rule: **crimson has exactly two jobs — the brand,
+and genuine urgency.** A red brand that also means "warning" means nothing, so
+every other signal moved off red. Positions take the brand's badge set (plum QB,
+teal RB, blue WR, amber TE), and QB moving to plum is precisely what frees
+crimson to mean "act now" on the draft clock and nowhere else. A test asserts it:
+no semantic or position token may wear the accent.
 
-There is deliberately **no light theme**. One ground tuned properly beats two
-half-tuned ones. `theme.PALETTES` is still a dict and `inject()` still takes a
-palette argument, so a light ground can be added later as one more entry without
-touching a single component.
+**The brand's own values could not be reused as-is.** They are mixed for an
+off-white ground — on a dark card, plum reads 1.9:1 and nothing in the set clears
+4.5. Each hue is the brand's, lifted until it clears 4.6:1, and lifted against
+`--card2` rather than `--bg`: text sits on the lightest surface in the stack, and
+clearing the ground is not the same as clearing the card. The contrast test
+caught that distinction, which is the entire reason it exists.
+
+The masthead is a crimson band with a white wordmark. That is display type at
+26px and up, where 3:1 is the standard; every small label keeps 4.5 or better,
+and the ink on accent *pills* is near-black (4.95) rather than white (4.01).
+
+There is deliberately **no light theme**, even though the brand is mixed for one.
+One ground tuned properly beats two half-tuned ones. `theme.PALETTES` is still a
+dict and `inject()` still takes a palette argument, so the light ground can be
+added later as one more entry without touching a single component.
 
 The glance gauges are **bowls of liquid**, not rings. The whoop app this borrows
 from runs a spring-damped surface sim per animation frame, but Streamlit does not

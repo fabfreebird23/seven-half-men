@@ -87,9 +87,27 @@ def test_the_display_face_is_a_real_condensed_cut():
 
 
 def test_there_is_one_ground_and_it_is_dark():
-    assert list(theme.PALETTES) == ["acid"]
-    v = theme.palette_vars("acid")
+    assert list(theme.PALETTES) == ["bloodysunday"]
+    v = theme.palette_vars("bloodysunday")
     assert theme.contrast(v["--ink"], v["--bg"]) > 15, "near-black ground, bright ink"
+
+
+def test_crimson_has_exactly_two_jobs():
+    """The whole palette turns on this. A red brand that also means "warning"
+    means nothing, so every other signal moved off red - positions included."""
+    v = theme.palette_vars("bloodysunday")
+    reds = {v["--acc"], v["--bad"]}
+    for token in ("--good", "--warn", "--qb", "--rb", "--wr", "--te", "--acc2"):
+        assert v[token] not in reds, "%s is wearing the brand colour" % token
+
+
+def test_the_position_scale_is_the_brand_badge_set_lifted():
+    """The brand's own values are mixed for an off-white ground - plum reads
+    1.9:1 on a dark card. Each one has to clear the CARD, not just the ground."""
+    v = theme.palette_vars("bloodysunday")
+    for token in ("--qb", "--rb", "--wr", "--te"):
+        assert theme.contrast(v[token], v["--card2"]) >= 4.5, token
+        assert theme.contrast(v[token], v["--card"]) >= 4.5, token
 
 
 # ---------------------------------------------------------------- liquid

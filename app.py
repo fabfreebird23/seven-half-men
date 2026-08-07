@@ -632,7 +632,7 @@ def my_card(view: str) -> None:
 
     (lk, lv, ln, _), (rk, rv, rn, _), (cap_l, cap_r), progress = band_numbers(sit)
     # The accent is reserved for a place that is worth something. Eighth of
-    # eight lit up in acid green reads as congratulation.
+    # eight lit up in the brand colour reads as congratulation.
     in_bracket = bool(sit["place"] and sit["place"] <= int(config.league()["playoff_teams"]))
     status = (("%s of %d" % (ordinal(sit["place"]), len(owner_ids())), not in_bracket)
               if sit["place"] else

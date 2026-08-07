@@ -26,31 +26,41 @@ from typing import Dict, List, Tuple
 import streamlit as st
 
 PALETTES: Dict[str, dict] = {
-    "acid": {
-        "label": "Acid",
+    "bloodysunday": {
+        "label": "Bloody Sunday",
+        # Carried over from the draft-dashboard brand so the two apps read as
+        # one family. The whole palette turns on giving crimson exactly two
+        # jobs - the brand, and genuine urgency - and moving every other signal
+        # off red. A red brand that also means "warning" means nothing.
+        #
+        # These are the DARK values. The brand's own set is mixed for an
+        # off-white ground and cannot be reused here: at their light-ground
+        # values plum reads 1.9:1 on a dark card and nothing in the set clears
+        # 4.5. Each hue is the brand's, lifted until it clears 4.6:1 on --bg.
         "vars": """
-  --bg:#08090c; --bg2:#0d0f14;
-  --card:#101218; --card2:#171a22; --line:#232833; --line2:#313847;
-  --ink:#f2f5f9; --ink2:#a6b1c2; --dim:#8593a6;
-  --acc:#ccff44; --acc-ink:#0a0d05; --acc-soft:rgba(204,255,68,.13);
-  --acc2:#5b8cff; --acc2-ink:#020a1f; --acc2-soft:rgba(91,140,255,.15);
-  /* Positions are CATEGORICAL, so they get their own scale rather than
-     borrowing one that already means something. Lime is state (on the clock,
-     your column) and mint/amber/coral are meaning (good/warning/bad) - a green
-     cell would read as "good" before it read as "RB". Positions take the cool
-     arc instead: sky, blue, violet, magenta. A smooth hue progression, so it
-     reads as one system; every step clears 5.5:1 on both card backgrounds and
-     sits at least 35deg off every reserved hue. */
-  --qb:#7ce0ff; --rb:#5b8cff; --wr:#a98bff; --te:#e879c7;
-  --warn-soft:rgba(245,197,66,.07);
-  --good:#48e39a; --warn:#f5c542; --bad:#ff6b7d;
+  --bg:#141314; --bg2:#1a1819;
+  --card:#1d1b1c; --card2:#262324; --line:#332f31; --line2:#463f42;
+  --ink:#f4f1f2; --ink2:#b4aaae; --dim:#938a8e;
+  /* Crimson stays the fill; the ink on it is near-black, which clears 4.95
+     where white manages only 4.01. The masthead keeps a white wordmark because
+     that is display type at 26px+, where 3:1 is the bar. */
+  --acc:#fb0849; --acc-ink:#1a0208; --acc-soft:rgba(251,8,73,.14);
+  --acc2:#578ed5; --acc2-ink:#02101f; --acc2-soft:rgba(87,142,213,.16);
+  /* Positions are CATEGORICAL and take the brand's own badge set - plum, teal,
+     blue, amber - lifted for this ground. QB is plum rather than red precisely
+     so crimson can keep meaning "act now" and nothing else. */
+  /* Lifted against --card2, not --bg: text sits on the lightest surface in the
+     stack, and clearing the ground is not the same as clearing the card. */
+  --qb:#cb6ab8; --rb:#369d86; --wr:#578ed5; --te:#d77010;
+  --warn-soft:rgba(215,112,16,.10);
+  --good:#369d86; --warn:#d77010; --bad:#fc4475;
   --shadow:0 10px 30px -18px rgba(0,0,0,.95);
-  --grain:.05;
+  --grain:.04;
 """,
     },
 }
 
-DEFAULT = "acid"
+DEFAULT = "bloodysunday"
 
 # Foreground / background pairs that actually carry text somewhere in the app.
 # tests/test_theme.py walks these for every palette.
@@ -144,17 +154,28 @@ html, body, [class*="css"], .stMarkdown, p, li, span, label{
 .mono, .num{ font-family:var(--f-data); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
 
 /* ---- masthead ------------------------------------------------------- */
-.mast{ display:flex; align-items:baseline; gap:9px; line-height:1; margin:0 0 16px; }
-.mast .the{ font-family:var(--f-script); font-size:24px; color:var(--acc2);
+/* A crimson band, the way the brand does it - the mark sits ON the colour
+   rather than beside it. White wordmark here is display type at 26px and up,
+   where 3:1 is the bar; every small label on the band is at 4.5 or better. */
+/* Streamlit's block container carries a large top padding, so a band that only
+   bleeds sideways leaves a dead strip above it. Pull it up the full padding and
+   put that space back inside the band. */
+.mast{ display:flex; align-items:baseline; gap:9px; line-height:1;
+       background:var(--acc); color:#fff;
+       margin:-96px -1.2rem 18px; padding:22px 1.2rem 16px;
+       border-radius:0 0 14px 14px; flex-wrap:wrap; }
+@media (max-width:640px){ .mast{ margin-top:-72px; padding-top:16px; } }
+.mast .the{ font-family:var(--f-script); font-size:24px; color:rgba(255,255,255,.94);
             transform:translateY(3px); line-height:1; }
 .mast .name{
   font-family:var(--f-display); font-weight:800; font-size:42px;
-  letter-spacing:.005em; text-transform:uppercase; line-height:.9; color:var(--ink);
+  letter-spacing:.005em; text-transform:uppercase; line-height:.9; color:#fff;
 }
-.mast .name .half{ color:var(--acc); }
+.mast .name .half{ color:#fff; opacity:.85; }
 .mast .yr{
-  font-family:var(--f-data); font-size:10.5px; letter-spacing:.14em; color:var(--dim);
-  text-transform:uppercase; font-weight:500; align-self:center;
+  font-family:var(--f-data); font-size:10.5px; letter-spacing:.14em;
+  color:rgba(255,255,255,.85); text-transform:uppercase; font-weight:500;
+  align-self:center; margin-left:auto;
 }
 
 /* ---- section heading ------------------------------------------------ */
