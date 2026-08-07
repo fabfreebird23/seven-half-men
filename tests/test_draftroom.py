@@ -39,7 +39,7 @@ def picker(at):
 
 
 def unlock(at):
-    pw = next(i for i in at.text_input if i.key == "draw_pw")
+    pw = next(i for i in at.text_input if i.key == "room_pw")
     pw.set_value(config.draw_password()).run()
     return at
 
@@ -47,7 +47,7 @@ def unlock(at):
 def test_the_board_is_read_only_until_the_commissioner_signs_in():
     at = room()
     assert picker(at) is None, "no entry control while locked"
-    assert any("password to run the board" in (i.placeholder or "") for i in at.text_input)
+    assert any(i.key == "room_pw" for i in at.text_input)
 
 
 def test_a_pick_typed_in_lands_on_the_board_and_persists():
@@ -126,3 +126,34 @@ def test_holding_v_does_not_fire_while_somebody_is_typing_a_name():
     src = Path(APP).read_text()
     room = src[src.index("def voice_button"):src.index("def draft_entry")]
     assert "role') === 'combobox'" in room, "the player picker is a combobox, not an input"
+
+
+def test_the_room_unlock_survives_a_full_page_load():
+    """Voice hands its transcript back by navigating the page, and a new page is
+    a new Streamlit session with an empty session_state. A session-only flag
+    asked for the password after every single spoken pick."""
+    at = unlock(room())
+    key = {k: (v[0] if isinstance(v, list) else v)
+           for k, v in dict(at.query_params).items()}.get("k")
+    assert key, "unlocking has to leave something a reload can read"
+
+    fresh = room(k=key)                       # brand new session, as after a navigation
+    assert picker(fresh) is not None, "still unlocked"
+    assert not any(i.key == "room_pw" for i in fresh.text_input)
+
+
+def test_a_wrong_key_does_not_open_the_board():
+    fresh = room(k="not-the-key")
+    assert picker(fresh) is None
+
+
+def test_the_room_key_does_not_unlock_the_lottery_draw():
+    """Re-drawing the lottery is destructive, so that one stays session-only and
+    does not travel in a pasted link."""
+    at = unlock(room())
+    key = {k: (v[0] if isinstance(v, list) else v)
+           for k, v in dict(at.query_params).items()}["k"]
+    lot = AppTest.from_file(APP, default_timeout=90)
+    lot.query_params.update({"p": "preseason", "g": "lottery", "t": "drums", "k": key})
+    lot.run()
+    assert any(i.key == "draw_pw" for i in lot.text_input), "the draw still asks"

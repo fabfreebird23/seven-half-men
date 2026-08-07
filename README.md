@@ -207,6 +207,17 @@ says so. It also needs HTTPS or localhost, which Streamlit Cloud satisfies.
 > echoes the transcript back, so "it heard me but nothing happened" can never
 > again look the same as "it did not hear me".
 
+Handing the transcript back means **navigating the page**, and a new page is a
+new Streamlit session with an empty `session_state` — so a session-only unlock
+asked for the password after every spoken pick. The room carries a token in the
+URL instead (`?k=`), a hash rather than the password, and `_keep()` drags it
+through every navigation.
+
+Be clear about what that buys: **anyone with the link can run the board.** Same
+speed bump as before, except it now travels. It deliberately does *not* unlock
+the lottery draw — re-drawing is destructive, so `draw_unlocked` stays
+session-only and a pasted draft-room link cannot touch it.
+
 ## The two draft boards
 
 **Pre-Season → Draft → Rookie draft** is the one that runs first: 2 rounds, 16

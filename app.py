@@ -9,6 +9,7 @@ full ruleset either way - nothing here is stubbed for year one.
 """
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import time
@@ -53,10 +54,63 @@ def draw_unlocked() -> bool:
     Only the controls are gated. Everyone else still sees the board, the hat and
     each envelope as it opens - which is the point of running it live - they
     just cannot re-draw it or rewind the reveal from their phone.
+
+    Session-only on purpose: re-drawing the lottery is destructive, so that one
+    should not survive a link being pasted into the group chat. The draft room
+    uses `room_unlocked` instead, which does.
     """
     if not config.draw_password():
         return True
     return bool(st.session_state.get("draw_unlocked"))
+
+
+def room_token() -> str:
+    """A short stand-in for the password, safe to carry in a URL."""
+    pw = config.draw_password()
+    return hashlib.sha1(("room:" + pw).encode()).hexdigest()[:10] if pw else ""
+
+
+def room_unlocked() -> bool:
+    """Whether this browser may enter picks.
+
+    The draft room is the one place the unlock has to survive a full page load:
+    voice navigates the page to hand its transcript back, and a new page is a
+    new Streamlit session with an empty session_state - so a session-only flag
+    asked for the password after every single spoken pick.
+
+    So the room carries a token in the URL instead. It is a hash rather than the
+    password, but be clear about what that buys: anyone with the link can run
+    the board. That is the same speed bump as before, except it now travels, and
+    it deliberately does NOT unlock the lottery draw.
+    """
+    if not config.draw_password():
+        return True
+    if st.session_state.get("room_unlocked"):
+        return True
+    return _qp("k") == room_token()
+
+
+def room_lock_ui() -> bool:
+    if room_unlocked():
+        return True
+    c1, c2 = st.columns([2, 3])
+    with c1:
+        pw = st.text_input("Commissioner", type="password",
+                           placeholder="password to run the board",
+                           label_visibility="collapsed", key="room_pw")
+        if pw:
+            if pw == config.draw_password():
+                st.session_state["room_unlocked"] = True
+                st.query_params["k"] = room_token()
+                st.rerun()
+            else:
+                st.markdown('<div class="tiny" style="color:var(--bad)">Not that one.</div>',
+                            unsafe_allow_html=True)
+    with c2:
+        st.markdown('<div class="tiny">Watching only. The board fills in here for everybody as '
+                    'picks go in &mdash; you just cannot enter them.</div>',
+                    unsafe_allow_html=True)
+    return False
 
 
 def draw_lock_ui(placeholder: str = "password to run the draw",
@@ -311,7 +365,7 @@ if PAGE not in dict(SECTIONS):
 # Send them where the content actually went instead.
 _moved = MOVED.get((_qp("g"), _qp("t")))
 if _moved and PAGE in GROUPS:
-    _team = _qp("team")
+    _team, _key = _qp("team"), _qp("k")
     PAGE, _g, _t = _moved
     st.query_params.clear()
     st.query_params["p"] = PAGE
@@ -320,6 +374,8 @@ if _moved and PAGE in GROUPS:
         st.query_params["t"] = _t
     if _team:                     # a redirect must not change who you are
         st.query_params["team"] = _team
+    if _key:                      # nor lock you out of the board mid-draft
+        st.query_params["k"] = _key
 
 GROUP = LEAF = None
 if PAGE in GROUPS:
@@ -1595,7 +1651,7 @@ def draft_room(leaf=None) -> None:
     seats = picks.board_seats(order, rounds, snake)
     made = picks.load(kind, SEASON)
     taken = {str(p["player_id"]) for p in made}
-    unlocked = draw_unlocked()
+    unlocked = room_unlocked()
 
     theme.bar("Draft room", "%d rounds &middot; %d picks &middot; this app is the record" % (
         rounds, len(seats)))
@@ -1638,8 +1694,7 @@ def draft_room(leaf=None) -> None:
 
     if seat:
         if not unlocked:
-            draw_lock_ui("password to run the board",
-                         "Watching only. The board updates here for everyone as picks go in.")
+            room_lock_ui()
         else:
             voice_button()
             avail = [p for p in pool if p["id"] not in taken]
@@ -2226,7 +2281,12 @@ def _keep() -> str:
     named here is dropped - which is how choosing a team and then tapping a page
     silently put you back on your own.
     """
-    return ("&team=%s" % VIEW) if VIEW and VIEW != DEFAULT_VIEW else ""
+    bits = []
+    if VIEW and VIEW != DEFAULT_VIEW:
+        bits.append("team=%s" % VIEW)
+    if _qp("k"):                       # keep the draft room unlocked across pages
+        bits.append("k=%s" % _qp("k"))
+    return ("&" + "&".join(bits)) if bits else ""
 
 
 def _popover(section: str, label: str) -> str:
