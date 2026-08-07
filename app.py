@@ -1704,9 +1704,19 @@ def draft_room(leaf=None) -> None:
 
 
 def voice_button() -> None:
-    """Hold to talk. The browser only captures audio - the transcript goes back
-    through the URL and Python does the matching, so the part that can get a
-    pick wrong is the part that is unit-tested."""
+    """Hold to talk.
+
+    Both halves of this run in the PARENT document, not in the component iframe,
+    and that is not a style choice. Streamlit sandboxes its component frames
+    without `allow-top-navigation`, so `window.parent.location = ...` is silently
+    dropped - the first version of this recognised speech perfectly and then had
+    nowhere to put the answer, which looked exactly like a dead microphone. The
+    iframe is only a place to hang a button; it calls into the parent, where
+    there is no sandbox and where the page already holds the mic permission.
+
+    Recognition only captures audio. The matching is Python, in voice.py, so the
+    part that can get a pick wrong is the part with tests around it.
+    """
     components.html(
         """<style>
         body{margin:0;font-family:ui-monospace,Menlo,monospace}
@@ -1715,44 +1725,71 @@ def voice_button() -> None:
            text-transform:uppercase;cursor:pointer;touch-action:none;user-select:none}
         #m:hover{border-color:#ccff44;color:#ccff44}
         #m.hot{background:#ccff44;color:#0a0d05;border-color:#ccff44}
+        #m.err{border-color:#ff6b7d;color:#ff6b7d}
         #m:disabled{opacity:.35;cursor:not-allowed}
         </style>
         <button id="m">Hold to talk &middot; or hold V</button>
         <script>
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         const b = document.getElementById('m');
+        const P = window.parent;                 // same-origin: allow-same-origin is set
+        const SR = P.SpeechRecognition || P.webkitSpeechRecognition;
+        const IDLE = 'Hold to talk \u00b7 or hold V';
         let rec = null, on = false;
-        function send(t){
-          const u = new URL(window.parent.location.href);
-          u.searchParams.set('say', t);
-          window.parent.location.href = u.toString();
+
+        function say(t, cls){ b.textContent = t; b.className = cls || ''; }
+
+        function go(text){
+          // Navigate from the PARENT's own document. A sandboxed frame cannot
+          // drive the top window, but an anchor the parent owns can.
+          const u = new URL(P.location.href);
+          u.searchParams.set('say', text);
+          const a = P.document.createElement('a');
+          a.href = u.toString(); a.target = '_self';
+          P.document.body.appendChild(a); a.click(); a.remove();
         }
+
         function start(){
           if (!SR || on) return;
-          rec = new SR(); rec.lang='en-US'; rec.interimResults=false; rec.continuous=false;
-          rec.onresult = e => { let t=''; for (const r of e.results) t += r[0].transcript;
-                                if (t.trim()) send(t.trim()); };
-          rec.onend = () => { on=false; b.classList.remove('hot');
-                              b.textContent='Hold to talk \u00b7 or hold V'; };
-          rec.onerror = ev => { b.textContent = ev.error==='not-allowed'
-                                ? 'Mic blocked' : 'Try again'; on=false;
-                                b.classList.remove('hot'); };
-          try{ rec.start(); on=true; b.classList.add('hot'); b.textContent='Listening\u2026'; }
-          catch(e){ on=false; }
+          rec = new SR(); rec.lang='en-US'; rec.interimResults=true; rec.continuous=false;
+          rec.onresult = e => {
+            let t = '', done = false;
+            for (let i = 0; i < e.results.length; i++){
+              t += e.results[i][0].transcript;
+              if (e.results[i].isFinal) done = true;
+            }
+            t = t.trim();
+            if (t) say('\u201c' + t + '\u201d', 'hot');
+            if (done && t) go(t);
+          };
+          rec.onend = () => { on = false; if (!/\u201c/.test(b.textContent)) say(IDLE); };
+          rec.onerror = ev => {
+            on = false;
+            say(ev.error === 'not-allowed' ? 'Mic blocked \u2014 allow it in the address bar'
+                                           : 'Did not catch that', 'err');
+          };
+          try { rec.start(); on = true; say('Listening\u2026', 'hot'); }
+          catch(err){ on = false; say('Could not start', 'err'); }
         }
-        function stop(){ if (rec && on){ try{ rec.stop(); }catch(e){} } }
-        if (!SR){ b.disabled = true; b.textContent = 'No voice in this browser'; }
-        else {
+        function stop(){ if (rec && on){ try { rec.stop(); } catch(e){} } }
+
+        if (!SR){
+          b.disabled = true;
+          say('Voice needs Chrome or Edge');
+        } else {
           b.addEventListener('pointerdown', e => { e.preventDefault(); start(); });
           ['pointerup','pointerleave','pointercancel'].forEach(ev =>
             b.addEventListener(ev, stop));
-          const doc = window.parent.document;
-          doc.addEventListener('keydown', e => {
-            if (e.key && e.key.toLowerCase()==='v' && !e.repeat &&
-                !/INPUT|TEXTAREA/.test((doc.activeElement||{}).tagName||'')) start();
+          // Hold V from anywhere on the page, unless somebody is typing a name.
+          const typing = () => {
+            const el = P.document.activeElement || {};
+            return /INPUT|TEXTAREA/.test(el.tagName || '') ||
+                   el.getAttribute && el.getAttribute('role') === 'combobox';
+          };
+          P.document.addEventListener('keydown', e => {
+            if (e.key && e.key.toLowerCase() === 'v' && !e.repeat && !typing()) start();
           });
-          doc.addEventListener('keyup', e => {
-            if (e.key && e.key.toLowerCase()==='v') stop();
+          P.document.addEventListener('keyup', e => {
+            if (e.key && e.key.toLowerCase() === 'v') stop();
           });
         }
         </script>""", height=60)

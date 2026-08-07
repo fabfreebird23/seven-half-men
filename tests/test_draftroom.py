@@ -98,3 +98,31 @@ def test_the_seats_label_by_pick_number_not_seat():
     seats = picks.board_seats(["a", "b", "c", "d"], 2, snake=True)
     assert seats[4]["label"] == "2.01" and seats[4]["owner_id"] == "d"
     assert seats[7]["label"] == "2.04" and seats[7]["owner_id"] == "a"
+
+
+def test_voice_never_navigates_from_inside_the_sandbox():
+    """Streamlit sandboxes component frames without allow-top-navigation, so
+    `window.parent.location = ...` is silently dropped - recognition works, the
+    transcript goes nowhere, and it looks exactly like a dead microphone. The
+    navigation has to be an anchor the PARENT owns and clicks."""
+    src = Path(APP).read_text()
+    room = src[src.index("def voice_button"):src.index("def draft_entry")]
+    assert "P.location.href" not in room.replace("new URL(P.location.href)", ""), room[:0]
+    assert "P.document.createElement('a')" in room, "navigate via a parent-owned anchor"
+    assert "a.click()" in room
+    assert "window.parent.location.href =" not in room, "this is the thing that fails silently"
+
+
+def test_the_mic_reports_what_it_heard():
+    """A silent failure is the worst outcome here - if it hears something and
+    cannot deliver it, the button still has to show that it heard."""
+    src = Path(APP).read_text()
+    room = src[src.index("def voice_button"):src.index("def draft_entry")]
+    assert "Mic blocked" in room and "Did not catch that" in room
+    assert "Voice needs Chrome or Edge" in room
+
+
+def test_holding_v_does_not_fire_while_somebody_is_typing_a_name():
+    src = Path(APP).read_text()
+    room = src[src.index("def voice_button"):src.index("def draft_entry")]
+    assert "role') === 'combobox'" in room, "the player picker is a combobox, not an input"

@@ -193,6 +193,20 @@ picker and waits. Undo is one button, because somebody will say the wrong name.
 Voice needs **Chrome or Edge**; Safari and Firefox get a disabled button that
 says so. It also needs HTTPS or localhost, which Streamlit Cloud satisfies.
 
+> **The trap, and it cost a working feature.** Streamlit sandboxes component
+> iframes with `allow-forms allow-modals allow-popups
+> allow-popups-to-escape-sandbox allow-same-origin allow-scripts
+> allow-downloads` — note the absence of `allow-top-navigation`. So
+> `window.parent.location = ...` from inside a component is **silently dropped**.
+> The first version recognised speech perfectly and then had nowhere to put the
+> answer, which is indistinguishable from a dead microphone.
+>
+> Both halves now run in the parent document: recognition (no sandbox, and the
+> page already holds the mic grant) and navigation (an anchor the parent owns
+> and clicks). The iframe is only somewhere to hang a button. The button also
+> echoes the transcript back, so "it heard me but nothing happened" can never
+> again look the same as "it did not hear me".
+
 ## The two draft boards
 
 **Pre-Season → Draft → Rookie draft** is the one that runs first: 2 rounds, 16
