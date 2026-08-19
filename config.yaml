@@ -23,6 +23,21 @@ drafts:
   # for consistency with the veteran draft; flip to false for a linear board.
   rookie_snake: true
 
+  # The veteran board, seat by seat, as the managers chose it off the drum.
+  # This app is the record for the veteran draft, so the order has to live here
+  # rather than being read off Sleeper - Sleeper's veteran draft still has no
+  # order set on it, and the app was falling back to config order, which is how
+  # a board came out showing the wrong eight names.
+  veteran_slots:
+    - "980569987930804224"    # 1  Lucas Hamilton
+    - "964703051971887104"    # 2  Brandon Clifton
+    - "334162589502144512"    # 3  Josh Lavanchy
+    - "979382824706912256"    # 4  Corey McKinney
+    - "1001531274030305280"   # 5  Clayton Hamilton
+    - "979455520442580992"    # 6  Thad Harter
+    - "1254567796231114752"   # 7  Devin Clifton
+    - "979400432114102272"    # 8  Isiah Douglass
+
 roster:
   starters: [QB, RB, RB, WR, WR, TE, FLEX, FLEX, FLEX]
   flex_positions: [RB, WR, TE]

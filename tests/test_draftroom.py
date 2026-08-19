@@ -200,3 +200,16 @@ def test_a_pick_with_no_team_does_not_leave_a_dangling_separator():
     got = picks.add(picks.VETERAN, {"id": "2", "name": "Somebody", "position": "WR"},
                     ["a", "b"], 1, snake=True, season=config.season())
     assert got["team"] == ""
+
+
+def test_the_room_draws_in_the_order_the_managers_actually_chose():
+    """Sleeper's veteran draft has no order set on it, so the board was falling
+    all the way back to config order and showing the wrong eight names. The
+    settled seats live in config until Sleeper carries a real order."""
+    slots = config.veteran_slots()
+    assert len(slots) == len(config.managers()), "every seat has to be spoken for"
+    assert len(set(slots)) == len(slots), "no manager in two seats"
+    assert set(slots) == set(config.managers()), "and nobody left off the board"
+    assert config.manager_name(slots[0]).startswith("Lucas")
+    assert config.manager_name(slots[1]).startswith("Brandon")
+    assert config.manager_name(slots[2]).startswith("Josh")

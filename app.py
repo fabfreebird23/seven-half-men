@@ -320,7 +320,6 @@ GROUPS = {
                                 ("slip", "Set my keepers")]),
         ("draft", "Draft", [("room", "Draft room"),
                             ("rookie", "Rookie draft"),
-                            ("board", "Veteran draft"),
                             ("capital", "Draft capital")]),
         ("young", "Rookies & Taxi", [("bay", "Taxi bay")]),
         ("lottery", "Lottery", [("drums", "The drums"),
@@ -345,6 +344,10 @@ MOVED = {
     ("keepers", "franchise"): ("preseason", "keepers", "slip"),
     ("draft", "locks"): ("preseason", "keepers", "matrix"),
     ("draft", "enter"): ("preseason", "draft", "rookie"),
+    # The room IS the veteran draft now - it is the live board and the record.
+    # A second, read-only grid of the same thing was two boards showing one
+    # draft, only one of which was real.
+    ("draft", "board"): ("preseason", "draft", "room"),
     ("young", "compliance"): ("preseason", "young", "bay"),
     # These two were duplicates of the rulebook, word for word.
     ("young", "counts"): ("rules", None, None),
@@ -1659,7 +1662,8 @@ def draft_room(leaf=None) -> None:
     kind = picks.VETERAN
     rounds = config.veteran_rounds(SEASON)
     snake = bool(config.drafts().get("snake", True))
-    order = _live_order(live.VETERAN) or first_draw().get("veteran") or owner_ids()
+    order = (_live_order(live.VETERAN) or config.veteran_slots()
+             or first_draw().get("veteran") or owner_ids())
 
     theme.bar("Draft room", "%d rounds &middot; %d picks &middot; this app is the record" % (
         rounds, rounds * len(order)))
@@ -1942,55 +1946,6 @@ def render_draft(leaf=None):
 
         draft_entry("rookie", rk_order, config.rookie_rounds(),
                     bool(config.drafts().get("rookie_snake", True)))
-
-    if leaf in (None, "board"):
-        theme.bar("Veteran draft", "%d rounds · snake · keeper costs burned in" % config.veteran_rounds())
-        live_draft(live.VETERAN)
-        if FIRST:
-            st.markdown(
-                '<div class="banner">Year one: no keepers, so every pick is live. Order is drawn flat '
-                'at random on the Lottery tab. <b>%d rounds, not %d</b> — %d vet picks plus %d rookies '
-                'is %d players against %d active spots and %d taxi slots, which leaves you the choice '
-                'of promoting a rookie or stashing both.</div>' % (
-                    config.veteran_rounds(), int(config.drafts()["veteran_rounds"]),
-                    config.veteran_rounds(), config.rookie_rounds(),
-                    config.veteran_rounds() + config.rookie_rounds(),
-                    config.active_roster_size(), int(config.taxi_rules()["slots"])),
-                unsafe_allow_html=True)
-
-        board_note(live.VETERAN, bool(draw.get("veteran")))
-        grid = draftboard.grid(order, season=SEASON, keepers={}, league_id=LG)
-        head = "<th></th>" + "".join(
-            '<th title="%s">%s</th>' % (esc(team_of(o)), esc(who(o).split()[0])) for o in order)
-        body = ""
-        for row in grid:
-            body += '<tr><td class="rd">R%d</td>' % row[0].round
-            for cell in row:
-                if cell.kind == "traded":
-                    inner = '<div class="cell traded"><span class="t">traded</span></div>'
-                elif cell.kind in ("keeper", "rookie", "franchise"):
-                    inner = '<div class="cell %s"><span class="p">%s</span>' \
-                            '<span class="t">%s</span></div>' % (cell.kind, esc(cell.player),
-                                                                 esc(cell.note or cell.kind))
-                else:
-                    inner = '<div class="cell open">%s</div>' % cell.pick_label
-                body += "<td>%s</td>" % inner
-            body += "</tr>"
-        st.markdown('<div class="boardwrap"><table class="board"><thead><tr>%s</tr></thead>'
-                    '<tbody>%s</tbody></table></div>' % (head, body), unsafe_allow_html=True)
-        st.markdown(
-            '<div class="legend">'
-            '<span><b style="background:var(--acc-soft);border:1px solid var(--acc)"></b> Keeper</span>'
-            '<span><b style="background:var(--acc2-soft);border:1px solid var(--acc2)"></b> Rookie keeper</span>'
-            '<span><b style="background:color-mix(in srgb,var(--acc2) 30%,transparent);'
-            'border:1px solid var(--acc2)"></b> Franchise</span>'
-            '<span><b style="background:color-mix(in srgb,var(--warn) 20%,transparent);'
-            'border:1px dashed var(--warn)"></b> Traded</span>'
-            '<span><b style="background:var(--card2);border:1px solid var(--line2)"></b> Open</span>'
-            '</div>', unsafe_allow_html=True)
-
-        draft_entry("veteran", order, config.veteran_rounds(SEASON),
-                    bool(config.drafts().get("snake", True)))
 
     if leaf in (None, "capital"):
         theme.bar("Draft capital", "which rounds each team actually holds")

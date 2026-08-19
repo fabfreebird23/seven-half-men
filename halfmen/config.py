@@ -63,6 +63,15 @@ def veteran_rounds(yr: int = None) -> int:
     return int(d["veteran_rounds"])
 
 
+def veteran_slots() -> List[str]:
+    """The veteran board seat by seat, as managers chose it off the drum.
+
+    Empty when it has not been settled. Sleeper wins if it ever carries a real
+    order for that draft; this is the answer for as long as it does not.
+    """
+    return [str(x) for x in (drafts().get("veteran_slots") or [])]
+
+
 def rookie_rounds() -> int:
     return int(drafts()["rookie_rounds"])
 

@@ -166,6 +166,11 @@ ADP, no suggestions, no rankings — that is the whole brief.
 board, the wire and every keeper price already read from, so nothing needs
 re-entering anywhere afterwards.
 
+**The seat order lives in `drafts.veteran_slots`**, not on Sleeper. Sleeper's
+veteran draft has never had an order set on it, so the board was falling all the
+way back to config order and quietly showing the wrong eight names. Sleeper still
+wins if it ever carries a real one; until then this is the answer.
+
 **Voice.** Hold the button or hold `V`, say the name, and the pick is entered.
 The browser only captures audio: the transcript comes back through the URL and
 `halfmen/voice.py` does the matching, so the part that can get a pick wrong is
@@ -349,7 +354,7 @@ lit. Same pattern the Kreeper and Babies & Boomer apps converged on.
 ```
 Home
 Pre-Season   Keepers          What a keeper costs · Set my keepers
-             Draft            Rookie draft · Veteran draft · Draft capital
+             Draft            Draft room · Rookie draft · Draft capital
              Rookies & Taxi   Taxi bay
              Lottery          The drums · Simulate
 In-Season    The Wire · The Pot          (no headings — two destinations)
@@ -369,6 +374,7 @@ carrying their own tap:
 | Taxi compliance | Taxi bay | 1.3k about the pods listed directly above it |
 | Franchise tag | Set my keepers | a decision about the same five slots |
 | Enter results | the two draft boards | the page you came from already knew which draft it was |
+| Veteran draft | the Draft room | the room *is* the veteran draft — it is the live board and the record. A second read-only grid was two boards showing one draft, only one of them real |
 
 The two sent to Rules were **word-for-word duplicates** of sections already
 there, which is the argument for the split the nav now makes: Pre-Season is
