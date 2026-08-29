@@ -342,6 +342,15 @@
         "position": "WR",
         "round": 5,
         "team": "BAL"
+      },
+      {
+        "name": "Travis Etienne",
+        "owner_id": "979382824706912256",
+        "pick": 4,
+        "player_id": "7543",
+        "position": "RB",
+        "round": 5,
+        "team": "NO"
       }
     ]
   },
