@@ -441,6 +441,15 @@
         "position": "TE",
         "round": 6,
         "team": "IND"
+      },
+      {
+        "name": "D'Andre Swift",
+        "owner_id": "964703051971887104",
+        "pick": 7,
+        "player_id": "6790",
+        "position": "RB",
+        "round": 6,
+        "team": "CHI"
       }
     ]
   },
