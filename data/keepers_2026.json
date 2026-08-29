@@ -27,17 +27,7 @@
   "kept": [],
   "locked": false,
   "picks": {
-    "veteran": [
-      {
-        "name": "SMOKE TEST",
-        "owner_id": "980569987930804224",
-        "pick": 1,
-        "player_id": "_smoke",
-        "position": "RB",
-        "round": 1,
-        "team": "XXX"
-      }
-    ]
+    "veteran": []
   },
   "rookie_kept": [],
   "season": 2026,
