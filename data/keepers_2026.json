@@ -747,6 +747,15 @@
         "position": "QB",
         "round": 10,
         "team": "CIN"
+      },
+      {
+        "name": "Tucker Kraft",
+        "owner_id": "980569987930804224",
+        "pick": 1,
+        "player_id": "9484",
+        "position": "TE",
+        "round": 11,
+        "team": "GB"
       }
     ]
   },
