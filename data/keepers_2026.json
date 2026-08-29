@@ -576,6 +576,15 @@
         "position": "RB",
         "round": 8,
         "team": "HOU"
+      },
+      {
+        "name": "Christian Watson",
+        "owner_id": "334162589502144512",
+        "pick": 6,
+        "player_id": "8167",
+        "position": "WR",
+        "round": 8,
+        "team": "GB"
       }
     ]
   },
