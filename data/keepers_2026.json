@@ -288,6 +288,15 @@
         "position": "WR",
         "round": 4,
         "team": "NYJ"
+      },
+      {
+        "name": "Josh Allen",
+        "owner_id": "334162589502144512",
+        "pick": 6,
+        "player_id": "4984",
+        "position": "QB",
+        "round": 4,
+        "team": "BUF"
       }
     ]
   },
