@@ -702,6 +702,15 @@
         "position": "WR",
         "round": 10,
         "team": "IND"
+      },
+      {
+        "name": "Aaron Jones",
+        "owner_id": "1001531274030305280",
+        "pick": 4,
+        "player_id": "4199",
+        "position": "RB",
+        "round": 10,
+        "team": "MIN"
       }
     ]
   },
