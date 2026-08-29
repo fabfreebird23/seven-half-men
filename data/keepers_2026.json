@@ -306,6 +306,15 @@
         "position": "WR",
         "round": 4,
         "team": "DAL"
+      },
+      {
+        "name": "DeVonta Smith",
+        "owner_id": "980569987930804224",
+        "pick": 8,
+        "player_id": "7525",
+        "position": "WR",
+        "round": 4,
+        "team": "PHI"
       }
     ]
   },
