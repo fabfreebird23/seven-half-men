@@ -612,6 +612,15 @@
         "position": "RB",
         "round": 9,
         "team": "TEN"
+      },
+      {
+        "name": "Jonathon Brooks",
+        "owner_id": "964703051971887104",
+        "pick": 2,
+        "player_id": "11583",
+        "position": "RB",
+        "round": 9,
+        "team": "CAR"
       }
     ]
   },
