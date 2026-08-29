@@ -495,6 +495,15 @@
         "position": "QB",
         "round": 7,
         "team": "WAS"
+      },
+      {
+        "name": "Davante Adams",
+        "owner_id": "1001531274030305280",
+        "pick": 5,
+        "player_id": "2133",
+        "position": "WR",
+        "round": 7,
+        "team": "LAR"
       }
     ]
   },
