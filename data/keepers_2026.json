@@ -684,6 +684,15 @@
         "position": "WR",
         "round": 10,
         "team": "PIT"
+      },
+      {
+        "name": "Rico Dowdle",
+        "owner_id": "1254567796231114752",
+        "pick": 2,
+        "player_id": "7021",
+        "position": "RB",
+        "round": 10,
+        "team": "PIT"
       }
     ]
   },
