@@ -945,6 +945,15 @@
         "position": "RB",
         "round": 13,
         "team": "KC"
+      },
+      {
+        "name": "Zach Charbonnet",
+        "owner_id": "1254567796231114752",
+        "pick": 7,
+        "player_id": "9753",
+        "position": "RB",
+        "round": 13,
+        "team": "SEA"
       }
     ]
   },
