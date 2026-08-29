@@ -621,6 +621,15 @@
         "position": "RB",
         "round": 9,
         "team": "CAR"
+      },
+      {
+        "name": "Rhamondre Stevenson",
+        "owner_id": "334162589502144512",
+        "pick": 3,
+        "player_id": "7611",
+        "position": "RB",
+        "round": 9,
+        "team": "NE"
       }
     ]
   },
