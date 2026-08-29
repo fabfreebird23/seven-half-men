@@ -927,6 +927,15 @@
         "position": "TE",
         "round": 13,
         "team": "DET"
+      },
+      {
+        "name": "Xavier Worthy",
+        "owner_id": "1001531274030305280",
+        "pick": 5,
+        "player_id": "11624",
+        "position": "WR",
+        "round": 13,
+        "team": "KC"
       }
     ]
   },
