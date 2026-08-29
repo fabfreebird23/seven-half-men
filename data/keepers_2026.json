@@ -639,6 +639,15 @@
         "position": "TE",
         "round": 9,
         "team": "ATL"
+      },
+      {
+        "name": "Jaylen Warren",
+        "owner_id": "1001531274030305280",
+        "pick": 5,
+        "player_id": "8228",
+        "position": "RB",
+        "round": 9,
+        "team": "PIT"
       }
     ]
   },
