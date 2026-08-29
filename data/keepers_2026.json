@@ -567,6 +567,15 @@
         "position": "TE",
         "round": 8,
         "team": "CLE"
+      },
+      {
+        "name": "David Montgomery",
+        "owner_id": "979382824706912256",
+        "pick": 5,
+        "player_id": "5892",
+        "position": "RB",
+        "round": 8,
+        "team": "HOU"
       }
     ]
   },
