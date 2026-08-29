@@ -1008,6 +1008,15 @@
         "position": "WR",
         "round": 14,
         "team": "BUF"
+      },
+      {
+        "name": "MarShawn Lloyd",
+        "owner_id": "334162589502144512",
+        "pick": 6,
+        "player_id": "11581",
+        "position": "RB",
+        "round": 14,
+        "team": "GB"
       }
     ]
   },
