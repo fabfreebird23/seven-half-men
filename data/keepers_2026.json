@@ -207,6 +207,15 @@
         "position": "RB",
         "round": 3,
         "team": "BAL"
+      },
+      {
+        "name": "Kenneth Walker",
+        "owner_id": "1001531274030305280",
+        "pick": 5,
+        "player_id": "8151",
+        "position": "RB",
+        "round": 3,
+        "team": "KC"
       }
     ]
   },
