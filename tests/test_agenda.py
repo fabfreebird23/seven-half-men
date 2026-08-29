@@ -54,3 +54,19 @@ def test_the_rulebook_carries_the_settled_money():
     assert "indifferent" in flat, "why the flat cap was wrong"
     for pct in ("60%", "20%", "10%"):
         assert pct in flat, "the overflow split"
+
+
+def test_the_2027_proposal_is_on_the_front_page_but_is_not_a_vote():
+    """It needs arguing about before it needs counting, and four live votes are
+    already above it - a second block of eight would make both harder to read."""
+    p = agenda.proposals()
+    assert len(p["items"]) == 3
+    assert p["url"].startswith("https://")
+    flat = " ".join(t + b for t, b in p["items"])
+    assert "16 rounds" in flat and "R5" in flat and "9.4" in flat
+    assert "2026 rookie class still enters" in flat, "the legacy rule has to be explicit"
+
+
+def test_the_proposal_says_it_does_not_touch_todays_draft():
+    """Somebody will read this on draft day and wonder if the rules just moved."""
+    assert "today's draft" in agenda.proposals()["note"]

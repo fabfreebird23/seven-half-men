@@ -788,6 +788,27 @@ def render_agenda() -> None:
             unsafe_allow_html=True)
 
 
+def render_proposals() -> None:
+    """Next season's proposal, on the front page but below the live votes.
+
+    It is a read, not a decision - so it sits under the things that still need
+    answering rather than competing with them."""
+    p = agenda.proposals()
+    if not p or not p.get("items"):
+        return
+    theme.bar("Proposed for 2027", "%d changes &middot; not yet a vote" % len(p["items"]))
+    st.markdown(
+        '<div class="agenda"><div class="it"><div class="h">'
+        '<span class="t">%s</span></div><div class="why">%s</div>'
+        '<div class="opts">%s</div>'
+        '<div class="foot"><a href="%s" target="_blank" rel="noopener">'
+        'Read the full proposal &rarr;</a></div></div></div>' % (
+            esc(p["title"]), esc(p["note"]),
+            "".join('<div class="o"><div class="lab">%s</div><div class="d">%s</div></div>'
+                    % (esc(t), body) for t, body in p["items"]),
+            esc(p["url"])), unsafe_allow_html=True)
+
+
 def _waiting_on(cast: dict, everyone: list) -> str:
     missing = [o for o in everyone if str(o) not in cast]
     if not missing:
@@ -814,6 +835,7 @@ def render_home(leaf=None):
 
     my_card(VIEW)
     render_agenda()
+    render_proposals()
 
     theme.bar("The league", "%s · %s" % (esc(lg.get("name") or ""),
                                          esc((lg.get("status") or "").replace("_", " "))))

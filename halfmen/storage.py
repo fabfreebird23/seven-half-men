@@ -64,6 +64,27 @@ def save(data: Dict[str, Any], season: int = None) -> None:
         remote.write(_remote_path(season), data, "league data: %d" % season)
 
 
+def mutate(fn, season: int = None) -> Dict[str, Any]:
+    """Apply `fn` to the season blob without clobbering a concurrent write.
+
+    The remote path re-reads inside its retry loop, so two people writing at the
+    same moment merge instead of the second one winning. Falls back to a plain
+    read-modify-write when there is no token, which is the local-dev case where
+    there is only ever one writer anyway.
+    """
+    season = int(season or config.season())
+    if remote.enabled():
+        got = remote.mutate(_remote_path(season), fn, "league data: %d" % season)
+        if got is not None:
+            # keep the container copy in step so a Cloud restart has something
+            config.DATA_DIR.mkdir(exist_ok=True)
+            _path(season).write_text(json.dumps(got, indent=2, sort_keys=True))
+            return got
+    data = fn(load(season))
+    save(data, season)
+    return data
+
+
 def submit(owner_id: str, entries: List[Dict[str, Any]], season: int = None) -> Dict[str, Any]:
     """`entries` is a list of {player_id, kind, round}. Rewrites the flat
     `kept` / `rookie_kept` indexes that history.build reads."""

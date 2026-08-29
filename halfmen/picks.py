@@ -30,9 +30,25 @@ def load(kind: str = VETERAN, season: int = None) -> List[dict]:
 
 
 def save(kind: str, picks: List[dict], season: int = None) -> List[dict]:
-    data = storage.load(season)
-    data.setdefault("picks", {})[kind] = list(picks)
-    storage.save(data, season)
+    """Replace one draft's picks.
+
+    Goes through the race-safe mutation rather than load-then-save. The board
+    is unlocked by a token that travels in the URL, so it can legitimately be
+    open on a laptop and a phone at once - and a plain write sends whatever
+    that tab had in hand, which would drop the other one's pick. It also stops
+    a pick landing on top of somebody's vote, since both live in the same blob.
+    """
+    picks = list(picks)
+
+    def apply(data):
+        data = dict(data or {})
+        data.setdefault("season", int(season or config.season()))
+        p = dict(data.get("picks") or {})
+        p[kind] = picks
+        data["picks"] = p
+        return data
+
+    storage.mutate(apply, season)
     return picks
 
 

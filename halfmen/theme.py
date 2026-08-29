@@ -358,6 +358,9 @@ td.dhas.p-TE{ border-left-color:var(--te); }
 .agenda .tally .bar i{ display:block; height:100%; background:var(--acc); }
 .agenda .tally .c{ font-family:var(--f-data); font-size:12px; color:var(--ink);
                    font-variant-numeric:tabular-nums; min-width:1ch; text-align:right; }
+.agenda .foot a{ color:var(--acc); text-decoration:none; font-weight:650;
+                 font-size:13px; }
+.agenda .foot a:hover{ text-decoration:underline; }
 .agenda .waiting{ font-family:var(--f-data); font-size:10px; letter-spacing:.12em;
                   text-transform:uppercase; color:var(--dim); margin-top:9px; }
 .agenda .it .foot{ font-size:11.5px; color:var(--warn); margin-top:9px; }

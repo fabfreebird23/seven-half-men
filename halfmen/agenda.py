@@ -115,3 +115,36 @@ def open_items() -> List[Dict[str, Any]]:
                     "have changed. Worth saying out loud whether it can be voted down later.",
         },
     ]
+
+
+PROPOSAL_URL = "https://claude.ai/code/artifact/308a42ba-a76e-4c8d-863a-f2d9b7acdd92"
+
+
+def proposals() -> Dict[str, Any]:
+    """What is being proposed for next season, in brief.
+
+    Deliberately NOT polls yet. These need arguing about before they need
+    counting, and four live votes are already sitting above them - a second
+    block of eight would just make both harder to read. They become polls the
+    day somebody calls the question.
+    """
+    return {
+        "title": "One draft, one drum",
+        "note": "Proposed for 2027. Nothing here changes anything about today's draft.",
+        "url": PROPOSAL_URL,
+        "items": [
+            ("One draft, 16 rounds",
+             "Rookies and veterans on the same board, one order, one lottery. Sixteen "
+             "rounds is the 14 we draft now plus the 2 the rookie draft used, so nobody "
+             "loses a pick."),
+            ("A kept rookie costs the round you took him in",
+             "R5 was only ever a stand-in for rookies who had no veteran round. Merge the "
+             "drafts and every player has a real one. <b>The 2026 rookie class still enters "
+             "at R5</b> &mdash; it is a legacy rule covering sixteen players, then it retires."),
+            ("Winning the Chase costs you lottery balls",
+             "One drum, seeded on regular-season record, with the Chase result re-sorting "
+             "the four weights held by the teams that missed the playoffs. Winning it costs "
+             "<b>9.4 points</b> of first choice and pays up to <b>$120</b> &mdash; which "
+             "makes weeks 15 to 17 a decision instead of a lap of honour."),
+        ],
+    }
