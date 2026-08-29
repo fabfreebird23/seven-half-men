@@ -117,6 +117,15 @@
         "position": "RB",
         "round": 2,
         "team": "BUF"
+      },
+      {
+        "name": "Justin Jefferson",
+        "owner_id": "979455520442580992",
+        "pick": 3,
+        "player_id": "6794",
+        "position": "WR",
+        "round": 2,
+        "team": "MIN"
       }
     ]
   },
