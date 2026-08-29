@@ -261,6 +261,15 @@
         "position": "TE",
         "round": 4,
         "team": "ARI"
+      },
+      {
+        "name": "Breece Hall",
+        "owner_id": "979455520442580992",
+        "pick": 3,
+        "player_id": "8155",
+        "position": "RB",
+        "round": 4,
+        "team": "NYJ"
       }
     ]
   },
