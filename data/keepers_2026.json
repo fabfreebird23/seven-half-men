@@ -81,6 +81,15 @@
         "position": "WR",
         "round": 1,
         "team": "DET"
+      },
+      {
+        "name": "Christian McCaffrey",
+        "owner_id": "1254567796231114752",
+        "pick": 7,
+        "player_id": "4034",
+        "position": "RB",
+        "round": 1,
+        "team": "SF"
       }
     ]
   },
