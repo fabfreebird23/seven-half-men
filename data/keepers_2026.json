@@ -936,6 +936,15 @@
         "position": "WR",
         "round": 13,
         "team": "KC"
+      },
+      {
+        "name": "Emmett Johnson",
+        "owner_id": "979455520442580992",
+        "pick": 6,
+        "player_id": "13337",
+        "position": "RB",
+        "round": 13,
+        "team": "KC"
       }
     ]
   },
