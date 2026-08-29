@@ -358,6 +358,16 @@ td.dhas.p-TE{ border-left-color:var(--te); }
 .agenda .tally .bar i{ display:block; height:100%; background:var(--acc); }
 .agenda .tally .c{ font-family:var(--f-data); font-size:12px; color:var(--ink);
                    font-variant-numeric:tabular-nums; min-width:1ch; text-align:right; }
+/* a talking point: what it is, what to say, and what comes back at you */
+.agenda .pitch{ border-top:1px solid var(--line); padding:13px 0 2px; }
+.agenda .pitch:first-of-type{ border-top:none; }
+.agenda .pitch .lab{ font-family:var(--f-display); font-size:19px; text-transform:uppercase;
+                     line-height:1.05; }
+.agenda .pitch .say{ font-size:14.5px; color:var(--ink); line-height:1.6; margin-top:6px;
+                     max-width:70ch; border-left:2px solid var(--acc); padding-left:12px; }
+.agenda .pitch .back{ font-size:12.5px; color:var(--dim); line-height:1.55; margin-top:9px;
+                      max-width:70ch; }
+.agenda .pitch .back b{ color:var(--warn); font-weight:600; }
 .agenda .foot a{ color:var(--acc); text-decoration:none; font-weight:650;
                  font-size:13px; }
 .agenda .foot a:hover{ text-decoration:underline; }

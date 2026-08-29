@@ -789,23 +789,27 @@ def render_agenda() -> None:
 
 
 def render_proposals() -> None:
-    """Next season's proposal, on the front page but below the live votes.
+    """Next season's proposal, as talking points.
 
-    It is a read, not a decision - so it sits under the things that still need
-    answering rather than competing with them."""
+    Not a poll - these need arguing about before they need counting. Each one
+    carries the line that lands it and the objection that comes back, because
+    the objection is where the conversation actually goes.
+    """
     p = agenda.proposals()
     if not p or not p.get("items"):
         return
-    theme.bar("Proposed for 2027", "%d changes &middot; not yet a vote" % len(p["items"]))
+    theme.bar("Proposed for 2027", "talking points &middot; not a vote")
     st.markdown(
-        '<div class="agenda"><div class="it"><div class="h">'
-        '<span class="t">%s</span></div><div class="why">%s</div>'
-        '<div class="opts">%s</div>'
+        '<div class="agenda"><div class="it"><div class="h"><span class="t">%s</span></div>'
+        '<div class="why">%s</div>%s'
         '<div class="foot"><a href="%s" target="_blank" rel="noopener">'
-        'Read the full proposal &rarr;</a></div></div></div>' % (
+        'The written version &rarr;</a></div></div></div>' % (
             esc(p["title"]), esc(p["note"]),
-            "".join('<div class="o"><div class="lab">%s</div><div class="d">%s</div></div>'
-                    % (esc(t), body) for t, body in p["items"]),
+            "".join(
+                '<div class="pitch"><div class="lab">%s</div><div class="say">%s</div>'
+                '<div class="back"><b>&ldquo;%s&rdquo;</b> %s</div></div>' % (
+                    esc(it["title"]), it["say"], esc(it["back"][0]), it["back"][1])
+                for it in p["items"]),
             esc(p["url"])), unsafe_allow_html=True)
 
 

@@ -121,30 +121,46 @@ PROPOSAL_URL = "https://claude.ai/code/artifact/308a42ba-a76e-4c8d-863a-f2d9b7ac
 
 
 def proposals() -> Dict[str, Any]:
-    """What is being proposed for next season, in brief.
+    """Next season's proposal, written to be SPOKEN rather than read.
 
-    Deliberately NOT polls yet. These need arguing about before they need
-    counting, and four live votes are already sitting above them - a second
-    block of eight would just make both harder to read. They become polls the
-    day somebody calls the question.
+    Not a poll and not a summary. Each change carries the one line that lands
+    it and the objection that will come back, because the objection is where
+    these conversations actually go - and having the answer ready is the whole
+    difference between a proposal and an argument.
     """
     return {
         "title": "One draft, one drum",
-        "note": "Proposed for 2027. Nothing here changes anything about today's draft.",
+        "note": "Proposed for 2027. Nothing here changes anything about today\u2019s draft.",
         "url": PROPOSAL_URL,
         "items": [
-            ("One draft, 16 rounds",
-             "Rookies and veterans on the same board, one order, one lottery. Sixteen "
-             "rounds is the 14 we draft now plus the 2 the rookie draft used, so nobody "
-             "loses a pick."),
-            ("A kept rookie costs the round you took him in",
-             "R5 was only ever a stand-in for rookies who had no veteran round. Merge the "
-             "drafts and every player has a real one. <b>The 2026 rookie class still enters "
-             "at R5</b> &mdash; it is a legacy rule covering sixteen players, then it retires."),
-            ("Winning the Chase costs you lottery balls",
-             "One drum, seeded on regular-season record, with the Chase result re-sorting "
-             "the four weights held by the teams that missed the playoffs. Winning it costs "
-             "<b>9.4 points</b> of first choice and pays up to <b>$120</b> &mdash; which "
-             "makes weeks 15 to 17 a decision instead of a lap of honour."),
+            {
+                "title": "One draft, 16 rounds",
+                "say": "Two drafts, two lotteries and two sets of guardrails, for one "
+                       "league. Next year it is one board \u2014 sixteen rounds, which is "
+                       "the fourteen we draft now plus the two the rookie draft used. "
+                       "Nobody loses a pick.",
+                "back": ("Doesn\u2019t that kill the rookie draft?",
+                         "It kills the separate event, not rookie picks. Rookies still get "
+                         "taken and still fill rookie keeper slots \u2014 they just get "
+                         "taken on the same board as everyone else."),
+            },
+            {
+                "title": "A kept rookie costs the round you took him in",
+                "say": "R5 was never a real price. It exists only because a rookie-draft "
+                       "pick had no round to point at. Give him a real round and we use it "
+                       "\u2014 take a rookie in the 12th and he keeps at R12, not R5.",
+                "back": ("What about the guys we just drafted?",
+                         "They still enter at R5. It is a legacy rule covering sixteen "
+                         "players, and then it retires itself."),
+            },
+            {
+                "title": "Winning the Chase costs you lottery balls",
+                "say": "Right now weeks 15 to 17 are a lap of honour. Under this, winning "
+                       "the Chase costs you <b>9.4 points</b> of first choice and pays you "
+                       "up to <b>$120</b>. That is a decision.",
+                "back": ("So you want us to tank the Chase?",
+                         "I want it to be a choice. Money now, or balls in the drum. Right "
+                         "now there is nothing to choose between."),
+            },
         ],
     }

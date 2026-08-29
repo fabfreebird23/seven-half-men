@@ -56,17 +56,29 @@ def test_the_rulebook_carries_the_settled_money():
         assert pct in flat, "the overflow split"
 
 
-def test_the_2027_proposal_is_on_the_front_page_but_is_not_a_vote():
-    """It needs arguing about before it needs counting, and four live votes are
-    already above it - a second block of eight would make both harder to read."""
+def test_the_2027_proposal_is_talking_points_not_a_poll():
+    """It needs arguing about before it needs counting. Each change carries the
+    line that lands it and the objection that comes back, because the objection
+    is where the conversation actually goes."""
     p = agenda.proposals()
     assert len(p["items"]) == 3
     assert p["url"].startswith("https://")
-    flat = " ".join(t + b for t, b in p["items"])
+    for it in p["items"]:
+        assert it["say"], it["title"]
+        q, a = it["back"]
+        assert q.endswith("?"), "the pushback has to be an actual question: %r" % q
+        assert a, "and it has to have an answer"
+    flat = " ".join(it["title"] + it["say"] + " ".join(it["back"]) for it in p["items"])
     assert "16 rounds" in flat and "R5" in flat and "9.4" in flat
-    assert "2026 rookie class still enters" in flat, "the legacy rule has to be explicit"
+    assert "still enter at R5" in flat, "the legacy rule has to survive being said out loud"
+
+
+def test_no_talking_point_is_too_long_to_say():
+    """If it cannot be read aloud in one breath it is a paragraph, not a line."""
+    for it in agenda.proposals()["items"]:
+        assert len(it["say"]) < 320, "%s is a speech: %d chars" % (it["title"], len(it["say"]))
 
 
 def test_the_proposal_says_it_does_not_touch_todays_draft():
     """Somebody will read this on draft day and wonder if the rules just moved."""
-    assert "today's draft" in agenda.proposals()["note"]
+    assert "draft" in agenda.proposals()["note"] and "Nothing here changes" in agenda.proposals()["note"]
