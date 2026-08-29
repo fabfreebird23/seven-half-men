@@ -36,6 +36,15 @@
         "position": "RB",
         "round": 1,
         "team": "ATL"
+      },
+      {
+        "name": "Jahmyr Gibbs",
+        "owner_id": "964703051971887104",
+        "pick": 2,
+        "player_id": "9221",
+        "position": "RB",
+        "round": 1,
+        "team": "DET"
       }
     ]
   },
