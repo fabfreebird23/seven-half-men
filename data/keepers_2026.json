@@ -603,6 +603,15 @@
         "position": "WR",
         "round": 8,
         "team": "TB"
+      },
+      {
+        "name": "Tony Pollard",
+        "owner_id": "980569987930804224",
+        "pick": 1,
+        "player_id": "5967",
+        "position": "RB",
+        "round": 9,
+        "team": "TEN"
       }
     ]
   },
