@@ -135,6 +135,15 @@
         "position": "RB",
         "round": 2,
         "team": "MIA"
+      },
+      {
+        "name": "Drake London",
+        "owner_id": "979382824706912256",
+        "pick": 5,
+        "player_id": "8112",
+        "position": "WR",
+        "round": 2,
+        "team": "ATL"
       }
     ]
   },
