@@ -387,6 +387,15 @@
         "position": "WR",
         "round": 5,
         "team": "TB"
+      },
+      {
+        "name": "Jameson Williams",
+        "owner_id": "979400432114102272",
+        "pick": 1,
+        "player_id": "8148",
+        "position": "WR",
+        "round": 6,
+        "team": "DET"
       }
     ]
   },
