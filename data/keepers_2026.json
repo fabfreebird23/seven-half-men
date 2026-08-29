@@ -216,6 +216,15 @@
         "position": "RB",
         "round": 3,
         "team": "KC"
+      },
+      {
+        "name": "Ashton Jeanty",
+        "owner_id": "979455520442580992",
+        "pick": 6,
+        "player_id": "12527",
+        "position": "RB",
+        "round": 3,
+        "team": "LV"
       }
     ]
   },
