@@ -450,6 +450,15 @@
         "position": "RB",
         "round": 6,
         "team": "CHI"
+      },
+      {
+        "name": "Bucky Irving",
+        "owner_id": "980569987930804224",
+        "pick": 8,
+        "player_id": "11584",
+        "position": "RB",
+        "round": 6,
+        "team": "TB"
       }
     ]
   },
