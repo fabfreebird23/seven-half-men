@@ -225,6 +225,15 @@
         "position": "RB",
         "round": 3,
         "team": "LV"
+      },
+      {
+        "name": "Rashee Rice",
+        "owner_id": "1254567796231114752",
+        "pick": 7,
+        "player_id": "10229",
+        "position": "WR",
+        "round": 3,
+        "team": "KC"
       }
     ]
   },
