@@ -819,6 +819,15 @@
         "position": "RB",
         "round": 11,
         "team": "DEN"
+      },
+      {
+        "name": "Kyle Monangai",
+        "owner_id": "979400432114102272",
+        "pick": 1,
+        "player_id": "12534",
+        "position": "RB",
+        "round": 12,
+        "team": "CHI"
       }
     ]
   },
