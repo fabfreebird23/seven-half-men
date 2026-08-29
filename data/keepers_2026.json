@@ -846,6 +846,15 @@
         "position": "QB",
         "round": 12,
         "team": "CHI"
+      },
+      {
+        "name": "Michael Pittman",
+        "owner_id": "1001531274030305280",
+        "pick": 4,
+        "player_id": "6819",
+        "position": "WR",
+        "round": 12,
+        "team": "PIT"
       }
     ]
   },
