@@ -315,6 +315,15 @@
         "position": "WR",
         "round": 4,
         "team": "PHI"
+      },
+      {
+        "name": "Ladd McConkey",
+        "owner_id": "980569987930804224",
+        "pick": 1,
+        "player_id": "11635",
+        "position": "WR",
+        "round": 5,
+        "team": "LAC"
       }
     ]
   },
