@@ -414,6 +414,15 @@
         "position": "TE",
         "round": 6,
         "team": "CHI"
+      },
+      {
+        "name": "Parker Washington",
+        "owner_id": "1001531274030305280",
+        "pick": 4,
+        "player_id": "9487",
+        "position": "WR",
+        "round": 6,
+        "team": "JAX"
       }
     ]
   },
