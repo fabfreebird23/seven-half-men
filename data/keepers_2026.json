@@ -153,6 +153,15 @@
         "position": "WR",
         "round": 2,
         "team": "NYG"
+      },
+      {
+        "name": "Chase Brown",
+        "owner_id": "964703051971887104",
+        "pick": 7,
+        "player_id": "9224",
+        "position": "RB",
+        "round": 2,
+        "team": "CIN"
       }
     ]
   },
