@@ -162,6 +162,15 @@
         "position": "RB",
         "round": 2,
         "team": "CIN"
+      },
+      {
+        "name": "Saquon Barkley",
+        "owner_id": "980569987930804224",
+        "pick": 8,
+        "player_id": "4866",
+        "position": "RB",
+        "round": 2,
+        "team": "PHI"
       }
     ]
   },
