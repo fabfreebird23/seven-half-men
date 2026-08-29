@@ -126,6 +126,15 @@
         "position": "WR",
         "round": 2,
         "team": "MIN"
+      },
+      {
+        "name": "De'Von Achane",
+        "owner_id": "1001531274030305280",
+        "pick": 4,
+        "player_id": "9226",
+        "position": "RB",
+        "round": 2,
+        "team": "MIA"
       }
     ]
   },
