@@ -324,6 +324,15 @@
         "position": "WR",
         "round": 5,
         "team": "LAC"
+      },
+      {
+        "name": "Kyren Williams",
+        "owner_id": "964703051971887104",
+        "pick": 2,
+        "player_id": "8150",
+        "position": "RB",
+        "round": 5,
+        "team": "LAR"
       }
     ]
   },
