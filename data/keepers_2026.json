@@ -756,6 +756,15 @@
         "position": "TE",
         "round": 11,
         "team": "GB"
+      },
+      {
+        "name": "Blake Corum",
+        "owner_id": "964703051971887104",
+        "pick": 2,
+        "player_id": "11586",
+        "position": "RB",
+        "round": 11,
+        "team": "LAR"
       }
     ]
   },
