@@ -882,6 +882,15 @@
         "position": "RB",
         "round": 12,
         "team": "LV"
+      },
+      {
+        "name": "Jordan Addison",
+        "owner_id": "980569987930804224",
+        "pick": 8,
+        "player_id": "9756",
+        "position": "WR",
+        "round": 12,
+        "team": "MIN"
       }
     ]
   },
