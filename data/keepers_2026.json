@@ -1017,6 +1017,15 @@
         "position": "RB",
         "round": 14,
         "team": "GB"
+      },
+      {
+        "name": "George Kittle",
+        "owner_id": "964703051971887104",
+        "pick": 7,
+        "player_id": "4217",
+        "position": "TE",
+        "round": 14,
+        "team": "SF"
       }
     ]
   },
