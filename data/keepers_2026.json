@@ -270,6 +270,15 @@
         "position": "RB",
         "round": 4,
         "team": "NYJ"
+      },
+      {
+        "name": "Javonte Williams",
+        "owner_id": "1001531274030305280",
+        "pick": 4,
+        "player_id": "7588",
+        "position": "RB",
+        "round": 4,
+        "team": "DAL"
       }
     ]
   },
