@@ -80,14 +80,17 @@ def sections() -> List[tuple]:
    "<b>No pot.</b> It needs a full season of FAAB data to settle against, so nothing is billed "
    "until the %d offseason. The burn-down still tracks all season." % (int(lg["season"]) + 1),
  ]),
- ("note", "<b>Why %d rounds and not %d.</b> Your active roster is %d and taxi holds %d, so the "
-          "roster tops out at %d players. A %d-round veteran draft plus %d rookie picks is exactly "
-          "%d — which would <em>force</em> both rookies onto taxi and take the decision away from "
-          "you. At %d rounds you land on %d and get to choose: promote one rookie and stash one, "
-          "or stash both and carry an open bench spot." % (
-            vet1, vet, config.active_roster_size(), int(tr["slots"]),
-            config.active_roster_size() + int(tr["slots"]), vet, rook, vet + rook,
-            vet1, vet1 + rook)),
+ ("note", "<b>Why %d rounds.</b> Your active roster is %d and taxi holds %d rookies without "
+          "counting against it. Both rookie-draft picks go to <b>taxi before the veteran draft "
+          "starts</b>, so the board begins empty and %d rounds fills it exactly \u2014 nobody "
+          "ends the night a player short or a player over."
+          % (vet1, config.active_roster_size(), int(tr["slots"]), vet1)),
+ ("note", "It was one round shorter for a while, so that %d picks plus %d rookies came to one "
+          "under the roster and <em>forced</em> a promote-or-stash choice. Parking both rookies "
+          "by rule removes that, and it should: the choice survives, it just has a price. "
+          "Promote a rookie and you are %d deep on a %d-man roster, so you cut your last pick to "
+          "do it. A price you can see beats a round count nobody can."
+          % (vet1 - 1, rook, config.active_roster_size() + 1, config.active_roster_size())),
 ]),
 
 ("keepers", "Keepers", "Five a year: three regular, two rookie. Keeping a player costs you the "

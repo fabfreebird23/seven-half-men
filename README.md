@@ -310,9 +310,20 @@ enough to regenerate it exactly.
 No keepers — every clock starts at zero after this season. Two drafts: the
 rookie draft (2 rounds) then the veteran draft, both drawn flat at random.
 
-The veteran draft is **13 rounds in year one, not 14**. 14 active spots plus 2
-taxi slots is 16; a 14-round vet draft plus 2 rookies fills all 16 exactly and
-forces both rookies onto taxi. At 13 you get the choice.
+The veteran draft is **14 rounds**, and the two rookie-draft picks go to the
+**taxi squad before it starts**. Taxi does not count against the 14 active
+spots, so the board begins empty and 14 rounds fills it exactly — nobody ends
+the night a player short or a player over.
+
+It was 13 for a while, on the reasoning that 13 + 2 rookies is one short of 14
+active + 2 taxi and therefore *forces* a promote-or-stash choice. Parking both
+rookies by rule removes that forcing function, and that is fine: the choice
+survives, it just has a price. Promote a rookie and you are 15 deep on a 14-man
+roster, so you cut your 14th-round pick to do it. A price you can see beats a
+round count nobody can.
+
+It also stops the app and Sleeper disagreeing — Sleeper's veteran draft has been
+set to 14 all along.
 
 Set in `config.yaml` as `drafts.veteran_rounds_first_season`.
 

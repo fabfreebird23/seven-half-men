@@ -26,9 +26,15 @@ def test_snake_reverses_the_pick_numbers_not_the_columns(monkeypatch):
     assert [c.pick_label for c in board[1]][:3] == ["2.08", "2.07", "2.06"]
 
 
-def test_year_one_board_is_thirteen_rounds(monkeypatch):
+def test_the_board_fills_the_active_roster_exactly(monkeypatch):
+    """14 rounds, because the two rookie-draft picks go to taxi before the
+    veteran draft and taxi does not count against the 14 active spots. The board
+    starts empty and fills it exactly - no dangling spot, nobody one over."""
+    from halfmen import config
     monkeypatch.setattr(draftboard, "traded_away", lambda *a, **k: {})
-    assert len(draftboard.grid(OWNERS, season=2026, keepers={})) == 13
+    rounds = len(draftboard.grid(OWNERS, season=2026, keepers={}))
+    assert rounds == config.active_roster_size() == 14
+    assert rounds == config.veteran_rounds(2026)
 
 
 def test_keepers_land_on_the_board(monkeypatch):

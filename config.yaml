@@ -14,8 +14,16 @@ league:
 
 drafts:
   veteran_rounds: 14
-  veteran_rounds_first_season: 13   # 13 + 2 rookies = 15, one short of 14 active + 2 taxi,
-                                    # so year one still offers a promote-or-stash choice
+  # 14, not 13. The two rookie-draft picks go to the TAXI squad before the
+  # veteran draft, and taxi does not count against the 14 active spots - so the
+  # board starts empty and 14 rounds fills it exactly. Sleeper is already set to
+  # 14, so this also stops the app and the league disagreeing about the number.
+  #
+  # It does cost the forced promote-or-stash choice 13 was built around: with
+  # both rookies parked by rule, promoting one puts you 15 deep on a 14-man
+  # roster. The choice survives, it just has a price now - cut your 14th-round
+  # pick - which is a fairer place to put it than a round count nobody can see.
+  veteran_rounds_first_season: 14
   rookie_rounds: 2
   snake: true
   # Does the rookie draft snake too, or does round 2 repeat round 1? The written
