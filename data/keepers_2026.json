@@ -837,6 +837,15 @@
         "position": "RB",
         "round": 12,
         "team": "CAR"
+      },
+      {
+        "name": "Caleb Williams",
+        "owner_id": "979455520442580992",
+        "pick": 3,
+        "player_id": "11560",
+        "position": "QB",
+        "round": 12,
+        "team": "CHI"
       }
     ]
   },
