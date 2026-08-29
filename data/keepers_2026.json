@@ -693,6 +693,15 @@
         "position": "RB",
         "round": 10,
         "team": "PIT"
+      },
+      {
+        "name": "Josh Downs",
+        "owner_id": "979455520442580992",
+        "pick": 3,
+        "player_id": "9500",
+        "position": "WR",
+        "round": 10,
+        "team": "IND"
       }
     ]
   },
