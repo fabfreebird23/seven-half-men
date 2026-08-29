@@ -810,6 +810,15 @@
         "position": "WR",
         "round": 11,
         "team": "CAR"
+      },
+      {
+        "name": "RJ Harvey",
+        "owner_id": "979400432114102272",
+        "pick": 8,
+        "player_id": "12489",
+        "position": "RB",
+        "round": 11,
+        "team": "DEN"
       }
     ]
   },
