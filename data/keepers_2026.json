@@ -45,6 +45,15 @@
         "position": "RB",
         "round": 1,
         "team": "DET"
+      },
+      {
+        "name": "Jalen Hurts",
+        "owner_id": "334162589502144512",
+        "pick": 3,
+        "player_id": "6904",
+        "position": "QB",
+        "round": 1,
+        "team": "PHI"
       }
     ]
   },
