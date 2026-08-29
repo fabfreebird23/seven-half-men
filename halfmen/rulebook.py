@@ -75,8 +75,11 @@ def sections() -> List[tuple]:
    "deliberate year-one change." % (vet1, vet),
    "<b>Both orders are drawn flat at random.</b> There are no standings to weight a drum with. "
    "The draw is seeded and reproducible so it can be run in front of everyone.",
-   "<b>Taxi squads are live from day one.</b> You can stash rookies you take in the rookie draft, "
-   "and their two-year clocks start now.",
+   "<b>Taxi squads are live from day one, and year one fills them by rule.</b> Both of your "
+   "rookie-draft picks go onto taxi <em>before</em> the veteran draft starts. Their two-year "
+   "clocks start now. Promote one later and you are one deep on a %d-man roster, so you cut a "
+   "pick to do it &mdash; the choice is still yours, it just has a price."
+   % config.active_roster_size(),
    "<b>No pot.</b> It needs a full season of FAAB data to settle against, so nothing is billed "
    "until the %d offseason. The burn-down still tracks all season." % (int(lg["season"]) + 1),
  ]),

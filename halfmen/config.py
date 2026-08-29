@@ -96,6 +96,11 @@ def taxi_rules() -> Dict[str, Any]:
     return rules()["taxi"]
 
 
+def auto_stash_rookies() -> bool:
+    """Whether the rookie-draft picks go to taxi before the veteran draft."""
+    return bool(taxi_rules().get("auto_stash_before_veteran_draft", False))
+
+
 def faab_rules() -> Dict[str, Any]:
     return rules()["faab"]
 

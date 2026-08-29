@@ -61,7 +61,7 @@ def test_the_2027_proposal_is_talking_points_not_a_poll():
     line that lands it and the objection that comes back, because the objection
     is where the conversation actually goes."""
     p = agenda.proposals()
-    assert len(p["items"]) == 4
+    assert len(p["items"]) == 3
     assert p["url"].startswith("https://")
     for it in p["items"]:
         assert it["say"], it["title"]
@@ -70,9 +70,10 @@ def test_the_2027_proposal_is_talking_points_not_a_poll():
         assert a, "and it has to have an answer"
     flat = " ".join(it["title"] + it["say"] + " ".join(it["back"]) for it in p["items"])
     assert "16 rounds" in flat and "R5" in flat and "9.4" in flat
-    assert "1.01" in flat and "whole career" in flat, (
-        "the consolidation exploit has to be sayable - a rookie taken at 1.01 kept "
-        "at R14 forever is the reason the rookie keeper price has to move too")
+    assert "normal" in flat and "untouched" in flat, (
+        "the R5 change is the NORMAL keeper path only - rookie-designated keepers "
+        "cost your last rounds by design, and a veteran-draft rookie already "
+        "qualifies for that today, so consolidation does not touch them")
     assert "still enter at R5" in flat, "the legacy rule has to survive being said out loud"
 
 

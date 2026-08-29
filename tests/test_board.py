@@ -230,3 +230,15 @@ def test_the_adp_refresh_entry_points_exist():
     missing config.current_season until somebody actually ran it."""
     assert config.current_season() == config.season()
     assert isinstance(config.adp_sources(), dict)
+
+
+def test_year_one_parks_both_rookies_on_taxi_before_the_veteran_draft():
+    """It is what makes 14 rounds the exact fit. Taxi does not count against the
+    14 active spots, so the board starts empty - and doing it AFTER the draft
+    would leave every team 16 deep on a 14-man roster mid-draft."""
+    from halfmen import config
+    assert config.auto_stash_rookies()
+    rounds = config.veteran_rounds(2026)
+    rookies = int(config.taxi_rules()["slots"])
+    assert rounds == config.active_roster_size(), "the board fills the roster exactly"
+    assert rookies == config.rookie_rounds(), "one taxi slot per rookie pick"

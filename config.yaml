@@ -102,6 +102,11 @@ rules:
     #   second_year_only  only a year-2 promotion keeps it (the stricter reading)
     promotion_keeps_rookie_status: any_year
     in_season_adds: false
+    # Year one only: both rookie-draft picks are parked on taxi BEFORE the
+    # veteran draft, not after. Taxi does not count against the 14 active
+    # spots, so the board starts empty and 14 rounds fills it exactly. Do it
+    # afterwards and every team is 16 deep on a 14-man roster mid-draft.
+    auto_stash_before_veteran_draft: true
     tradeable: true           # stays on taxi for the new team if they have a slot
 
   faab:

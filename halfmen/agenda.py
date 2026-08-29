@@ -146,23 +146,14 @@ def proposals() -> Dict[str, Any]:
             },
             {
                 "title": "A kept rookie costs the round you took him in",
-                "say": "R5 was never a real price. It exists only because a rookie-draft "
-                       "pick had no round to point at. Give him a real round and we use it "
-                       "\u2014 take a rookie in the 12th and he keeps at R12, not R5.",
-                "back": ("What about the guys we just drafted?",
-                         "They still enter at R5. It is a legacy rule covering sixteen "
-                         "players, and then it retires itself."),
-            },
-            {
-                "title": "And the rookie keeper slot has to be repriced with it",
-                "say": "Rookie keepers cost your last round. That only works because rookies "
-                       "come off a separate board. Share a board and you could take one at 1.01 "
-                       "and keep him at R14 <b>for his whole career</b> \u2014 so he costs his "
-                       "draft round too. The perk becomes the missing clock, not a free price.",
-                "back": ("Doesn\u2019t that gut rookie keepers?",
-                         "It keeps the part that matters. Find one in the 14th who turns into a "
-                         "first-rounder and you still bank thirteen rounds a year, forever, with "
-                         "no wall. You just cannot buy that at 1.01 any more."),
+                "say": "This is the <b>normal</b> keeper path only. R5 exists because a "
+                       "rookie-draft pick had no round to point at \u2014 give him a real "
+                       "round and we use it. Take a rookie in the 12th and he keeps at R12, "
+                       "not R5. Rookie-designated keepers are untouched.",
+                "back": ("Does this change rookie keeper slots?",
+                         "No. Two slots, your last rounds, no clock \u2014 all unchanged. "
+                         "And the guys we just drafted still enter at R5 on the normal path: "
+                         "a legacy rule covering sixteen players, then it retires itself."),
             },
             {
                 "title": "Winning the Chase costs you lottery balls",
