@@ -136,13 +136,14 @@ def proposals() -> Dict[str, Any]:
             {
                 "title": "One draft, 16 rounds",
                 "say": "Two drafts, two lotteries and two sets of guardrails, for one "
-                       "league. Next year it is one board \u2014 sixteen rounds, which is "
-                       "the fourteen we draft now plus the two the rookie draft used. "
-                       "Nobody loses a pick.",
+                       "league. Next year it is one board, all players, sixteen rounds. "
+                       "<b>Nobody has to draft a rookie</b> \u2014 and that is the point, "
+                       "because taking one in the 6th finally costs you a veteran in the 6th.",
                 "back": ("Doesn\u2019t that kill the rookie draft?",
-                         "It kills the separate event, not rookie picks. Rookies still get "
-                         "taken and still fill rookie keeper slots \u2014 they just get "
-                         "taken on the same board as everyone else."),
+                         "It kills the separate event, not rookie picks. Right now two "
+                         "rookies are free because they come off a board that costs no "
+                         "veteran capital. On one board they cost a real pick, which is how "
+                         "a rookie stops being an entitlement and starts being a decision."),
             },
             {
                 "title": "A kept rookie costs the round you took him in",
