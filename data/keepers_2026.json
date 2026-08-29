@@ -27,7 +27,17 @@
   "kept": [],
   "locked": false,
   "picks": {
-    "veteran": []
+    "veteran": [
+      {
+        "name": "Jahmyr Gibbs",
+        "owner_id": "980569987930804224",
+        "pick": 1,
+        "player_id": "9221",
+        "position": "RB",
+        "round": 1,
+        "team": "DET"
+      }
+    ]
   },
   "rookie_kept": [],
   "season": 2026,
