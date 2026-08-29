@@ -369,6 +369,15 @@
         "position": "WR",
         "round": 5,
         "team": "CAR"
+      },
+      {
+        "name": "Quinshon Judkins",
+        "owner_id": "1254567796231114752",
+        "pick": 7,
+        "player_id": "12512",
+        "position": "RB",
+        "round": 5,
+        "team": "CLE"
       }
     ]
   },
