@@ -99,6 +99,15 @@
         "position": "WR",
         "round": 1,
         "team": "DAL"
+      },
+      {
+        "name": "Jonathan Taylor",
+        "owner_id": "979400432114102272",
+        "pick": 1,
+        "player_id": "6813",
+        "position": "RB",
+        "round": 2,
+        "team": "IND"
       }
     ]
   },
