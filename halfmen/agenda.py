@@ -154,6 +154,17 @@ def proposals() -> Dict[str, Any]:
                          "players, and then it retires itself."),
             },
             {
+                "title": "And the rookie keeper slot has to be repriced with it",
+                "say": "Rookie keepers cost your last round. That only works because rookies "
+                       "come off a separate board. Share a board and you could take one at 1.01 "
+                       "and keep him at R14 <b>for his whole career</b> \u2014 so he costs his "
+                       "draft round too. The perk becomes the missing clock, not a free price.",
+                "back": ("Doesn\u2019t that gut rookie keepers?",
+                         "It keeps the part that matters. Find one in the 14th who turns into a "
+                         "first-rounder and you still bank thirteen rounds a year, forever, with "
+                         "no wall. You just cannot buy that at 1.01 any more."),
+            },
+            {
                 "title": "Winning the Chase costs you lottery balls",
                 "say": "Right now weeks 15 to 17 are a lap of honour. Under this, winning "
                        "the Chase costs you <b>9.4 points</b> of first choice and pays you "
