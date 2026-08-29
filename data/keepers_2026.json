@@ -171,6 +171,15 @@
         "position": "RB",
         "round": 2,
         "team": "PHI"
+      },
+      {
+        "name": "Nico Collins",
+        "owner_id": "980569987930804224",
+        "pick": 1,
+        "player_id": "7569",
+        "position": "WR",
+        "round": 3,
+        "team": "HOU"
       }
     ]
   },
