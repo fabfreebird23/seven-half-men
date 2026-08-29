@@ -648,6 +648,15 @@
         "position": "RB",
         "round": 9,
         "team": "PIT"
+      },
+      {
+        "name": "Courtland Sutton",
+        "owner_id": "979455520442580992",
+        "pick": 6,
+        "player_id": "5045",
+        "position": "WR",
+        "round": 9,
+        "team": "DEN"
       }
     ]
   },
