@@ -477,6 +477,15 @@
         "position": "WR",
         "round": 7,
         "team": "CHI"
+      },
+      {
+        "name": "Bhayshul Tuten",
+        "owner_id": "334162589502144512",
+        "pick": 3,
+        "player_id": "12490",
+        "position": "RB",
+        "round": 7,
+        "team": "JAX"
       }
     ]
   },
