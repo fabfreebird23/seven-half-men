@@ -990,6 +990,15 @@
         "position": "RB",
         "round": 14,
         "team": "DEN"
+      },
+      {
+        "name": "Isaiah Likely",
+        "owner_id": "1001531274030305280",
+        "pick": 4,
+        "player_id": "8131",
+        "position": "TE",
+        "round": 14,
+        "team": "NYG"
       }
     ]
   },
