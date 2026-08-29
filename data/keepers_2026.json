@@ -909,6 +909,15 @@
         "position": "WR",
         "round": 13,
         "team": "BAL"
+      },
+      {
+        "name": "Ted Hurst",
+        "owner_id": "334162589502144512",
+        "pick": 3,
+        "player_id": "13317",
+        "position": "WR",
+        "round": 13,
+        "team": "TB"
       }
     ]
   },
