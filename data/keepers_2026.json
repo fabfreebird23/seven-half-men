@@ -36,6 +36,15 @@
         "position": "RB",
         "round": 1,
         "team": "MIN"
+      },
+      {
+        "name": "A.J. Brown",
+        "owner_id": "964703051971887104",
+        "pick": 2,
+        "player_id": "5859",
+        "position": "WR",
+        "round": 1,
+        "team": "NE"
       }
     ]
   },
