@@ -108,6 +108,15 @@
         "position": "RB",
         "round": 2,
         "team": "IND"
+      },
+      {
+        "name": "James Cook",
+        "owner_id": "1254567796231114752",
+        "pick": 2,
+        "player_id": "8138",
+        "position": "RB",
+        "round": 2,
+        "team": "BUF"
       }
     ]
   },
