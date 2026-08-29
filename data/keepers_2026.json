@@ -90,6 +90,15 @@
         "position": "RB",
         "round": 1,
         "team": "SF"
+      },
+      {
+        "name": "CeeDee Lamb",
+        "owner_id": "979400432114102272",
+        "pick": 8,
+        "player_id": "6786",
+        "position": "WR",
+        "round": 1,
+        "team": "DAL"
       }
     ]
   },
