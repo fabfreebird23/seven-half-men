@@ -45,6 +45,15 @@
         "position": "RB",
         "round": 1,
         "team": "ATL"
+      },
+      {
+        "name": "Ja'Marr Chase",
+        "owner_id": "334162589502144512",
+        "pick": 3,
+        "player_id": "7564",
+        "position": "WR",
+        "round": 1,
+        "team": "CIN"
       }
     ]
   },
