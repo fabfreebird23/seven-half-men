@@ -558,6 +558,15 @@
         "position": "WR",
         "round": 8,
         "team": "WAS"
+      },
+      {
+        "name": "Harold Fannin",
+        "owner_id": "1001531274030305280",
+        "pick": 4,
+        "player_id": "12506",
+        "position": "TE",
+        "round": 8,
+        "team": "CLE"
       }
     ]
   },
