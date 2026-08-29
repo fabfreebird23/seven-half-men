@@ -549,6 +549,15 @@
         "position": "QB",
         "round": 8,
         "team": "BAL"
+      },
+      {
+        "name": "Terry McLaurin",
+        "owner_id": "979455520442580992",
+        "pick": 3,
+        "player_id": "5927",
+        "position": "WR",
+        "round": 8,
+        "team": "WAS"
       }
     ]
   },
