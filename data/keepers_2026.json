@@ -540,6 +540,15 @@
         "position": "RB",
         "round": 8,
         "team": "NE"
+      },
+      {
+        "name": "Lamar Jackson",
+        "owner_id": "1254567796231114752",
+        "pick": 2,
+        "player_id": "4881",
+        "position": "QB",
+        "round": 8,
+        "team": "BAL"
       }
     ]
   },
