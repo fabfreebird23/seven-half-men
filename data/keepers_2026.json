@@ -36,6 +36,15 @@
         "position": "RB",
         "round": 1,
         "team": "DET"
+      },
+      {
+        "name": "Bijan Robinson",
+        "owner_id": "964703051971887104",
+        "pick": 2,
+        "player_id": "9509",
+        "position": "RB",
+        "round": 1,
+        "team": "ATL"
       }
     ]
   },
