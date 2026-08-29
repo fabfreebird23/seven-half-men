@@ -675,6 +675,15 @@
         "position": "WR",
         "round": 9,
         "team": "JAX"
+      },
+      {
+        "name": "DK Metcalf",
+        "owner_id": "979400432114102272",
+        "pick": 1,
+        "player_id": "5846",
+        "position": "WR",
+        "round": 10,
+        "team": "PIT"
       }
     ]
   },
