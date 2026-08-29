@@ -765,6 +765,15 @@
         "position": "RB",
         "round": 11,
         "team": "LAR"
+      },
+      {
+        "name": "Alec Pierce",
+        "owner_id": "334162589502144512",
+        "pick": 3,
+        "player_id": "8142",
+        "position": "WR",
+        "round": 11,
+        "team": "IND"
       }
     ]
   },
