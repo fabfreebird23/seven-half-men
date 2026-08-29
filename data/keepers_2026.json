@@ -234,6 +234,15 @@
         "position": "WR",
         "round": 3,
         "team": "KC"
+      },
+      {
+        "name": "Brock Bowers",
+        "owner_id": "979400432114102272",
+        "pick": 8,
+        "player_id": "11604",
+        "position": "TE",
+        "round": 3,
+        "team": "LV"
       }
     ]
   },
