@@ -891,6 +891,15 @@
         "position": "WR",
         "round": 12,
         "team": "MIN"
+      },
+      {
+        "name": "Jayden Reed",
+        "owner_id": "980569987930804224",
+        "pick": 1,
+        "player_id": "10222",
+        "position": "WR",
+        "round": 13,
+        "team": "GB"
       }
     ]
   },
