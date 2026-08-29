@@ -432,6 +432,15 @@
         "position": "RB",
         "round": 6,
         "team": "NYG"
+      },
+      {
+        "name": "Jaylen Warren",
+        "owner_id": "334162589502144512",
+        "pick": 6,
+        "player_id": "8228",
+        "position": "RB",
+        "round": 6,
+        "team": "PIT"
       }
     ]
   },
