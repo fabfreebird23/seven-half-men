@@ -279,6 +279,15 @@
         "position": "RB",
         "round": 4,
         "team": "DAL"
+      },
+      {
+        "name": "Garrett Wilson",
+        "owner_id": "979382824706912256",
+        "pick": 5,
+        "player_id": "8146",
+        "position": "WR",
+        "round": 4,
+        "team": "NYJ"
       }
     ]
   },
