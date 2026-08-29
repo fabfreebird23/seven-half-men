@@ -738,6 +738,15 @@
         "position": "QB",
         "round": 10,
         "team": "NE"
+      },
+      {
+        "name": "Joe Burrow",
+        "owner_id": "980569987930804224",
+        "pick": 8,
+        "player_id": "6770",
+        "position": "QB",
+        "round": 10,
+        "team": "CIN"
       }
     ]
   },
