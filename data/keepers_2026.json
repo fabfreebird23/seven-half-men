@@ -873,6 +873,15 @@
         "position": "WR",
         "round": 12,
         "team": "LAC"
+      },
+      {
+        "name": "Mike Washington",
+        "owner_id": "964703051971887104",
+        "pick": 7,
+        "player_id": "13305",
+        "position": "RB",
+        "round": 12,
+        "team": "LV"
       }
     ]
   },
