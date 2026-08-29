@@ -711,6 +711,15 @@
         "position": "RB",
         "round": 10,
         "team": "MIN"
+      },
+      {
+        "name": "Kenny Gainwell",
+        "owner_id": "979382824706912256",
+        "pick": 5,
+        "player_id": "7567",
+        "position": "RB",
+        "round": 10,
+        "team": "TB"
       }
     ]
   },
