@@ -27,7 +27,17 @@
   "kept": [],
   "locked": false,
   "picks": {
-    "veteran": []
+    "veteran": [
+      {
+        "name": "Jordan Mason",
+        "owner_id": "980569987930804224",
+        "pick": 1,
+        "player_id": "8408",
+        "position": "RB",
+        "round": 1,
+        "team": "MIN"
+      }
+    ]
   },
   "rookie_kept": [],
   "season": 2026,
