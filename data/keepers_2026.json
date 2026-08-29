@@ -900,6 +900,15 @@
         "position": "WR",
         "round": 13,
         "team": "GB"
+      },
+      {
+        "name": "Ja'Kobi Lane",
+        "owner_id": "964703051971887104",
+        "pick": 2,
+        "player_id": "13293",
+        "position": "WR",
+        "round": 13,
+        "team": "BAL"
       }
     ]
   },
