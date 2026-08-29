@@ -801,6 +801,15 @@
         "position": "RB",
         "round": 11,
         "team": "MIN"
+      },
+      {
+        "name": "Jalen Coker",
+        "owner_id": "1254567796231114752",
+        "pick": 7,
+        "player_id": "11646",
+        "position": "WR",
+        "round": 11,
+        "team": "CAR"
       }
     ]
   },
