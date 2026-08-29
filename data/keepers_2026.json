@@ -999,6 +999,15 @@
         "position": "TE",
         "round": 14,
         "team": "NYG"
+      },
+      {
+        "name": "Khalil Shakir",
+        "owner_id": "979382824706912256",
+        "pick": 5,
+        "player_id": "8134",
+        "position": "WR",
+        "round": 14,
+        "team": "BUF"
       }
     ]
   },
