@@ -252,6 +252,15 @@
         "position": "WR",
         "round": 4,
         "team": "NO"
+      },
+      {
+        "name": "Trey McBride",
+        "owner_id": "1254567796231114752",
+        "pick": 2,
+        "player_id": "8130",
+        "position": "TE",
+        "round": 4,
+        "team": "ARI"
       }
     ]
   },
