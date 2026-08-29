@@ -423,6 +423,15 @@
         "position": "WR",
         "round": 6,
         "team": "JAX"
+      },
+      {
+        "name": "Cam Skattebo",
+        "owner_id": "979382824706912256",
+        "pick": 5,
+        "player_id": "12481",
+        "position": "RB",
+        "round": 6,
+        "team": "NYG"
       }
     ]
   },
