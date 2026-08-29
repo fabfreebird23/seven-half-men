@@ -594,6 +594,15 @@
         "position": "WR",
         "round": 8,
         "team": "SF"
+      },
+      {
+        "name": "Chris Godwin",
+        "owner_id": "980569987930804224",
+        "pick": 8,
+        "player_id": "4037",
+        "position": "WR",
+        "round": 8,
+        "team": "TB"
       }
     ]
   },
