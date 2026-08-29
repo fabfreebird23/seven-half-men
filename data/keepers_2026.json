@@ -459,6 +459,15 @@
         "position": "RB",
         "round": 6,
         "team": "TB"
+      },
+      {
+        "name": "Marvin Harrison",
+        "owner_id": "980569987930804224",
+        "pick": 1,
+        "player_id": "11628",
+        "position": "WR",
+        "round": 7,
+        "team": "ARI"
       }
     ]
   },
