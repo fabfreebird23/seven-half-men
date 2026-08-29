@@ -585,6 +585,15 @@
         "position": "WR",
         "round": 8,
         "team": "GB"
+      },
+      {
+        "name": "Mike Evans",
+        "owner_id": "964703051971887104",
+        "pick": 7,
+        "player_id": "2216",
+        "position": "WR",
+        "round": 8,
+        "team": "SF"
       }
     ]
   },
