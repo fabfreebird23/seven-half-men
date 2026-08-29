@@ -918,6 +918,15 @@
         "position": "WR",
         "round": 13,
         "team": "TB"
+      },
+      {
+        "name": "Sam LaPorta",
+        "owner_id": "979382824706912256",
+        "pick": 4,
+        "player_id": "10859",
+        "position": "TE",
+        "round": 13,
+        "team": "DET"
       }
     ]
   },
