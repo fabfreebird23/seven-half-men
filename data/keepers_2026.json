@@ -792,6 +792,15 @@
         "position": "QB",
         "round": 11,
         "team": "PHI"
+      },
+      {
+        "name": "Jordan Mason",
+        "owner_id": "979455520442580992",
+        "pick": 6,
+        "player_id": "8408",
+        "position": "RB",
+        "round": 11,
+        "team": "MIN"
       }
     ]
   },
