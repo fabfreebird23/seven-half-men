@@ -297,6 +297,15 @@
         "position": "QB",
         "round": 4,
         "team": "BUF"
+      },
+      {
+        "name": "George Pickens",
+        "owner_id": "964703051971887104",
+        "pick": 7,
+        "player_id": "8137",
+        "position": "WR",
+        "round": 4,
+        "team": "DAL"
       }
     ]
   },
