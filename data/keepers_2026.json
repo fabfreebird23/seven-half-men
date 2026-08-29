@@ -954,6 +954,15 @@
         "position": "RB",
         "round": 13,
         "team": "SEA"
+      },
+      {
+        "name": "Dak Prescott",
+        "owner_id": "979400432114102272",
+        "pick": 8,
+        "player_id": "3294",
+        "position": "QB",
+        "round": 13,
+        "team": "DAL"
       }
     ]
   },
