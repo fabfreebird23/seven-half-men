@@ -729,6 +729,15 @@
         "position": "RB",
         "round": 10,
         "team": "WAS"
+      },
+      {
+        "name": "Drake Maye",
+        "owner_id": "964703051971887104",
+        "pick": 7,
+        "player_id": "11564",
+        "position": "QB",
+        "round": 10,
+        "team": "NE"
       }
     ]
   },
