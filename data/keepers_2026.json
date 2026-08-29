@@ -189,6 +189,15 @@
         "position": "WR",
         "round": 3,
         "team": "NE"
+      },
+      {
+        "name": "Omarion Hampton",
+        "owner_id": "334162589502144512",
+        "pick": 3,
+        "player_id": "12507",
+        "position": "RB",
+        "round": 3,
+        "team": "LAC"
       }
     ]
   },
