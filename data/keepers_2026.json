@@ -405,6 +405,15 @@
         "position": "WR",
         "round": 6,
         "team": "CIN"
+      },
+      {
+        "name": "Colston Loveland",
+        "owner_id": "979455520442580992",
+        "pick": 3,
+        "player_id": "12517",
+        "position": "TE",
+        "round": 6,
+        "team": "CHI"
       }
     ]
   },
