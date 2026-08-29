@@ -486,6 +486,15 @@
         "position": "RB",
         "round": 7,
         "team": "JAX"
+      },
+      {
+        "name": "Jayden Daniels",
+        "owner_id": "979382824706912256",
+        "pick": 4,
+        "player_id": "11566",
+        "position": "QB",
+        "round": 7,
+        "team": "WAS"
       }
     ]
   },
