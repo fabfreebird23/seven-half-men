@@ -243,6 +243,15 @@
         "position": "TE",
         "round": 3,
         "team": "LV"
+      },
+      {
+        "name": "Chris Olave",
+        "owner_id": "979400432114102272",
+        "pick": 1,
+        "player_id": "8144",
+        "position": "WR",
+        "round": 4,
+        "team": "NO"
       }
     ]
   },
