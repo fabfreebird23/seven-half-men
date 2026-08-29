@@ -1026,6 +1026,15 @@
         "position": "TE",
         "round": 14,
         "team": "SF"
+      },
+      {
+        "name": "Rachaad White",
+        "owner_id": "980569987930804224",
+        "pick": 8,
+        "player_id": "8136",
+        "position": "RB",
+        "round": 14,
+        "team": "WAS"
       }
     ]
   },
