@@ -783,6 +783,15 @@
         "position": "WR",
         "round": 11,
         "team": "GB"
+      },
+      {
+        "name": "Jalen Hurts",
+        "owner_id": "1001531274030305280",
+        "pick": 5,
+        "player_id": "6904",
+        "position": "QB",
+        "round": 11,
+        "team": "PHI"
       }
     ]
   },
