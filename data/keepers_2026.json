@@ -531,6 +531,15 @@
         "position": "RB",
         "round": 7,
         "team": "GB"
+      },
+      {
+        "name": "TreVeyon Henderson",
+        "owner_id": "979400432114102272",
+        "pick": 1,
+        "player_id": "12529",
+        "position": "RB",
+        "round": 8,
+        "team": "NE"
       }
     ]
   },
