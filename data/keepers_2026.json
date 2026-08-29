@@ -198,6 +198,15 @@
         "position": "RB",
         "round": 3,
         "team": "LAC"
+      },
+      {
+        "name": "Derrick Henry",
+        "owner_id": "979382824706912256",
+        "pick": 4,
+        "player_id": "3198",
+        "position": "RB",
+        "round": 3,
+        "team": "BAL"
       }
     ]
   },
