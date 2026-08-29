@@ -630,6 +630,15 @@
         "position": "RB",
         "round": 9,
         "team": "NE"
+      },
+      {
+        "name": "Kyle Pitts",
+        "owner_id": "979382824706912256",
+        "pick": 4,
+        "player_id": "7553",
+        "position": "TE",
+        "round": 9,
+        "team": "ATL"
       }
     ]
   },
