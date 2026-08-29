@@ -522,6 +522,15 @@
         "position": "WR",
         "round": 7,
         "team": "BUF"
+      },
+      {
+        "name": "Josh Jacobs",
+        "owner_id": "979400432114102272",
+        "pick": 8,
+        "player_id": "5850",
+        "position": "RB",
+        "round": 7,
+        "team": "GB"
       }
     ]
   },
