@@ -511,6 +511,12 @@ svg.liq .bob{ animation:liq-bob 5.5s ease-in-out infinite; }
                        letter-spacing:.1em; text-transform:uppercase; margin-top:4px; }
 .contract.wall .price .rd{ color:var(--bad); }
 .contract.fr .price .rd{ color:var(--acc2); }
+/* Power-ranking meter. Scaled against the leader rather than against 100, so
+   the bar shows the GAP to the top of the league - which is the thing being
+   read - instead of a score out of an arbitrary maximum. */
+.pwr{height:5px;background:var(--card2);border-radius:1px;overflow:hidden;min-width:70px}
+.pwr span{display:block;height:100%;background:var(--acc2)}
+tr.me .pwr span{background:var(--acc)}
 .surplus{ font-family:var(--f-data); font-size:12px; font-weight:600; }
 .surplus.p{ color:var(--good); } .surplus.n{ color:var(--bad); } .surplus.z{ color:var(--dim); }
 

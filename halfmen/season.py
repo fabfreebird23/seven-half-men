@@ -322,3 +322,103 @@ def taxi_gap(rows: List[dict] = None) -> List[str]:
     """
     rows = taxi() if rows is None else rows
     return [r["owner_id"] for r in rows if r["wasting"]]
+
+# --------------------------------------------------------------------------
+# power rankings
+# --------------------------------------------------------------------------
+
+# How quickly results take over from roster strength. At week 0 the ranking is
+# pure roster strength because there is nothing else; by this week it is pure
+# results. Six is deliberate on a 13-week season: four or five games is enough
+# that a hot start is no longer just a soft schedule, and waiting longer means
+# the block is still arguing about the draft in November.
+RESULTS_TAKE_OVER_BY = 6.0
+
+
+def _pct(value: float, biggest: float) -> float:
+    return (value / biggest) if biggest else 0.0
+
+
+def power(league_id: str = None) -> List[dict]:
+    """Ranked on a blend of what you have done and what you are holding.
+
+    Two components, both scaled 0-1 against the best team in the league so they
+    can be mixed at all:
+
+      results   60% win rate, 40% points for. Win rate alone rewards a soft
+                schedule; points alone ignores that the league plays games.
+      strength  the roster's best nine ACTIVES against the consensus board.
+                Taxi is excluded - a stashed rookie cannot score for you.
+
+    The weight moves. In week 1 there are no results, so a blend that included
+    them would just be roster strength with extra steps, and the honest thing
+    is to say the ranking IS roster strength. By week `RESULTS_TAKE_OVER_BY`
+    the roster component is gone entirely, because by then the season has
+    opinions of its own and a preseason board does not get a vote.
+
+    `moved` is against the preseason strength order rather than last week's
+    ranking. That needs no stored history, and it answers the better question:
+    not "who got hot this week" but "who is doing more than their draft said
+    they would".
+    """
+    league_id = league_id or config.league_id()
+    rows = standings(league_id)
+    if not rows:
+        return []
+    try:
+        rosters = sleeper.get_rosters(league_id) or []
+        pmap = sleeper.get_players()
+    except Exception:
+        rosters, pmap = [], {}
+    table = adp_board.table()
+
+    actives = {}
+    for r in rosters:
+        owner = str(r.get("owner_id") or "")
+        taxi_ids = {str(x) for x in (r.get("taxi") or [])}
+        actives[owner] = [str(p) for p in (r.get("players") or [])
+                          if str(p) not in taxi_ids]
+
+    played = max(r["played"] for r in rows)
+    weight = min(1.0, played / RESULTS_TAKE_OVER_BY) if played else 0.0
+
+    for r in rows:
+        r["strength"] = _strength(actives.get(r["owner_id"], []), pmap, table)
+    best_strength = max((r["strength"] for r in rows), default=0.0)
+    best_pf = max((r["points_for"] for r in rows), default=0.0)
+
+    for r in rows:
+        wins = r["wins"] + 0.5 * r["ties"]
+        rate = (wins / r["results"]) if r["results"] else 0.0
+        r["win_rate"] = rate
+        r["results_score"] = 0.6 * rate + 0.4 * _pct(r["points_for"], best_pf)
+        r["strength_score"] = _pct(r["strength"], best_strength)
+        r["power"] = round(100.0 * (weight * r["results_score"]
+                                    + (1.0 - weight) * r["strength_score"]), 1)
+
+    # Where the draft said they should be, for the movement column.
+    seed = sorted(rows, key=lambda x: -x["strength"])
+    seeded = {r["owner_id"]: i + 1 for i, r in enumerate(seed)}
+
+    out = sorted(rows, key=lambda x: (-x["power"], -x["points_for"]))
+    for i, r in enumerate(out, 1):
+        r["rank"] = i
+        r["seed"] = seeded.get(r["owner_id"], i)
+        r["moved"] = r["seed"] - i          # positive = climbing
+        r["weight"] = round(weight, 3)
+    return out
+
+
+def power_basis(rows: List[dict] = None) -> str:
+    """What the ranking is actually made of right now, in words. The block has
+    to say this - a number blended from two things, labelled neither, invites
+    everyone to assume it is the one they like least."""
+    rows = power() if rows is None else rows
+    if not rows:
+        return ""
+    w = rows[0].get("weight", 0.0)
+    if w <= 0:
+        return "roster strength only &mdash; nothing has been played"
+    if w >= 1:
+        return "record and points only"
+    return "%d%% record, %d%% roster strength" % (round(w * 100), round((1 - w) * 100))

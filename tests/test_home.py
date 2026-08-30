@@ -74,7 +74,7 @@ def test_midseason_shows_the_record_and_what_is_left_of_the_budget(monkeypatch):
     assert "6\u20133" in body
     assert "Standing" in body and "1st" in body, "one roster, so it is top of the table"
     assert "$29" in body
-    assert "owed to the pot at year end" in body
+    assert "$71 spent" in body, "you owe what you bid, not what you kept"
     # Derived, not hardcoded: the regular season is 13 weeks now (Sleeper runs
     # the playoffs from week 14 at two weeks a round), and a test that pinned
     # the number would have to be edited every time the schedule moves.
@@ -82,13 +82,21 @@ def test_midseason_shows_the_record_and_what_is_left_of_the_budget(monkeypatch):
     assert "Week 9" in body and "%d to play" % left in body
 
 
-def test_spending_out_is_reported_as_owing_nothing_not_as_zero_left(monkeypatch):
-    """$0 left is the good outcome in this league - the pot is funded by what you
-    DIDN'T spend - and the card has to say which way round that is."""
+def test_spending_out_is_reported_as_the_biggest_bill_not_as_zero_left(monkeypatch):
+    """$0 left is the EXPENSIVE outcome since 2026-08-30: the pot is funded by
+    what you spend. The card has to say which way round that is, because it
+    said the exact opposite until the rule was inverted."""
     monkeypatch.setattr(sleeper, "get_rosters",
                         lambda lid: roster(wins=1, losses=8, waiver_budget_used=100))
     body = home()
-    assert "you owe the pot nothing" in body
+    assert "you owe the full $100" in body
+
+
+def test_an_untouched_budget_is_reported_as_owing_nothing(monkeypatch):
+    monkeypatch.setattr(sleeper, "get_rosters",
+                        lambda lid: roster(wins=1, losses=8, waiver_budget_used=0))
+    body = home()
+    assert "nothing bid, nothing owed" in body
 
 
 def test_a_submitted_slip_is_counted(monkeypatch):

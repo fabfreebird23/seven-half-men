@@ -480,9 +480,9 @@ RULES_LEDGER = [
     ("Owning the pick", "A keeper lands on a round you actually hold. If it is gone he bumps to "
                         "the next-earliest round you own. The price travels with the player on a "
                         "trade — an R7 keeper is an R7 again for an owner who has their R7."),
-    ("Taxi", "Two slots, two-year clocks, that year's rookie draft only. Never startable. "
-             "Promotion is permanent."),
-    ("The pot", "Unspent FAAB comes due. The first $%d goes to the Chase-bracket winner and "
+    ("Taxi", "Two slots, two-year clocks, any rookie you drafted. Declared before the first "
+             "kickoff and locked after it. Never startable. Promotion is permanent."),
+    ("The pot", "FAAB you SPEND comes due. The first $%d goes to the Chase-bracket winner and "
                 "everything above it rejoins the payout." % pot.cap_amount()[0]),
     ("Two lotteries", "Rookie drum on regular-season record, veteran drum on final standing "
                       "including the Chase bracket. Champion always at the floor. Nobody wins "
@@ -612,7 +612,7 @@ def band_numbers(sit: dict) -> tuple:
     # were full.
     budget = int(config.faab_rules()["budget"])
     left = ("FAAB", "$%d" % (budget if sit["faab_left"] is None else sit["faab_left"]),
-            "to spend all season &mdash; <b>whatever is left, you owe</b>", False)
+            "to spend all season &mdash; <b>every dollar you bid, you owe</b>", False)
     held = sit.get("rostered") or 0
     tx = len(sit["taxi"].pods) if sit["taxi"] else 0
     right = ("Rostered", str(held) if held else "\u2014",
@@ -645,7 +645,6 @@ def my_card(view: str) -> None:
     in_bracket = bool(sit["place"] and sit["place"] <= int(config.league()["playoff_teams"]))
     status = (("%s of %d" % (ordinal(sit["place"]), len(owner_ids())), not in_bracket)
               if sit["place"] else
-              ("both orders drawn", True) if sit["slots"] else
               ("nothing played yet", True))
 
     parts = ['<div class="tcard">']
@@ -671,11 +670,12 @@ def my_card(view: str) -> None:
     parts.append('<div class="meters">')
     parts.append(meter(
         "FAAB left", "$%d" % left_faab,
-        ("all of it still comes due" if left_faab == budget else
-         "owed to the pot at year end" if left_faab else
-         "spent out &mdash; you owe the pot nothing"),
+        ("nothing bid, nothing owed" if left_faab == budget else
+         "$%d spent &mdash; that is what you owe" % (budget - left_faab) if left_faab else
+         "spent out &mdash; you owe the full $%d" % budget),
         pct=left_faab / float(budget),
-        color="var(--warn)" if left_faab else "var(--good)", off=not left_faab))
+        color="var(--good)" if left_faab == budget else "var(--warn)",
+        off=left_faab == budget))
     parts.append(meter(
         "Keepers in", "%d<small>/%d</small>" % (sit["kept"], total_keepers),
         "on your slip",
@@ -1173,6 +1173,73 @@ def render_top_values() -> None:
         unsafe_allow_html=True)
 
 
+def render_power() -> None:
+    """Power rankings: what you have done, blended with what you are holding.
+
+    The blend is labelled on the page rather than left implicit. In week 1 it
+    is roster strength and says so - a ranking that quietly weighed an unplayed
+    record would be roster strength wearing a disguise. Past the crossover
+    week it is results only, because by then the season has opinions of its
+    own.
+
+    Movement is measured against the PRESEASON strength order, not last week's
+    table. That needs no stored history and answers the better question: who is
+    doing more than their draft said they would.
+
+    NB: do not %-format this docstring. Streamlit's magic turns a bare
+    expression into st.write, and a triple-quoted string followed by a percent
+    operator is a BinOp rather than a docstring - it printed this whole
+    paragraph onto the Home page above the block.
+    """
+    rows = season.power()
+    if not rows:
+        return
+    theme.bar("Power rankings", season.power_basis(rows))
+    top = rows[0]["power"] or 1.0
+
+    body = []
+    for r in rows:
+        mv = r["moved"]
+        if not r["weight"]:
+            chip = '<span class="chip">seeded by the draft</span>'
+        elif mv > 0:
+            chip = '<span class="chip good">&#9650; %d on the draft</span>' % mv
+        elif mv < 0:
+            chip = '<span class="chip bad">&#9660; %d on the draft</span>' % abs(mv)
+        else:
+            chip = '<span class="chip">holding its seed</span>'
+        body.append([
+            '<span class="mono" style="font-family:var(--f-display);font-weight:800;'
+            'font-size:19px;color:%s">%d</span>' % (
+                "var(--acc)" if r["rank"] == 1 else "var(--dim)", r["rank"]),
+            '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
+                700 if r["owner_id"] == VIEW else 550,
+                esc(team_of(r["owner_id"])), esc(who(r["owner_id"]))),
+            '<span class="mono">%s</span>' % r["record"],
+            '<div class="pwr"><span style="width:%d%%"></span></div>'
+            '<div class="tiny">%.0f</div>' % (
+                int(round(100.0 * r["power"] / top)), r["power"]),
+            chip,
+        ])
+    ledger_table(["", "Team", "W&ndash;L", "Power", ""], body,
+                 me_row=next((i for i, r in enumerate(rows)
+                              if r["owner_id"] == VIEW), None))
+    if not rows[0]["weight"]:
+        st.markdown(
+            '<div class="tiny" style="margin-top:8px">Nothing has been played, so this is '
+            '<b>roster strength only</b> &mdash; each team\'s best nine actives against the '
+            'consensus board, taxi excluded. Everyone drafted off that same board, so this is '
+            'close to ranking the room by draft slot. Records start pulling it apart from week '
+            '1 and take over completely by week %d.</div>' % int(season.RESULTS_TAKE_OVER_BY),
+            unsafe_allow_html=True)
+    else:
+        st.markdown(
+            '<div class="tiny" style="margin-top:8px">Results are <b>60%% win rate, 40%% points '
+            'for</b> &mdash; win rate alone rewards a soft schedule, points alone ignore that '
+            'the league plays games. The arrow is movement against where your draft seeded you, '
+            'not against last week.</div>', unsafe_allow_html=True)
+
+
 def render_home(leaf=None):
     """The in-season front page.
 
@@ -1187,6 +1254,7 @@ def render_home(leaf=None):
     render_matchups()
     render_pot_strip()
     render_standings()
+    render_power()
     render_top_values()
     render_transactions()
 
@@ -1729,7 +1797,7 @@ def render_pot(leaf=None):
     complete = (lg.get("status") or "") == "complete"
 
     if leaf in (None, "pot"):
-        theme.bar("The pot", "unspent FAAB comes due")
+        theme.bar("The pot", "FAAB you spend comes due")
         played = sum(b.spent for b in settlement.bills) > 0
 
         if FIRST:
@@ -1830,7 +1898,7 @@ def render_pot(leaf=None):
         _ov = config.overflow_split()
         st.markdown(
             '<div class="banner" style="margin-top:12px"><b>The cap is a ceiling, not a discount.</b> '
-            'Every unspent dollar comes due. The first <b>$%d</b> goes to whoever wins the Chase '
+            'Every dollar you bid comes due. The first <b>$%d</b> goes to whoever wins the Chase '
             'bracket &mdash; that is the third-place prize. Everything above it is split '
             '<b>%d/%d/%d/%d</b> between the champion, the runner-up, third place and the Chase '
             'winner, so a low-spend year lifts the whole bracket rather than one person. The '

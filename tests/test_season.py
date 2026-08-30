@@ -175,3 +175,87 @@ def test_incomplete_moves_are_not_reported_as_having_happened(league):
     league([roster(1, "a")], players={"9": {"full_name": "Some Guy"}})
     season.sleeper.get_transactions = tx
     assert season.transactions(limit=5, week=2) == []
+
+
+# ------------------------------------------------------- power rankings
+
+def _league(league, records, players=None, adp=None, monkeypatch=None):
+    rs = []
+    for i, (owner, (w, l, pf, pids)) in enumerate(records.items(), 1):
+        rs.append(roster(i, owner, wins=w, losses=l, fpts=pf, players=pids))
+    league(rs, players=players or {})
+    if adp is not None:
+        monkeypatch.setattr(season.adp_board, "table", lambda: adp)
+    return rs
+
+
+PLAYERS = {"stud": {"full_name": "Stud"}, "scrub": {"full_name": "Scrub"}}
+ADP = {"stud": {"rank": 1.0}, "scrub": {"rank": 350.0}}
+
+
+def test_before_a_game_the_ranking_is_roster_strength_and_says_so(league, monkeypatch):
+    """A blend that quietly weighed an unplayed 0-0 record would be roster
+    strength wearing a disguise. The page has to be able to name what it is."""
+    _league(league, {"a": (0, 0, 0, ["scrub"]), "b": (0, 0, 0, ["stud"])},
+            PLAYERS, ADP, monkeypatch)
+    rows = season.power()
+    assert rows[0]["owner_id"] == "b", "the better roster leads"
+    assert rows[0]["weight"] == 0.0
+    assert "roster strength only" in season.power_basis(rows)
+
+
+def test_results_take_over_completely_by_the_crossover_week(league, monkeypatch):
+    """Past the crossover a preseason board does not get a vote. The worst
+    roster with the best record has to be able to rank first."""
+    played = int(season.RESULTS_TAKE_OVER_BY) * 2      # median match: 2 a week
+    _league(league, {"a": (played, 0, 900, ["scrub"]),
+                     "b": (0, played, 100, ["stud"])},
+            PLAYERS, ADP, monkeypatch)
+    rows = season.power()
+    assert rows[0]["weight"] == 1.0
+    assert rows[0]["owner_id"] == "a", "unbeaten with the worst roster still leads"
+    assert season.power_basis(rows) == "record and points only"
+
+
+def test_the_blend_moves_off_roster_strength_as_games_are_played(league, monkeypatch):
+    """Halfway to the crossover the ranking is genuinely mixed - neither
+    component may be silently dropped."""
+    _league(league, {"a": (6, 0, 900, ["scrub"]), "b": (0, 6, 100, ["stud"])},
+            PLAYERS, ADP, monkeypatch)
+    rows = season.power()
+    assert 0.0 < rows[0]["weight"] < 1.0
+    basis = season.power_basis(rows)
+    assert "%" in basis and "record" in basis and "roster strength" in basis
+
+
+def test_movement_is_measured_against_the_draft_not_last_week(league, monkeypatch):
+    """No stored history, and it answers the better question: who is doing more
+    than their draft said they would."""
+    played = int(season.RESULTS_TAKE_OVER_BY) * 2
+    _league(league, {"a": (played, 0, 900, ["scrub"]),
+                     "b": (0, played, 100, ["stud"])},
+            PLAYERS, ADP, monkeypatch)
+    rows = {r["owner_id"]: r for r in season.power()}
+    assert rows["a"]["seed"] == 2 and rows["a"]["moved"] == 1
+    assert rows["b"]["seed"] == 1 and rows["b"]["moved"] == -1
+
+
+def test_a_taxi_stash_does_not_count_toward_roster_strength(league, monkeypatch):
+    """He cannot score for you, so he cannot make you look stronger."""
+    rs = [roster(1, "a", players=["stud", "scrub"], taxi=["stud"]),
+          roster(2, "b", players=["scrub"])]
+    league(rs, players=PLAYERS)
+    monkeypatch.setattr(season.adp_board, "table", lambda: ADP)
+    rows = {r["owner_id"]: r for r in season.power()}
+    assert rows["a"]["strength"] == rows["b"]["strength"]
+
+
+def test_win_rate_alone_cannot_carry_a_team_that_scores_nothing(league, monkeypatch):
+    """40% of the results score is points for, so a soft schedule is not the
+    whole story."""
+    played = int(season.RESULTS_TAKE_OVER_BY) * 2
+    _league(league, {"lucky": (played, 0, 10, ["scrub"]),
+                     "strong": (played - 2, 2, 2000, ["scrub"])},
+            PLAYERS, ADP, monkeypatch)
+    rows = {r["owner_id"]: r for r in season.power()}
+    assert rows["strong"]["results_score"] > rows["lucky"]["results_score"] * 0.8
