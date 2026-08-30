@@ -136,11 +136,19 @@ def compliance(bays: Dict[str, Bay], hist) -> Dict[str, List[Pod]]:
 
     `hist` is a history.History; passed in rather than imported so this module
     stays free of the draft-history machinery.
+
+    A player whose rookie status we could not establish is NOT reported. This
+    block names people in public, and it did exactly that on the strength of a
+    5MB player map failing to load - every rookie taken in the veteran draft
+    lost his eligibility at once and three managers were told to drop legal
+    stashes. Silence is the right failure here.
     """
     out: Dict[str, List[Pod]] = {}
+    known = getattr(hist, "rookie_status_is_known", None)
     for owner, bay in bays.items():
         bad = [p for p in bay.pods
-               if not hist.is_rookie_keeper_eligible(str(p.player_id))]
+               if (known is None or known(str(p.player_id)))
+               and not hist.is_rookie_keeper_eligible(str(p.player_id))]
         if bad:
             out[owner] = bad
     return out

@@ -234,6 +234,26 @@ def players_map() -> dict:
         return {}
 
 
+def player_data_warning() -> None:
+    """Say so when the player map is missing, rather than degrading quietly.
+
+    It is a 15MB file, gitignored because it has no business in the repo, so a
+    fresh container has to fetch the whole thing from Sleeper before anything
+    that needs a position, a team or an age can work. Nearly every board here
+    depends on it, and every one of them swallows the failure and carries on
+    with an empty dict - which is how three managers came to be accused of
+    stashing illegal players when the only thing wrong was a slow download.
+    """
+    if players_map():
+        return
+    st.markdown(
+        '<div class="banner" style="border-color:var(--warn)"><b>Player data is still '
+        'loading.</b> The full NFL player file is ~15MB and this container has not finished '
+        'fetching it from Sleeper. Positions, ages and anything derived from them will be '
+        'blank or missing until it lands &mdash; give it a moment and refresh. Nothing is '
+        'broken and nothing you see is a rule.</div>', unsafe_allow_html=True)
+
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def owned_map() -> Dict[str, Counter]:
     try:
@@ -2545,6 +2565,8 @@ PAGES = {"home": render_home, "rules": render_rules}
 GROUP_PAGES = {"keepers": render_keepers, "draft": render_draft,
                "lottery": render_lottery, "wire": render_keepers, "pot": render_pot,
                "taxi": render_taxi_league}
+
+player_data_warning()
 
 if PAGE in PAGES:
     PAGES[PAGE]()

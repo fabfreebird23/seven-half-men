@@ -258,3 +258,16 @@ def test_year_one_parks_both_rookies_on_taxi_before_the_veteran_draft():
     rookies = int(config.taxi_rules()["slots"])
     assert rounds == config.active_roster_size(), "the board fills the roster exactly"
     assert rookies == config.rookie_rounds(), "one taxi slot per rookie pick"
+
+
+def test_missing_player_metadata_reads_as_unknown_not_as_veteran():
+    """`_was_rookie` returned False for a player it had no metadata for, which
+    is indistinguishable from 'definitely a veteran'. That is what silently
+    stripped taxi eligibility from every veteran-draft rookie when the player
+    map failed to load."""
+    from halfmen import history
+    assert history._was_rookie({}, 2026) is None
+    assert history._was_rookie({"years_exp": None}, 2026) is None
+    assert history._was_rookie({"years_exp": "nonsense"}, 2026) is None
+    assert history._was_rookie({"years_exp": 0}, 2026) is True
+    assert history._was_rookie({"years_exp": 4}, 2026) is False

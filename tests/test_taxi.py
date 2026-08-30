@@ -57,3 +57,35 @@ def test_the_eligibility_note_says_either_board_and_the_kickoff_lock():
     note = taxi.eligibility_note()
     assert "either board" in note
     assert "kickoff" in note
+
+
+class BlindHistory:
+    """History built while the player map was unavailable: it has the draft
+    records but cannot say whether anyone was an NFL rookie."""
+    def __init__(self, unknown):
+        self._unknown = set(unknown)
+
+    def rookie_status_is_known(self, pid):
+        return pid not in self._unknown
+
+    def is_rookie_keeper_eligible(self, pid):
+        return False            # nothing looks eligible without metadata
+
+
+def test_a_player_we_cannot_judge_is_not_accused():
+    """This block names managers in public. It did exactly that on the strength
+    of a 5MB player map failing to load: `years_exp` was unreadable, every
+    rookie taken in the VETERAN draft silently stopped being eligible, and
+    three managers were told to drop legal stashes. Absent data is not
+    evidence, so silence is the right failure."""
+    hist = BlindHistory(unknown={"a", "b"})
+    bay = taxi.Bay(owner_id="o", pods=[pod("a", "Legal Rook"), pod("b", "Also Legal")])
+    assert taxi.compliance({"o": bay}, hist) == {}
+
+
+def test_a_player_we_can_judge_is_still_caught():
+    """Failing quiet must not mean failing off. Anyone whose status we DO know
+    is still checked."""
+    hist = BlindHistory(unknown={"a"})       # "b" is known, and not eligible
+    bay = taxi.Bay(owner_id="o", pods=[pod("a", "Unknown"), pod("b", "Wire Guy")])
+    assert [p.name for p in taxi.compliance({"o": bay}, hist)["o"]] == ["Wire Guy"]

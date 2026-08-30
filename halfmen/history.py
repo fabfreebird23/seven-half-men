@@ -26,7 +26,7 @@ class PlayerSeason:
     round: Optional[int]
     pick_no: Optional[int]
     draft_type: str          # rookie | veteran | first_season
-    was_rookie: bool         # an actual NFL rookie that season
+    was_rookie: Optional[bool]   # an actual NFL rookie that season; None = unknown
     kept: bool = False
     rookie_kept: bool = False
 
@@ -38,6 +38,10 @@ class History:
     drafted_as_rookie: Dict[str, int] = field(default_factory=dict)   # pid -> season
     rookie_draft_round: Dict[str, int] = field(default_factory=dict)  # pid -> round
     ever_regular_keeper: Set[str] = field(default_factory=set)
+    # Drafted, but we could not read his metadata to say whether he was an NFL
+    # rookie that season. "Cannot say" is not "no": anything that ACCUSES a
+    # manager has to check this before it speaks.
+    rookie_status_unknown: Set[str] = field(default_factory=set)
 
     # ---------------------------------------------------------------- queries
     def latest(self, pid: str) -> Optional[PlayerSeason]:
@@ -93,6 +97,9 @@ class History:
         if self.has_rookie_draft_provenance(pid):
             return None
         return self.draft_round(pid)
+
+    def rookie_status_is_known(self, pid: str) -> bool:
+        return str(pid) not in self.rookie_status_unknown
 
     def is_rookie_keeper_eligible(self, pid: str) -> bool:
         """Any NFL rookie you DRAFTED, in either draft. Not a waiver pickup, and
@@ -210,6 +217,8 @@ def build(league_id: str = None) -> History:
             hist.rookie_draft_round[pid] = int(row["round"])
         elif was_rookie and pid not in hist.drafted_as_rookie:
             hist.drafted_as_rookie[pid] = season
+        elif was_rookie is None:
+            hist.rookie_status_unknown.add(pid)
 
     for link in sorted(chain, key=lambda c: c["season"]):
         season = int(link["season"])
@@ -243,6 +252,8 @@ def build(league_id: str = None) -> History:
                                   kept=pid in kept, rookie_kept=pid in rookie_kept)
                 hist.by_player[pid].append(ps)
 
+                if was_rookie is None:
+                    hist.rookie_status_unknown.add(pid)
                 if was_rookie and pid not in hist.drafted_as_rookie:
                     hist.drafted_as_rookie[pid] = season
                     if ps.round:
@@ -253,16 +264,26 @@ def build(league_id: str = None) -> History:
     return hist
 
 
-def _was_rookie(player_meta: dict, season: int) -> bool:
-    """An NFL rookie in `season`. Sleeper carries `years_exp` as of *now*, so we
-    back-date it against the current season rather than trusting it directly."""
+def _was_rookie(player_meta: dict, season: int) -> Optional[bool]:
+    """An NFL rookie in `season`, or None when we cannot tell.
+
+    Sleeper carries `years_exp` as of *now*, so we back-date it against the
+    current season rather than trusting it directly.
+
+    None is not the same as False and the difference matters. This returned
+    False for a player we had no metadata for, which is indistinguishable from
+    "definitely a veteran" - so when the 5MB player map failed to load, every
+    rookie taken in the VETERAN draft silently stopped being taxi-eligible and
+    the compliance page accused three managers of stashing illegal players.
+    Absent data is not evidence.
+    """
     if not player_meta:
-        return False
+        return None
     yrs = player_meta.get("years_exp")
     if yrs is None:
-        return False
+        return None
     try:
         yrs = int(yrs)
     except (TypeError, ValueError):
-        return False
+        return None
     return (config.season() - season) == yrs
