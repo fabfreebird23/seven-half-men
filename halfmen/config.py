@@ -108,11 +108,6 @@ def rules() -> Dict[str, Any]:
 def keeper_rules() -> Dict[str, Any]:
     return rules()["keepers"]
 
-
-def rookie_rules() -> Dict[str, Any]:
-    return rules()["rookie_keepers"]
-
-
 def franchise_rules() -> Dict[str, Any]:
     return rules()["franchise"]
 

@@ -1,6 +1,6 @@
 """The taxi bay.
 
-Two slots, two-year clocks, rookies from that year's rookie draft only, and
+Two slots, two-year clocks, any rookie you drafted that year, and
 promotion is permanent. The interesting part is not the rules - it is the
 squeeze: a team holding last year's stash a second season has nowhere to put
 this year's rookie picks, and that tension is what this module surfaces.
@@ -112,9 +112,10 @@ def promote_cost_note() -> str:
 
 def eligibility_note() -> str:
     t = config.taxi_rules()
-    return ("Rookies from that year's rookie draft only, %d slots, %d-year clock, "
-            "never startable. They do not count against your bench and they carry "
-            "over free." % (int(t["slots"]), int(t["years"])))
+    return ("Any rookie you drafted that year, off either board. %d slots, %d-year "
+            "clock, never startable. Declared before the first kickoff and locked "
+            "after it. They do not count against your bench and they carry over "
+            "free." % (int(t["slots"]), int(t["years"])))
 
 
 def compliance(bays: Dict[str, Bay], hist) -> Dict[str, List[Pod]]:

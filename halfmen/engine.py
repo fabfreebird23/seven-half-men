@@ -2,8 +2,10 @@
 
 The whole ruleset in one place:
 
-  regular keepers    yr1  cheaper of (drafted round, current ADP round)
-                     yr2  cheaper of (drafted round - 3, current ADP round)
+  regular keepers    yr1  the round he was drafted in
+                     yr2  cheaper of (drafted round - 3, ADP) - but ADP is
+                          relief from the LADDER, never a discount below what
+                          he cost, so it can never land later than yr1
                      yr3  ADP, no choice
                      yr4  the wall - gone unless franchised
 
@@ -145,13 +147,6 @@ def franchise_price(peak_round: int) -> int:
     """Frozen at the most expensive round ever paid. Earlier round = higher price,
     so the peak is the MINIMUM round number."""
     return int(peak_round)
-
-
-def franchise_years() -> Sequence[int]:
-    fr = config.franchise_rules()
-    start = int(config.keeper_rules()["max_years"]) + 1
-    return list(range(start, start + int(fr["extra_years"])))
-
 
 def rookie_cost_rounds(count: int, last_round: int) -> List[int]:
     """Rookie keepers cost your last picks, cheapest first: R14, then R13."""

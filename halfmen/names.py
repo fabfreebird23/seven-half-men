@@ -46,11 +46,3 @@ def normalize_name(name: str) -> str:
         parts = parts[:-1]
     key = "".join(parts)
     return _ALIASES.get(key, key)
-
-
-def player_key(name: str, position: str | None = None) -> str:
-    """A name key optionally namespaced by position to split same-name players."""
-    base = normalize_name(name)
-    if position:
-        return f"{base}|{position.lower()}"
-    return base

@@ -20,7 +20,7 @@ in the foundation. Pinned to third place it cannot outrank a playoff finish at
 any buy-in, and it needs no re-vote when the buy-in changes.
 
 Whatever is left over rejoins the prize pool instead of landing entirely on the
-champion, so an unspent-FAAB year lifts the whole bracket. The Chase winner
+champion, so a heavy-spending year lifts the whole bracket. The Chase winner
 takes a slice of that too, and the arithmetic lands somewhere neat: their total
 is the cap plus 10% of overflow, and third place is the third-place prize plus
 10% of overflow - the same number, once the pot clears the cap. Below the cap

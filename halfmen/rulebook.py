@@ -475,20 +475,6 @@ def sections() -> List[tuple]:
  ]),
 ]),
 
-("settled", "Put to a vote", "Four questions the league answered on %s. %s." % (
-    config.settled().get("date", ""), config.settled().get("turnout", "")), [
- ("table", ["Question", "Answer", "Tally"],
-  [[v.get("_q", k), "<b>%s</b>" % v.get("answer", ""), v.get("tally", "")]
-   for k, v in [
-     ("deadline", dict(config.settled()["votes"]["deadline"], _q="Trade deadline")),
-     ("vetoes", dict(config.settled()["votes"]["vetoes"], _q="Trade vetoes")),
-     ("waivers", dict(config.settled()["votes"]["waivers"], _q="Waiver tiebreaker")),
-     ("escalation", dict(config.settled()["votes"]["escalation"], _q="Buy-in escalation")),
-   ]]),
- ("p", "The full tallies, and which way each manager voted, are kept with the vote itself. "
-       "Seven of eight voted; the first three were decided without the eighth."),
-]),
-
 ("open", "Still being argued about", "What the rulebook does not settle yet.", [
  ("list", [
    "<b>Year two of the R%d ladder.</b> The written spec gives it as <code>min(5 - 3, adp)</code>, "

@@ -14,9 +14,8 @@ import html
 from pathlib import Path
 import json
 import time
-import math
 from collections import Counter
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -723,104 +722,6 @@ def my_card(view: str) -> None:
     st.markdown("".join(parts), unsafe_allow_html=True)
 
 
-def render_agenda() -> None:
-    """The open votes, as actual polls.
-
-    Everyone is holding a phone anyway, so the room can answer on the page
-    instead of shouting over each other and somebody trying to remember the
-    count. Votes are stored on the data branch, so every manager sees the tally
-    move as it happens rather than each browser keeping its own idea of it.
-
-    There is no login here - identity comes from the team picker at the top,
-    which any of eight friends could change. That is fine for this; it is a
-    tally to argue over, not a ballot box.
-    """
-    items = agenda.open_items()
-    if not items:
-        return
-
-    try:
-        tallies = storage.votes(SEASON)
-    except Exception:
-        tallies = {}
-    everyone = owner_ids()
-    answered = sum(1 for it in items if len(tallies.get(it["id"]) or {}) >= len(everyone))
-
-    theme.bar("On the table", "%d to vote on &middot; %d closed" % (len(items), answered))
-    st.markdown(
-        '<div class="banner">Tap your answer. Everyone sees the tally move, and you can change '
-        'your mind until we call it. Who you are voting as comes from the picker at the top of '
-        'the page &mdash; check it says <b>you</b> before you start.</div>',
-        unsafe_allow_html=True)
-
-    for n, it in enumerate(items, 1):
-        cast = dict(tallies.get(it["id"]) or {})
-        mine = cast.get(str(VIEW))
-        labels = [lab for lab, _ in it["options"]]
-
-        st.markdown(
-            '<div class="agenda"><div class="it"><div class="h"><span class="n">%02d</span>'
-            '<span class="t">%s</span></div><div class="why">%s</div></div></div>' % (
-                n, esc(it["title"]), it["why"]), unsafe_allow_html=True)
-
-        picked = st.radio(
-            it["title"], list(range(len(labels))),
-            index=mine if mine is not None and mine < len(labels) else None,
-            format_func=lambda i, _l=labels: _l[i],
-            key="vote_%s" % it["id"], label_visibility="collapsed")
-        if picked is not None and picked != mine:
-            try:
-                storage.record_vote(it["id"], VIEW, int(picked), SEASON)
-            except Exception:
-                st.markdown('<div class="tiny" style="color:var(--bad)">That did not save '
-                            '&mdash; try again.</div>', unsafe_allow_html=True)
-            else:
-                st.rerun()
-
-        # The reasoning under each option, plus wherever the room has landed.
-        counts = [sum(1 for v in cast.values() if v == i) for i in range(len(labels))]
-        top = max(counts) if counts else 0
-        st.markdown('<div class="agenda"><div class="it" style="padding-top:2px">'
-                    '<div class="opts">%s</div>%s%s</div></div>' % (
-            "".join(
-                '<div class="o%s"><div class="lab">%s%s</div><div class="d">%s</div>'
-                '<div class="tally"><span class="bar"><i style="width:%d%%"></i></span>'
-                '<span class="c">%d</span></div></div>' % (
-                    " lead" if counts[i] and counts[i] == top else "",
-                    esc(labels[i]),
-                    ' <span class="you">yours</span>' if mine == i else "",
-                    note, (counts[i] * 100 // max(1, len(everyone))), counts[i])
-                for i, (_lab, note) in enumerate(it["options"])),
-            ('<div class="foot">%s</div>' % it["note"]) if it.get("note") else "",
-            '<div class="waiting">%s</div>' % _waiting_on(cast, everyone)),
-            unsafe_allow_html=True)
-
-
-def render_proposals() -> None:
-    """Next season's proposal, as talking points.
-
-    Not a poll - these need arguing about before they need counting. Each one
-    carries the line that lands it and the objection that comes back, because
-    the objection is where the conversation actually goes.
-    """
-    p = agenda.proposals()
-    if not p or not p.get("items"):
-        return
-    theme.bar("Proposed for 2027", "talking points &middot; not a vote")
-    st.markdown(
-        '<div class="agenda"><div class="it"><div class="h"><span class="t">%s</span></div>'
-        '<div class="why">%s</div>%s'
-        '<div class="foot"><a href="%s" target="_blank" rel="noopener">'
-        'The written version &rarr;</a></div></div></div>' % (
-            esc(p["title"]), esc(p["note"]),
-            "".join(
-                '<div class="pitch"><div class="lab">%s</div><div class="say">%s</div>'
-                '<div class="back"><b>&ldquo;%s&rdquo;</b> %s</div></div>' % (
-                    esc(it["title"]), it["say"], esc(it["back"][0]), it["back"][1])
-                for it in p["items"]),
-            esc(p["url"])), unsafe_allow_html=True)
-
-
 def _waiting_on(cast: dict, everyone: list) -> str:
     missing = [o for o in everyone if str(o) not in cast]
     if not missing:
@@ -1111,13 +1012,6 @@ def _drafted_cell(r: dict) -> str:
             theme.surplus_class(gain), theme.signed(gain))) if gain else ""))
 
 
-def _cheapest_first(r: dict):
-    """Latest keeper round first - a later round is a cheaper pick to give up.
-    Ties break on the earliest draft round, so the best player at that price
-    sorts above the others."""
-    return (-(r.get("cost") or 0), _drafted_round(r) or 99)
-
-
 def render_top_values() -> None:
     """The five best contracts in the league, wherever they sit.
 
@@ -1280,6 +1174,40 @@ def render_block(kind, *rest) -> str:
     return ""
 
 
+def render_settled_votes() -> None:
+    """Every called vote, with the options that lost still attached.
+
+    The rulebook carries the RULE. This carries how the room got to it: what
+    the alternatives were, what each one would have meant, how the count fell,
+    and who did not vote. A results line that says only "Week 12" throws away
+    the reason Week 10 and Week 13 were on the ballot, which is the part
+    somebody re-reading this in March actually needs.
+
+    Driven off agenda.py rather than a hand-written table, so the questions and
+    the answers cannot drift apart.
+    """
+    items = agenda.closed_items()
+    if not items:
+        return
+    theme.bar("Put to a vote", "%s &middot; %s" % (agenda.settled_on(), agenda.turnout()))
+    for it in items:
+        opts = []
+        for i, (label, note) in enumerate(it["options"]):
+            won = (i == it["won"])
+            opts.append(
+                '<div class="o%s"><div class="lab">%s%s</div><div class="d">%s</div></div>' % (
+                    " lead" if won else "", esc(label),
+                    ' <span class="you">carried</span>' if won else "", note))
+        st.markdown(
+            '<div class="agenda"><div class="it">'
+            '<div class="h"><span class="t">%s</span></div>'
+            '<div class="why">%s</div><div class="opts">%s</div>'
+            '<div class="foot"><b>%s</b> &mdash; %s. %s</div></div></div>' % (
+                esc(it["title"]), it["why"], "".join(opts),
+                esc(it["answer"]), esc(it["tally"]), it["verdict"]),
+            unsafe_allow_html=True)
+
+
 def render_rules(leaf=None):
     secs = rulebook.sections()
     theme.bar("The short version", "everything the engine enforces, in one screen")
@@ -1299,6 +1227,8 @@ def render_rules(leaf=None):
         "".join('<a href="#%s">%s</a>' % (a, esc(t)) for a, t, _, _ in secs),
         '<a href="#minutes-%s">Minutes</a>' % esc(minutes.latest().get("date", ""))
         if minutes.count() else ""), unsafe_allow_html=True)
+
+    render_settled_votes()
 
     for anchor_id, title, stand, blocks in secs:
         theme.bar(title, "")
@@ -1814,7 +1744,7 @@ def render_pot(leaf=None):
         if complete:
             glance([
                 {"pct": 1.0, "color": "var(--bad)", "big": "$%d" % settlement.total,
-                 "label": "Comes due", "note": "every unspent dollar, all 8 teams"},
+                 "label": "Comes due", "note": "every dollar bid, all 8 teams"},
                 {"pct": settlement.to_chase / max(1, settlement.cap), "color": "var(--acc)",
                  "big": "$%d" % settlement.chase_total,
                  "label": "To the Chase winner",

@@ -97,12 +97,6 @@ def undo(kind: str, season: int = None) -> dict:
     save(kind, made[:-1], season)
     return last
 
-
-def taken_ids(kind: str = None, season: int = None) -> set:
-    kinds = (kind,) if kind else (ROOKIE, VETERAN)
-    return {str(p["player_id"]) for k in kinds for p in load(k, season)}
-
-
 def recorded(season: int = None) -> int:
     return sum(len(load(k, season)) for k in (ROOKIE, VETERAN))
 
