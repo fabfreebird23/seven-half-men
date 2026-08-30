@@ -143,6 +143,24 @@ def _picks_for(draft: dict, kind: str = None) -> List[dict]:
     return picks
 
 
+def _real_drafts(league_id: str) -> List[dict]:
+    """The drafts that count, in board order, per `drafts.sleeper_drafts`.
+
+    Falls back to everything Sleeper returns when nothing is configured, which
+    is the right behaviour for a past season keyed in before the setting
+    existed and for any league that never had a junk draft.
+    """
+    drafts = sleeper.get_drafts(league_id) or []
+    want = []
+    for ids in (config.drafts().get("sleeper_drafts") or {}).values():
+        want.extend(str(x) for x in (ids or []))
+    if not want:
+        return drafts
+    by_id = {str(d.get("draft_id")): d for d in drafts}
+    got = [by_id[i] for i in want if i in by_id]
+    return got or drafts
+
+
 def build(league_id: str = None) -> History:
     league_id = league_id or config.league_id()
     hist = History()
@@ -178,7 +196,13 @@ def build(league_id: str = None) -> History:
         kept = set(ledger.get("kept", []))
         rookie_kept = set(ledger.get("rookie_kept", []))
 
-        drafts = sleeper.get_drafts(link["league_id"]) or []
+        # Only the drafts the rulebook says are real. Five exist on Sleeper
+        # for 2026 and two are junk - the never-started veteran board and the
+        # rookie draft that went live at 16 ROUNDS and was abandoned. The junk
+        # rookie draft holds the same first sixteen picks as the real one, so
+        # reading every draft recorded each of those players TWICE, which
+        # inflates anything that counts seasons held.
+        drafts = _real_drafts(link["league_id"])
         for d in drafts:
             kind = _draft_kind(d, first)
             for pick in _picks_for(d, kind):

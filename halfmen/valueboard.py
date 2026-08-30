@@ -34,16 +34,26 @@ def _roster_players(league_id: str) -> Dict[str, List[str]]:
 
 
 def price_for(pid: str, *, hist, pmap: dict, owner: str = None,
-              last_round: int = None) -> Optional[engine.Price]:
-    """One player, priced for whoever holds him, in the coming offseason."""
+              last_round: int = None, slot: Optional[int] = None) -> Optional[engine.Price]:
+    """One player, priced for whoever holds him, in the coming offseason.
+
+    `slot` is which ROOKIE KEEPER slot he is being held in - 0 for the first,
+    1 for the second, and None for "not in one". It has to be decided by the
+    caller, because there are only %s of them and which two a manager spends
+    them on is a fact about the whole roster, not about the player.
+
+    Passing None for a rookie-eligible player is not a mistake: his third-best
+    rookie can still be kept, just in a REGULAR slot at the normal price. That
+    is the difference between "cannot be kept" and "cannot be kept cheaply".
+    """
     meta = pmap.get(str(pid)) or {}
     name = meta.get("full_name") or str(pid)
     pos = meta.get("position") or ""
     adp = adp_board.adp_round_for_player(meta) if meta else None
     last_round = int(last_round or config.veteran_rounds())
 
-    if hist.is_rookie_keeper_eligible(str(pid)):
-        return engine.price_rookie(str(pid), name, pos, slot=0,
+    if slot is not None and hist.is_rookie_keeper_eligible(str(pid)):
+        return engine.price_rookie(str(pid), name, pos, slot=int(slot),
                                    last_round=last_round, adp_round=adp)
 
     year = hist.keeper_year(str(pid)) + 1
@@ -53,6 +63,31 @@ def price_for(pid: str, *, hist, pmap: dict, owner: str = None,
         draft_round=anchor if anchor else hist.draft_round(str(pid)),
         year=year, adp_round=adp,
         from_rookie_draft=hist.has_rookie_draft_provenance(str(pid)))
+
+
+def _plausible_slip(priced: List["engine.Price"], slot_of: Dict[str, int],
+                    kr: dict) -> List["engine.Price"]:
+    """The players a manager would actually put on next year's slip.
+
+    Best `rookie` rookies into the rookie slots and best `regular` of everyone
+    else, ranked by surplus - the number that decides whether a slot is worth
+    spending at all. This is a projection, not the manager's decision, and it
+    exists only so the bump has a realistic set of players to compete over.
+    """
+    def by_surplus(p):
+        return -(p.surplus if p.surplus is not None else -99)
+
+    rookies = [p for p in priced if str(p.player_id) in slot_of]
+    others = sorted([p for p in priced if str(p.player_id) not in slot_of], key=by_surplus)
+    return sorted(rookies, key=by_surplus)[:int(kr["rookie"])] + others[:int(kr["regular"])]
+
+
+def _market_rank(pid: str, pmap: dict) -> float:
+    """Where the market has him. Unranked players sort last, so a slot is never
+    spent on somebody nobody has heard of while a ranked rookie misses out."""
+    meta = pmap.get(str(pid)) or {}
+    row = adp_board.table().get(normalize_name(meta.get("full_name") or ""))
+    return float(row["rank"]) if row and row.get("rank") else 1e9
 
 
 def rows(league_id: str = None, season: int = None, hist=None) -> List[dict]:
@@ -78,13 +113,40 @@ def rows(league_id: str = None, season: int = None, hist=None) -> List[dict]:
         pmap = {}
 
     owned = draftboard.owned_rounds(league_id, season)
+    kr = config.keeper_rules()
+    slots = int(kr["rookie"])
     out: List[dict] = []
     for owner, pids in rosters.items():
-        priced = [p for p in (price_for(pid, hist=hist, pmap=pmap, owner=owner)
+        # There are only `slots` rookie keeper slots. Every rookie on the
+        # roster used to be priced as though he were in the first one, which
+        # started four players on the same round and let the bump scatter them
+        # down the board to R12, R10, R7 - rounds that correspond to no rule at
+        # all. Assign the slots to the best rookies by market, and price the
+        # rest on the regular path, which is what keeping them actually costs.
+        eligible = [str(x) for x in pids if hist.is_rookie_keeper_eligible(str(x))]
+        eligible.sort(key=lambda x: _market_rank(x, pmap))
+        slot_of = {pid: i for i, pid in enumerate(eligible[:slots])}
+        priced = [p for p in (price_for(pid, hist=hist, pmap=pmap, owner=owner,
+                                        slot=slot_of.get(str(pid)))
                               for pid in pids) if p]
-        # Bumping is per-manager and competitive: two keepers cannot share a
-        # round, so a price is only true in the context of the rest of the slip.
-        engine.allocate(priced, owned.get(owner, Counter()))
+
+        # Bumping is competitive - two keepers cannot share a round - but it is
+        # competition among the players a manager would actually KEEP, not among
+        # all sixteen on his roster. Allocating the whole roster meant sixteen
+        # players claiming rounds off a fourteen-round board: the first rookie
+        # took R14, the next R13, and by the fourth there was nothing left, so
+        # the board printed R12, R10 and "no pick left" for players whose real
+        # price is R14, R13 and R5.
+        #
+        # The slip is `regular` + `rookie` deep. Everyone outside it is priced
+        # in isolation, which is the honest answer to "what would he cost me" -
+        # he is not competing with anyone because he is not being kept.
+        slip = _plausible_slip(priced, slot_of, kr)
+        engine.allocate(slip, owned.get(owner, Counter()))
+        for p in priced:
+            if p not in slip:
+                p.final_round = p.base_round
+                p.bumped = False
         for p in priced:
             out.append({
                 "owner_id": owner, "player_id": p.player_id, "name": p.name,

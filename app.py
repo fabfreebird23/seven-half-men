@@ -505,11 +505,13 @@ def my_situation(view: str) -> dict:
     instead of printing four zeros and pretending they mean something.
     """
     out = {"record": None, "place": None, "played": 0, "faab_left": None, "owed": None,
-           "best": None, "worst": None, "taxi": None, "slots": {}, "kept": 0}
+           "best": None, "worst": None, "taxi": None, "slots": {}, "kept": 0,
+           "rostered": 0}
 
     rosters = state["rosters"] or []
     r = next((x for x in rosters if str(x.get("owner_id")) == str(view)), None)
     if r:
+        out["rostered"] = len(r.get("players") or [])
         st_ = r.get("settings") or {}
         w, l, t = (int(st_.get("wins", 0)), int(st_.get("losses", 0)),
                    int(st_.get("ties", 0)))
@@ -595,27 +597,20 @@ def band_numbers(sit: dict) -> tuple:
         cap = ("Week %d" % played, "%d to play" % max(0, weeks - played))
         return left, right, cap, (played / float(weeks) if weeks else 0)
 
-    if sit["slots"]:
-        left = ("Rookie slot",
-                ordinal(sit["slots"]["rookie"]) if "rookie" in sit["slots"] else "\u2014",
-                "%d rounds, held first" % config.rookie_rounds(), False)
-        right = ("Veteran slot",
-                 ordinal(sit["slots"]["veteran"]) if "veteran" in sit["slots"] else "\u2014",
-                 "%d rounds &mdash; <b>first choice takes any spot on the board</b>"
-                 % config.veteran_rounds(), True)
-        return left, right, ("Pre-season", "season starts week 1"), 0
-
-    if FIRST:
-        # No draw yet. Season one is drawn flat, so everyone's odds really are
-        # one in eight - a true pair of numbers beats two dashes.
-        return (("Teams in the drum", str(n), "both orders are drawn flat", False),
-                ("Your odds", "1 in %d" % n,
-                 "on first choice &mdash; <b>no standings to weight a lottery with</b>", True),
-                ("Pre-season", "nothing drawn yet"), 0)
-
-    return (("Rookie slot", "\u2014", "not drawn yet", False),
-            ("Veteran slot", "\u2014", "not drawn yet", True),
-            ("Pre-season", "nothing drawn yet"), 0)
+    # Nothing played yet. The draft is done, so the two numbers are the two
+    # things that ARE settled going into week 1 - what you can spend, and what
+    # you are holding. This used to show your rookie-draft and veteran-draft
+    # selection slots, which stopped meaning anything the moment the boards
+    # were full.
+    budget = int(config.faab_rules()["budget"])
+    left = ("FAAB", "$%d" % (budget if sit["faab_left"] is None else sit["faab_left"]),
+            "to spend all season &mdash; <b>whatever is left, you owe</b>", False)
+    held = sit.get("rostered") or 0
+    tx = len(sit["taxi"].pods) if sit["taxi"] else 0
+    right = ("Rostered", str(held) if held else "\u2014",
+             "%d active + %d on taxi" % (max(0, held - tx), tx) if held
+             else "nobody rostered yet", True)
+    return left, right, ("Week 1", "%d to play" % weeks), 0
 
 
 def my_card(view: str) -> None:
@@ -875,6 +870,23 @@ def render_pot_strip() -> None:
     budget = int(config.faab_rules()["budget"])
     owed = sum(r["budget_left"] for r in rows)
     cap = int(pot.cap_amount()[0])
+    buy_in = int(config.buy_in() or 0)
+    pool = buy_in * len(rows)
+    split = config.payout_split()
+    first = int(round(pool * split["first"] / 100.0))
+    second = int(round(pool * split["second"] / 100.0))
+    third = int(round(pool * split["third"] / 100.0))
+
+    theme.bar("The money", "$%d in the pool &middot; $%d buy-in" % (pool, buy_in))
+    glance([
+        {"pct": 1.0, "color": "var(--acc)", "big": "$%d" % first,
+         "label": "Winner", "note": "%d%% of the pool" % int(split["first"])},
+        {"pct": second / float(first or 1), "color": "var(--acc2)", "big": "$%d" % second,
+         "label": "Runner-up", "note": "%d%% of the pool" % int(split["second"])},
+        {"pct": third / float(first or 1), "color": "var(--ink2)", "big": "$%d" % third,
+         "label": "Third", "note": "%d%% &mdash; and it sets the pot cap" % int(split["third"])},
+    ])
+
     theme.bar("The pot", "$%d unspent &middot; every dollar comes due" % owed)
     glance([
         {"pct": owed / float(budget * max(1, len(rows))), "color": "var(--good)",
@@ -882,7 +894,7 @@ def render_pot_strip() -> None:
          "note": "unspent FAAB across %d teams" % len(rows)},
         {"pct": min(1.0, owed / float(cap or 1)), "color": "var(--acc)",
          "big": "$%d" % cap, "label": "Chase takes",
-         "note": "the cap &mdash; third place money"},
+         "note": "the cap &mdash; ties the third-place prize"},
         {"pct": 1.0, "color": "var(--acc2)",
          "big": "$%d" % max(0, owed - cap), "label": "Overflow",
          "note": "splits back into the bracket"},
@@ -989,8 +1001,11 @@ def render_taxi_league(leaf=None) -> None:
         '<div class="banner"><b>Any rookie you drafted is eligible</b> &mdash; off the rookie '
         'draft or the veteran draft, it makes no difference. Taxi sits <em>outside</em> your %d '
         'active spots, so a rookie parked here costs you no bench place and no keeper slot for '
-        'two years. Squads are <b>declared before the first game of week one</b> and are shut '
-        'after that.</div>' % config.active_roster_size(), unsafe_allow_html=True)
+        'two years. Squads are <b>declared before the first game of week one</b> and shut at '
+        'kickoff &mdash; no swapping one rookie for another after that, and no shuttling '
+        'anybody in and out for a bye. The only way off taxi is to <b>promote</b> him, which '
+        'is permanent and costs you a roster spot.</div>' % config.active_roster_size(),
+        unsafe_allow_html=True)
     if wasting:
         n = sum(len(r["parkable"]) for r in wasting)
         st.markdown(
@@ -1057,6 +1072,50 @@ def render_taxi_league(leaf=None) -> None:
                 unsafe_allow_html=True)
 
 
+def render_top_values() -> None:
+    """The five best contracts in the league, wherever they sit.
+
+    Surplus is the only number that decides whether a keeper slot is worth
+    spending - the gap between what he costs to hold and what the market says
+    he is worth. Shown league-wide rather than just yours because the useful
+    version of this is knowing who ELSE is about to keep a stud for nothing.
+    """
+    try:
+        board = value_rows()
+    except Exception:
+        board = []
+    best = [r for r in board
+            if r.get("surplus") is not None and r.get("eligible") and r.get("cost")][:5]
+    if not best:
+        return
+    theme.bar("Best contracts in the league", "biggest gap between price and market")
+    rows = []
+    for r in best:
+        chips = []
+        if r["kind"] == "rookie":
+            chips.append('<span class="chip mag">rookie slot</span>')
+        elif r.get("from_rookie_draft"):
+            chips.append('<span class="chip acc">R%d premium</span>'
+                         % engine.rookie_draft_premium())
+        rows.append([
+            '<div style="font-weight:650">%s</div><div class="tiny">%s &middot; %s</div>' % (
+                esc(r["name"]), esc(r["position"]), esc(team_of(r["owner_id"]))),
+            '<span class="mono">R%s</span>' % r["cost"],
+            '<span class="mono">R%s</span>' % (r["adp"] if r["adp"] else "\u2014"),
+            '<span class="surplus %s">%s</span>' % (
+                theme.surplus_class(r["surplus"]), theme.signed(r["surplus"])),
+            " ".join(chips),
+        ])
+    ledger_table(["Player", "Costs", "Market", "Surplus", ""], rows,
+                 me_row=next((i for i, r in enumerate(best)
+                              if r["owner_id"] == VIEW), None))
+    st.markdown(
+        '<div class="tiny" style="margin-top:8px">Rounds are what he would cost to keep for '
+        '<b>2027</b>, priced against today\'s market. A rookie in one of the two rookie slots '
+        'costs your last round and carries no three-year clock, which is why they sit at the '
+        'top of this list.</div>', unsafe_allow_html=True)
+
+
 def render_home(leaf=None):
     """The in-season front page.
 
@@ -1071,6 +1130,7 @@ def render_home(leaf=None):
     render_matchups()
     render_pot_strip()
     render_standings()
+    render_top_values()
     render_transactions()
 
 

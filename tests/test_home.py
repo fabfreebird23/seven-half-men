@@ -40,27 +40,31 @@ def roster(**settings):
     return [{"owner_id": ME, "players": [], "settings": base}]
 
 
-def test_before_anything_happens_the_band_still_carries_two_real_numbers(monkeypatch):
-    """A lone em-dash in an empty band reads as broken. In season one the draw is
-    flat, so everyone's odds genuinely are one in eight - that is a fact, not a
-    placeholder."""
+def test_before_a_game_is_played_the_band_carries_the_two_settled_numbers(monkeypatch):
+    """A lone em-dash in an empty band reads as broken, so there is always an
+    honest pair. Once the draft is done the two settled things going into week
+    one are what you can spend and what you are holding."""
     monkeypatch.setattr(sleeper, "get_rosters", lambda lid: roster())
     body = home()
-    assert "Teams in the drum" in body and "1 in 8" in body
-    assert "nothing drawn yet" in body
-    assert "$100" in body and "all of it still comes due" in body
+    assert "FAAB" in body and "$100" in body
+    assert "Rostered" in body
+    assert "Week 1" in body
 
 
-def test_once_the_order_is_drawn_the_band_becomes_your_two_slots(monkeypatch):
+def test_the_draft_slots_are_gone_from_the_band_once_the_boards_are_full(monkeypatch):
+    """These were your rookie-draft and veteran-draft selection slots. They
+    stopped meaning anything the moment both boards filled, and a drawn slot
+    sitting on the in-season front page is just clutter from a finished
+    event."""
     monkeypatch.setattr(sleeper, "get_rosters", lambda lid: roster())
     ids = list(config.managers().keys())
     rookie = [ids[3]] + [i for i in ids if i != ids[3]]
-    veteran = [i for i in ids if i != ME] + [ME]      # last of eight
+    veteran = [i for i in ids if i != ME] + [ME]
     storage.save_draw(11, rookie, veteran, config.season())
     body = home()
-    assert "Rookie slot" in body and "Veteran slot" in body
-    assert "8th" in body, "last of eight in the veteran drum"
-    assert "Teams in the drum" not in body, "the pre-draw fallback is gone once drawn"
+    assert "Rookie slot" not in body
+    assert "Veteran slot" not in body
+    assert "Teams in the drum" not in body
 
 
 def test_midseason_shows_the_record_and_what_is_left_of_the_budget(monkeypatch):
@@ -117,7 +121,11 @@ def test_it_names_the_best_and_worst_contract_on_your_roster(monkeypatch):
     body = home()
     assert "Bargain Bill" in body and "best value" in body
     assert "Albatross Andy" in body and "worst value" in body
-    assert "Not Yours" not in body, "another manager's contract is not your business here"
+    # Another manager's contract is not part of YOUR card. It can legitimately
+    # appear further down the page, in the league-wide best-contracts block,
+    # which is labelled as such so the two cannot be confused.
+    mine = body.split("Best contracts in the league")[0]
+    assert "Not Yours" not in mine, "your card is about your roster"
 
 
 def test_an_ineligible_player_is_not_offered_as_your_best_value(monkeypatch):

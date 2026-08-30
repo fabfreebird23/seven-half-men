@@ -277,6 +277,9 @@ def sections() -> List[tuple]:
    "<b>Squads are declared before the first game of week one.</b> A slot still empty at kickoff "
    "stays empty for the season — it is not returned and it cannot be filled later. The point of "
    "the slot is that you commit to a player before you know anything.",
+   "<b>The lock runs both ways.</b> Whoever is on taxi at kickoff is your taxi squad for the "
+   "season. You cannot swap one rookie for another, and you cannot shuttle a player in and out "
+   "week to week to cover a bye. The only exit is promotion, and promotion is permanent.",
    "<b>You cannot start them. Ever.</b> Not for a bye, not for an injury.",
    "They do not count against your bench and they carry over free — no keeper slot used.",
    "You can hold a player up to <b>%d years</b>, but you only have %d slots. One player for two "

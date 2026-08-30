@@ -38,10 +38,27 @@ PMAP = {
 }
 
 
-def test_a_rookie_keeper_prices_at_the_last_round():
+def test_a_rookie_keeper_in_a_slot_prices_at_the_last_round():
     hist = FakeHistory(rookie_keepers={"2"})
-    p = valueboard.price_for("2", hist=hist, pmap=PMAP)
+    p = valueboard.price_for("2", hist=hist, pmap=PMAP, slot=0)
     assert p.kind == "rookie" and p.final_round == config.veteran_rounds()
+
+
+def test_the_second_rookie_slot_is_the_round_before_it():
+    hist = FakeHistory(rookie_keepers={"2"})
+    p = valueboard.price_for("2", hist=hist, pmap=PMAP, slot=1)
+    assert p.final_round == config.veteran_rounds() - 1
+
+
+def test_a_rookie_with_no_slot_left_is_priced_as_a_regular_keeper():
+    """There are only two rookie slots. A third rookie is not un-keepable - he
+    just costs a REGULAR slot at the normal price, which for a rookie-draft
+    pick is the premium. Pricing him as though he were in a slot was what put
+    four players on one round and let the bump scatter them to R12 and R10."""
+    hist = FakeHistory(rookie_keepers={"2"}, rookie_draft={"2"})
+    p = valueboard.price_for("2", hist=hist, pmap=PMAP, slot=None)
+    assert p.kind == "regular"
+    assert p.final_round == engine.rookie_draft_premium()
 
 
 def test_a_rookie_draft_player_prices_at_the_premium():
