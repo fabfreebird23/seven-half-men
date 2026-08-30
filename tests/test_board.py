@@ -155,8 +155,12 @@ def test_a_full_farm_is_four_cheap_players():
 # --------------------------------------------------- taxi compliance policing
 
 class _FakeHistory:
-    def __init__(self, rookie_draft_ids):
-        self._ok = set(rookie_draft_ids)
+    """`eligible` is the taxi rule: any rookie you DRAFTED, off either board."""
+    def __init__(self, eligible_ids):
+        self._ok = set(eligible_ids)
+
+    def is_rookie_keeper_eligible(self, pid):
+        return str(pid) in self._ok
 
     def has_rookie_draft_provenance(self, pid):
         return str(pid) in self._ok
@@ -167,12 +171,24 @@ def test_compliance_passes_a_legal_bay():
     assert taxi.compliance(bays, _FakeHistory(["1"])) == {}
 
 
-def test_compliance_catches_a_veteran_draft_rookie_on_taxi():
-    """Sleeper allows it — taxi_allow_vets only blocks veterans — so this is the
-    only thing standing between the rule and the honour system."""
+def test_compliance_allows_a_rookie_taken_in_the_veteran_draft():
+    """A rookie taken in the 12th of the veteran draft is exactly as eligible
+    as one taken 1.01 in the rookie draft - what qualifies him is that he is a
+    rookie and you drafted him. This flagged him as illegal until 2026-08-31."""
     bays = {"a": taxi.Bay("a", [
         taxi.Pod("1", "Rookie Pick", "WR", 2026, 1),
         taxi.Pod("2", "Vet Draft Rookie", "RB", 2026, 1),
+    ])}
+    assert taxi.compliance(bays, _FakeHistory(["1", "2"])) == {}
+
+
+def test_compliance_catches_a_player_who_was_never_drafted_by_you():
+    """Sleeper gates taxi on NFL experience and nothing else, so it will let
+    someone stash a rookie they picked up off waivers. This is the only thing
+    standing between that rule and the honour system."""
+    bays = {"a": taxi.Bay("a", [
+        taxi.Pod("1", "Rookie Pick", "WR", 2026, 1),
+        taxi.Pod("2", "Waiver Rookie", "RB", 2026, 1),
     ])}
     flagged = taxi.compliance(bays, _FakeHistory(["1"]))
     assert [p.player_id for p in flagged["a"]] == ["2"]

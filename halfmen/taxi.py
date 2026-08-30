@@ -121,11 +121,18 @@ def eligibility_note() -> str:
 def compliance(bays: Dict[str, Bay], hist) -> Dict[str, List[Pod]]:
     """Players sitting on a taxi squad who should not be there.
 
-    Sleeper polices taxi by the player's NFL experience, not by which of OUR
-    drafts he came from - `taxi_allow_vets: 0` blocks veterans and nothing else.
-    So the platform will happily let someone stash a rookie they took in the
-    VETERAN draft, which our rules do not allow. Nothing stops it at the source,
-    so this is the check that catches it after the fact.
+    Eligibility is any rookie YOU DRAFTED that season, off either board. What
+    disqualifies a player is being a veteran, or arriving by waiver or trade
+    rather than by draft - not which of our two boards he came off.
+
+    This checked rookie-draft provenance until 2026-08-31, which was the old
+    rule and would have flagged a legal stash: a rookie taken in the 12th of
+    the veteran draft is exactly as eligible as one taken 1.01 in the rookie
+    draft. From 2027 there is one draft and the distinction stops existing.
+
+    Sleeper cannot do this for us either way. It polices taxi by NFL
+    experience - `taxi_allow_vets: 0` blocks veterans and nothing else - so it
+    will happily let someone stash a player they picked up off waivers.
 
     `hist` is a history.History; passed in rather than imported so this module
     stays free of the draft-history machinery.
@@ -133,7 +140,7 @@ def compliance(bays: Dict[str, Bay], hist) -> Dict[str, List[Pod]]:
     out: Dict[str, List[Pod]] = {}
     for owner, bay in bays.items():
         bad = [p for p in bay.pods
-               if not hist.has_rookie_draft_provenance(str(p.player_id))]
+               if not hist.is_rookie_keeper_eligible(str(p.player_id))]
         if bad:
             out[owner] = bad
     return out

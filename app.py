@@ -1700,8 +1700,9 @@ def render_taxi(leaf=None):
         if flagged:
             st.markdown("".join(
                 '<div class="banner" style="border-color:var(--bad);margin-bottom:8px">'
-                '<b>%s</b> is stashing %s, who was not taken in the rookie draft. '
-                'Taxi is rookie-draft picks only — he has to come off.</div>' % (
+                '<b>%s</b> is stashing %s, who is not an eligible rookie. Taxi is for '
+                'rookies <b>you drafted</b> this year, off either board &mdash; not waiver '
+                'pickups and not veterans. He has to come off.</div>' % (
                     esc(who(o)), ", ".join(esc(p.name) for p in pods))
                 for o, pods in flagged.items()), unsafe_allow_html=True)
         else:
