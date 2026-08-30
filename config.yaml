@@ -148,6 +148,15 @@ rules:
     # season, which is why it lives here.
     rookie_draft_premium_round: 5
     adp_discount: true        # years 1 and 2 may take ADP instead if it is cheaper
+    # ...but ADP is relief from the LADDER, never a discount below what he cost
+    # you. A drafted player can never be kept later than the round he went in.
+    #
+    # This was wrong until 2026-08-31. Wan'Dale Robinson went in the 9th, the
+    # market moved him to a 14th, and the board offered him back at R14 - a
+    # last-round price. The last round exists for exactly two cases: a
+    # rookie-designated keeper, and a player never drafted in this league.
+    # A 9th-rounder who had a quiet year is neither. He costs a 9th.
+    adp_never_beats_draft_round: true
     position_caps: {}         # none in this league
     enforce_owned_picks: true
     owned_pick_mode: bump     # move to the next-EARLIEST round you still own

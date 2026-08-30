@@ -10,11 +10,19 @@ from halfmen import config, engine
 
 # ---------------------------------------------------------------- regular
 
-def test_year_one_takes_the_cheaper_of_draft_round_and_adp():
-    # drafted R6, market says R4 -> R6 is later, so R6 is cheaper
+def test_year_one_costs_the_round_you_drafted_him_in():
+    """ADP cannot beat the draft round in year one, in either direction.
+
+    A player whose stock ROSE still costs what he cost - drafted R6 against an
+    R4 market is an R6 keeper, and that is the whole point of the system.
+
+    A player whose stock FELL costs what he cost too. This is the half that was
+    wrong until 2026-08-31: drafted R2 against an R7 market came back as an R7
+    keeper, so a quiet season made a 2nd-rounder cheaper to hold than he was to
+    draft. The late rounds are for a rookie-designated keeper and for a player
+    never drafted in this league. A 2nd-rounder is neither."""
     assert engine.recommended(engine.regular_options(6, 1, 4)) == 6
-    # drafted R2, market says R7 -> the market is cheaper
-    assert engine.recommended(engine.regular_options(2, 1, 7)) == 7
+    assert engine.recommended(engine.regular_options(2, 1, 7)) == 2
 
 
 def test_year_two_costs_your_draft_round_minus_three():
@@ -219,9 +227,13 @@ def test_year_two_resumes_the_ladder_with_the_premium_as_the_anchor():
     assert engine.recommended(engine.regular_options(None, 2, 1, from_rookie_draft=True)) == 2
 
 
-def test_year_two_can_still_take_adp_when_the_market_is_cheaper():
+def test_year_two_adp_relief_stops_at_what_he_cost():
+    """A rookie-draft player's anchor IS the premium - that is what he cost.
+    The year-two ladder pushes him to R2; ADP pulls him back, but only as far
+    as the premium, never past it to the R7 the market is quoting."""
+    prem = engine.rookie_draft_premium()
     got = engine.recommended(engine.regular_options(None, 2, 7, from_rookie_draft=True))
-    assert got == 7, "R7 is later than R2, so it is the cheaper of the two"
+    assert got == prem
 
 
 def test_year_three_is_the_market_for_a_rookie_draft_player_too():
@@ -307,7 +319,9 @@ def test_a_dropped_players_clock_does_not_reset():
     yr2 = engine.price_regular("a", "x", "RB", draft_round=2, year=2, adp_round=8)
     yr1 = engine.price_regular("a", "x", "RB", draft_round=2, year=1, adp_round=8)
     assert yr2.year == 2 and yr1.year == 1
-    assert yr2.final_round == 8, "year two: 2 minus 3 floors at R1, so ADP is cheaper"
+    # Year two: 2 minus 3 floors at R1, and ADP pulls him back off that - but
+    # only to R2, the round he cost. Not to the R8 the market is quoting.
+    assert yr2.final_round == 2
 
 
 def test_only_a_never_drafted_player_reaches_the_last_round():
@@ -316,3 +330,29 @@ def test_only_a_never_drafted_player_reaches_the_last_round():
     assert undrafted.final_round == config.veteran_rounds()
     drafted = engine.price_regular("b", "y", "WR", draft_round=2, year=1, adp_round=3)
     assert drafted.final_round < config.veteran_rounds()
+
+
+# --------------------------------------------------- ADP is relief, not a discount
+
+def test_adp_relieves_the_ladder_without_undercutting_the_draft_round():
+    """The rule in one place. ADP is worth having - it stops the year-two bump
+    running away from a player the market has cooled on - but it is relief from
+    the LADDER, not a discount below what he cost you.
+
+    Drafted R12, market now R14. Year two would otherwise charge R9. ADP pulls
+    that back to R12, the round he was drafted in, and stops there.
+    """
+    assert engine.recommended(engine.regular_options(12, 2, 14)) == 12
+    assert engine.recommended(engine.regular_options(12, 2, 3)) == 9, "ladder still wins"
+
+
+def test_the_last_round_is_never_reachable_by_a_drafted_player():
+    """Two things price at the last round: a rookie-designated keeper, and a
+    player never drafted in this league. Nothing a drafted veteran does with
+    his ADP can get him there."""
+    last = config.veteran_rounds()
+    for drafted in (1, 5, 9, 13):
+        for year in (1, 2):
+            got = engine.recommended(engine.regular_options(drafted, year, last))
+            assert got is not None and got <= drafted, (drafted, year, got)
+            assert got < last or drafted == last

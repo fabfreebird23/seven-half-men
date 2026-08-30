@@ -107,15 +107,28 @@ def regular_options(anchor_round: Optional[int], year: int, adp_round: Optional[
         anchor_round = waiver_anchor()
 
     allow_adp = bool(kr.get("adp_discount", True))
+    # The ADP option is RELIEF FROM THE LADDER, not a discount below what he
+    # cost you. It may never price a drafted player later than the round he
+    # was drafted in.
+    #
+    # Without the floor, a player who fell after the draft got cheaper than he
+    # was drafted: Wan'Dale Robinson went in the 9th, the market moved him to
+    # a 14th, and the board offered him back at R14 - a last-round price. The
+    # last round is for two things only, a rookie-designated keeper and a
+    # player who was never drafted here at all, and he is neither. Keeping a
+    # 9th-rounder costs a 9th-round pick.
+    floor = anchor_round if bool(kr.get("adp_never_beats_draft_round", True)) else None
+
+    def relief(adp: Optional[int]) -> Optional[int]:
+        if not (allow_adp and adp):
+            return None
+        return min(adp, floor) if floor else adp
+
     if year == 1:
-        opts = [anchor_round]
-        if allow_adp and adp_round:
-            opts.append(adp_round)
+        opts = [anchor_round, relief(adp_round)]
     elif year == 2:
         bumped = max(1, anchor_round - int(kr["year2_bump"]))
-        opts = [bumped]
-        if allow_adp and adp_round:
-            opts.append(adp_round)
+        opts = [bumped, relief(adp_round)]
     else:  # year three takes the market, no choice
         opts = [adp_round] if adp_round else [anchor_round]
 

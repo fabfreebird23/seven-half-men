@@ -469,8 +469,9 @@ def ledger_table(headers: List[str], rows: List[List[str]], me_row: int = None) 
 
 RULES_LEDGER = [
     ("Keepers", "Five: three regular, two rookie. No position caps."),
-    ("The price climbs", "Year 1 the cheaper of your draft round or ADP. Year 2 your draft "
-                         "round minus three, or ADP. Year 3 ADP, no choice. Year 4 is the wall."),
+    ("The price climbs", "Year 1 the round you drafted him in. Year 2 that minus three, or ADP "
+                         "if it is kinder \u2014 but never later than his draft round. Year 3 "
+                         "ADP, no choice. Year 4 is the wall."),
     ("Franchise tag", "One player, years four and five, frozen at the most expensive round you "
                       "have ever paid for him. Gone after year five. It still uses a keeper slot."),
     ("Rookie keepers", "Any NFL rookie you <b>drafted</b> — rookie draft or veteran draft, not a "
@@ -1129,24 +1130,18 @@ def render_top_values() -> None:
         board = value_rows()
     except Exception:
         board = []
-    priced = [r for r in board if r.get("eligible") and r.get("cost")]
-    # Ranked on the gap between what he cost in the draft and what he keeps
-    # for - both facts this league produced. Not against ADP: the only ADP
-    # here is the preseason board everyone drafted off, so that comparison
-    # reads zero for almost everyone and says nothing.
-    def gain(r):
-        rd = _drafted_round(r)
-        return (r["cost"] - rd) if rd else -99
-    best = sorted(priced, key=gain, reverse=True)[:5]
-    best = [r for r in best if gain(r) > 0]
+    best = [r for r in board
+            if r.get("eligible") and r.get("cost") and r.get("surplus") is not None][:5]
     if not best:
         return
-    theme.bar("Best contracts in the league",
-              "drafted early, kept late &middot; rounds gained")
+    # `board` is already sorted by surplus - the gap between what he costs to
+    # keep and what the market says he is worth. That comparison only became
+    # meaningful once a keeper price stopped being derived FROM adp: a drafted
+    # player now keeps at the round he was drafted in, so the two numbers are
+    # independent and the gap is real.
+    theme.bar("Best contracts in the league", "price against market &middot; biggest gap first")
     rows = []
     for r in best:
-        rd = _drafted_round(r)
-        g = r["cost"] - rd
         chips = []
         if r["kind"] == "rookie":
             chips.append('<span class="chip mag">rookie slot</span>')
@@ -1156,21 +1151,22 @@ def render_top_values() -> None:
         rows.append([
             '<div style="font-weight:650">%s</div><div class="tiny">%s &middot; %s</div>' % (
                 esc(r["name"]), esc(r["position"]), esc(team_of(r["owner_id"]))),
-            '<span class="mono">R%s</span>' % rd,
             '<span class="mono">R%s</span>' % r["cost"],
+            '<span class="mono">%s</span>' % ("R%d" % r["adp"] if r["adp"] else "\u2014"),
             '<span class="surplus %s">%s</span>' % (
-                theme.surplus_class(g), theme.signed(g)),
+                theme.surplus_class(r["surplus"]), theme.signed(r["surplus"])),
             " ".join(chips),
         ])
-    ledger_table(["Player", "Drafted", "Keeps at", "Rounds gained", ""], rows,
+    ledger_table(["Player", "Keeps at", "Market", "Surplus", ""], rows,
                  me_row=next((i for i, r in enumerate(best)
                               if r["owner_id"] == VIEW), None))
     st.markdown(
-        '<div class="tiny" style="margin-top:8px">What he cost in the draft against what he '
-        'keeps for in <b>2027</b> \u2014 both numbers this league produced. Market value is '
-        'deliberately not in here: the only ADP the app has is the preseason board everyone '
-        'drafted off, so it would say nothing you did not already know in August.</div>',
-        unsafe_allow_html=True)
+        '<div class="tiny" style="margin-top:8px">What he costs to keep for <b>2027</b> against '
+        'what the market says he is worth. A drafted player keeps at the round he was drafted '
+        'in, so his price does not move with the market and the gap is real. The two rookie '
+        'slots and the R%d premium are the only prices that ignore his draft round entirely, '
+        'which is why they sit at both ends of this list.</div>'
+        % engine.rookie_draft_premium(), unsafe_allow_html=True)
 
 
 def render_power() -> None:
@@ -1564,7 +1560,8 @@ def render_keepers(leaf=None):
                 shown = board if scope == "Whole league" else [
                     r for r in board if r["owner_id"] == VIEW]
                 rows_vb = []
-                for r in sorted(shown, key=_cheapest_first)[:60]:
+                for r in sorted(shown, key=lambda x: -(
+                        x["surplus"] if x["surplus"] is not None else -99))[:60]:
                     chips = []
                     if r["kind"] == "rookie":
                         chips.append('<span class="chip mag">rookie slot</span>')
@@ -1580,17 +1577,20 @@ def render_keepers(leaf=None):
                             esc(r["name"]), esc(r["position"]), esc(team_of(r["owner_id"]))),
                         '<span class="mono">%s</span>' % ("R%d" % r["cost"] if r["cost"] else "&mdash;"),
                         _drafted_cell(r),
+                        '<span class="mono">%s</span>' % ("R%d" % r["adp"] if r["adp"] else "&mdash;"),
+                        '<span class="surplus %s">%s</span>' % (
+                            theme.surplus_class(r["surplus"]), theme.signed(r["surplus"])),
                         " ".join(chips),
                     ])
-                ledger_table(["Player", "Keeps at", "Drafted", ""], rows_vb)
+                ledger_table(["Player", "Keeps at", "Drafted", "Market", "Surplus"], rows_vb)
                 st.markdown(
-                    '<div class="tiny" style="margin-top:8px">Cheapest contracts first. <b>Market '
-                    'value is not shown during the season</b> \u2014 the only ADP this app has is '
-                    'the preseason consensus board you drafted off, so comparing a player against '
-                    'it would just tell you what you already decided in August. What is real is '
-                    'the round he keeps at against the round he cost you. Prices include the bump, '
-                    'so they are true in the context of the rest of that manager\'s slip.'
-                    '</div>', unsafe_allow_html=True)
+                    '<div class="tiny" style="margin-top:8px">Sorted by surplus &mdash; the gap '
+                    'between what he costs to keep and what the market says he is worth. A '
+                    'drafted player keeps at <b>the round he was drafted in</b>, so his price no '
+                    'longer moves with ADP and the two columns say genuinely different things. '
+                    'Market is the preseason consensus board and will not shift much until next '
+                    'summer. Prices include the bump, so they are true in the context of the rest '
+                    'of that manager\'s slip.</div>', unsafe_allow_html=True)
             else:
                 st.markdown(
                     '<div class="banner"><b>Nobody is on a roster yet.</b> The moment the veteran draft '
@@ -1608,10 +1608,13 @@ def render_keepers(leaf=None):
                 fa = valueboard.free_agents(LG, limit=20, hist=hist_all)
             except Exception:
                 fa = []
-            ledger_table(["Player", "Would keep at", ""], [[
+            ledger_table(["Player", "Would keep at", "Market", "Surplus", ""], [[
                 '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
                     esc(f["name"]), esc(f["position"])),
                 '<span class="mono">R%d</span>' % f["cost"],
+                '<span class="mono">R%d</span>' % f["adp"],
+                '<span class="surplus %s">%s</span>' % (
+                    theme.surplus_class(f["surplus"]), theme.signed(f["surplus"])),
                 ('<span class="chip warn">carries R%d</span>' % f["cost"]) if f["carried"]
                 else '<span class="chip good">never drafted here</span>',
             ] for f in fa])

@@ -134,10 +134,24 @@ def sections() -> List[tuple]:
           "board and round %d the least. A 12th-rounder is cheap; a 2nd-rounder is not." % vet),
  ("p", "ADP is average draft position — where the fantasy world says he would go in a normal "
        "draft. It is the market price, and the dashboard pulls a daily consensus of it."),
+ ("note", "<b>ADP is relief from the ladder, never a discount below what he cost you.</b> You "
+          "may take the market price in years one and two when it beats the ladder — that is "
+          "the point of it, and it stops the year-two bump running away from a player the "
+          "market has cooled on. What it cannot do is price him <em>later</em> than the round "
+          "you drafted him in. Draft a man in the 9th and he is a 9th-round keeper; a quiet "
+          "season does not turn him into a 14th. The late rounds belong to two things only — a "
+          "rookie-designated keeper, and a player who was never drafted in this league at all."),
+ ("worked", "A 9th-rounder the market cooled on", [
+   ("You draft him", "R9", "round 9 of the veteran draft"),
+   ("Market now", "R14", "he had a quiet year and the consensus dropped him"),
+   ("Year 1", "R9", "what he cost. ADP cannot take him past it."),
+   ("Year 2", "R9", "the ladder says R6; ADP pulls that back to R9 and stops there"),
+ ]),
  ("worked", "What that looks like on a late-round hit", [
    ("You draft him", "R12", "round 12 of the veteran draft"),
    ("Year 1", "R12", "his draft round beats his ADP, so you pay R12"),
-   ("Year 2", "R9", "12 minus 3 — and by now the market has him at R3, so R9 is the cheaper of the two"),
+   ("Year 2", "R9", "12 minus 3. The market has him at R3, so ADP does not help — the ladder is "
+                    "already the cheaper of the two"),
    ("Year 3", "R3", "ADP only. No choice, no discount."),
    ("Year 4", "gone", "unless he is your franchise player"),
    ("Banked", "+15 rounds", "over the full three-year run"),
@@ -381,16 +395,16 @@ def sections() -> List[tuple]:
  ("table", ["How he reached the wire", "What he costs whoever claims him"], [
    ["Drafted in this league at some point, then dropped",
     "he keeps <b>his draft round as the anchor and his clock where it left off</b>, and the "
-    "normal ladder runs from there \u2014 so in year one that is still the cheaper of that round "
-    "or his current ADP"],
+    "normal ladder runs from there \u2014 so in year one that is still the round he was drafted "
+    "in, whatever the market has done to him since"],
    ["Never drafted here at all \u2014 undrafted in the veteran draft, then picked up",
     "<b>your last available round.</b> The only genuinely cheap route onto a roster."],
  ]),
  ("note", "<b>Cutting a player gains you nothing, which is why no lock-out is needed.</b> "
-          "The year-one price already offers the cheaper of his draft round and his current ADP. "
-          "So dropping a fading 2nd-rounder and re-claiming him lands on exactly the number you "
-          "would have paid by simply keeping him. The exploit the old rule guarded against stops "
-          "existing the moment the price follows the player."),
+          "He carries his draft round onto whoever claims him, so dropping a fading 2nd-rounder "
+          "and re-claiming him lands on exactly the number you would have paid by keeping him. "
+          "The exploit the old lock-out guarded against stops existing the moment the price "
+          "follows the player."),
  ("note", "<b>You cannot launder a price by cutting him.</b> That was the whole point of the old "
           "twelve-month lock-out, and carrying the price does the same job without asking anyone "
           "to police a transaction log — which nobody was going to do, and which Sleeper will "
