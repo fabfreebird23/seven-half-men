@@ -40,7 +40,7 @@ def test_every_leaf_in_the_nav_is_covered_here():
     """The count is deliberately hard-coded: adding a leaf without adding it to
     the walk below would leave a route untested, and most of them are dark in
     year one so nothing else would notice."""
-    assert len(ALL) == 13   # 11 leaves + home + rules
+    assert len(ALL) == 12   # 10 leaves + home + rules
 
 
 @pytest.mark.parametrize("qp", ALL, ids=lambda q: "/".join(q.values()))
@@ -278,11 +278,13 @@ def test_entering_a_paper_draft_gets_it_onto_the_board(tmp_path, monkeypatch):
     (("wire", "cheap"), {"p": "inseason", "g": "wire", "t": "wire"}),
     (("pot", "burn"), {"p": "inseason", "g": "pot", "t": "pot"}),
     (("pot", "settle"), {"p": "inseason", "g": "pot", "t": "pot"}),
-    (("keepers", "franchise"), {"p": "preseason", "g": "keepers", "t": "slip"}),
-    (("draft", "locks"), {"p": "preseason", "g": "keepers", "t": "matrix"}),
-    (("draft", "enter"), {"p": "preseason", "g": "draft", "t": "rookie"}),
-    (("draft", "board"), {"p": "preseason", "g": "draft", "t": "room"}),
-    (("young", "compliance"), {"p": "preseason", "g": "young", "t": "bay"}),
+    (("keepers", "franchise"), {"p": "offseason", "g": "keepers", "t": "slip"}),
+    (("draft", "locks"), {"p": "offseason", "g": "keepers", "t": "matrix"}),
+    (("draft", "enter"), {"p": "offseason", "g": "draft", "t": "rookie"}),
+    (("draft", "board"), {"p": "offseason", "g": "draft", "t": "room"}),
+    # The taxi bay and the in-season taxi page were two views of one squad.
+    (("young", "bay"), {"p": "inseason", "g": "taxi", "t": "taxi"}),
+    (("young", "compliance"), {"p": "inseason", "g": "taxi", "t": "taxi"}),
     (("young", "counts"), {"p": "rules"}),
     (("lottery", "guards"), {"p": "rules"}),
 ])
@@ -292,8 +294,10 @@ def test_a_retired_link_lands_where_its_content_went(old, expect):
     to the drums with no explanation - a broken link that throws no error, which
     is the worst kind."""
     at = AppTest.from_file(APP, default_timeout=60)
-    at.query_params.update({"p": "preseason" if old[0] != "wire" and old[0] != "pot"
-                            else "inseason", "g": old[0], "t": old[1]})
+    # Old links carry ?p=preseason, which is itself retired. Send them exactly
+    # as they were pasted into the group chat.
+    at.query_params.update({"p": "inseason" if old[0] in ("wire", "pot") else "preseason",
+                            "g": old[0], "t": old[1]})
     at.run()
     assert not at.exception, [e.value for e in at.exception]
     got = {k: (v[0] if isinstance(v, list) else v)
@@ -306,7 +310,7 @@ def test_the_in_season_sheet_carries_no_group_headings():
     """Two destinations do not need sorting into categories, and a heading
     reading "The Wire" above an item reading "The Wire" is noise."""
     assert all(not glabel for _, glabel, _ in _groups()["inseason"])
-    assert any(glabel for _, glabel, _ in _groups()["preseason"])
+    assert any(glabel for _, glabel, _ in _groups()["offseason"])
 
 
 def test_every_nav_link_carries_the_viewer():
@@ -337,3 +341,35 @@ def test_a_redirect_does_not_change_who_you_are():
     at.run()
     got = {k: (v[0] if isinstance(v, list) else v) for k, v in dict(at.query_params).items()}
     assert got.get("t") == "pot" and got.get("team") == other
+
+
+def test_the_retired_preseason_section_still_resolves():
+    """?p=preseason is in bookmarks and in the group chat. Dropping it to Home
+    would lose whichever leaf someone actually wanted, silently."""
+    at = AppTest.from_file(APP, default_timeout=60)
+    at.query_params.update({"p": "preseason", "g": "lottery", "t": "drums"})
+    at.run()
+    assert not at.exception, [e.value for e in at.exception]
+    got = {k: (v[0] if isinstance(v, list) else v)
+           for k, v in dict(at.query_params).items()}
+    assert got.get("p") == "offseason"
+    assert got.get("g") == "lottery" and got.get("t") == "drums"
+
+
+def test_in_season_comes_before_the_offseason_in_the_bar():
+    """The offseason sheet held eight of eleven leaves and sat first, which put
+    the four months anyone actually opens this app behind the eight pages
+    nobody needs until spring."""
+    ns = {}
+    exec(re.search(r"SECTIONS = \[.*?\]\n", SRC, re.S).group(0), ns)
+    order = [k for k, _ in ns["SECTIONS"]]
+    assert order.index("inseason") < order.index("offseason")
+
+
+def test_taxi_lives_in_exactly_one_place():
+    """It was rendered twice - the offseason bay had 'Every bay' and 'Taxi
+    compliance' on it before the in-season page was built with the same two
+    tables."""
+    leaves = [(s, g, t) for s, groups in _groups().items()
+              for g, _l, ls in groups for t, _n in ls]
+    assert [x for x in leaves if "taxi" in (x[1], x[2])] == [("inseason", "taxi", "taxi")]

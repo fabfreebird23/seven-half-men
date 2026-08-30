@@ -314,22 +314,25 @@ with head_r:
 # ---------------------------------------------------------------------------
 
 GROUPS = {
-    "preseason": [
-        ("keepers", "Keepers", [("matrix", "What a keeper costs"),
-                                ("slip", "Set my keepers")]),
-        ("draft", "Draft", [("room", "Draft room"),
-                            ("rookie", "Rookie draft"),
-                            ("capital", "Draft capital")]),
-        ("young", "Rookies & Taxi", [("bay", "Taxi bay")]),
-        ("lottery", "Lottery", [("drums", "The drums"),
-                                ("sim", "Simulate")]),
-    ],
-    # No group headings in season: two destinations do not need sorting into
+    # No group headings in season: three destinations do not need sorting into
     # categories, and "The Wire" under a heading reading "The Wire" is noise.
     "inseason": [
         ("wire", "", [("wire", "The Wire")]),
         ("taxi", "", [("taxi", "Taxi")]),
         ("pot", "", [("pot", "The Pot")]),
+    ],
+    # Everything here is dormant between February and August. It sat FIRST and
+    # held eight of eleven leaves while the season it belongs to was already
+    # over, which put the four months of the year anyone actually opens this
+    # app behind the eight pages nobody needs until next spring.
+    "offseason": [
+        ("keepers", "Keepers", [("matrix", "What a keeper costs"),
+                                ("slip", "Set my keepers")]),
+        ("draft", "Draft", [("room", "Draft room"),
+                            ("rookie", "Rookie draft"),
+                            ("capital", "Draft capital")]),
+        ("lottery", "Lottery", [("drums", "The drums"),
+                                ("sim", "Simulate")]),
     ],
 }
 
@@ -341,20 +344,25 @@ MOVED = {
     ("wire", "cheap"): ("inseason", "wire", "wire"),
     ("pot", "burn"): ("inseason", "pot", "pot"),
     ("pot", "settle"): ("inseason", "pot", "pot"),
-    ("keepers", "franchise"): ("preseason", "keepers", "slip"),
-    ("draft", "locks"): ("preseason", "keepers", "matrix"),
-    ("draft", "enter"): ("preseason", "draft", "rookie"),
+    ("keepers", "franchise"): ("offseason", "keepers", "slip"),
+    ("draft", "locks"): ("offseason", "keepers", "matrix"),
+    ("draft", "enter"): ("offseason", "draft", "rookie"),
     # The room IS the veteran draft now - it is the live board and the record.
     # A second, read-only grid of the same thing was two boards showing one
     # draft, only one of which was real.
-    ("draft", "board"): ("preseason", "draft", "room"),
-    ("young", "compliance"): ("preseason", "young", "bay"),
+    ("draft", "board"): ("offseason", "draft", "room"),
+    # The taxi bay and the in-season taxi page were two views of one squad -
+    # the bay had "Every bay" and "Taxi compliance" before the in-season page
+    # was built with the same two tables on it. One page now, in the section
+    # where a taxi decision actually gets made.
+    ("young", "bay"): ("inseason", "taxi", "taxi"),
+    ("young", "compliance"): ("inseason", "taxi", "taxi"),
     # These two were duplicates of the rulebook, word for word.
     ("young", "counts"): ("rules", None, None),
     ("lottery", "guards"): ("rules", None, None),
 }
-SECTIONS = [("home", "Home"), ("preseason", "Pre-Season"),
-            ("inseason", "In-Season"), ("rules", "Rules")]
+SECTIONS = [("home", "Home"), ("inseason", "In-Season"),
+            ("offseason", "Offseason"), ("rules", "Rules")]
 
 
 def _qp(key: str, default: str = "") -> str:
@@ -363,6 +371,12 @@ def _qp(key: str, default: str = "") -> str:
 
 
 PAGE = _qp("p", "home")
+# The section was called "preseason" until the season started and every page
+# in it went dormant. Old links carry it, so it redirects rather than falling
+# back to Home and losing whichever leaf someone actually wanted.
+if PAGE == "preseason":
+    PAGE = "offseason"
+    st.query_params["p"] = PAGE
 if PAGE not in dict(SECTIONS):
     PAGE = "home"
 
@@ -506,7 +520,7 @@ def my_situation(view: str) -> dict:
     """
     out = {"record": None, "place": None, "played": 0, "faab_left": None, "owed": None,
            "best": None, "worst": None, "taxi": None, "slots": {}, "kept": 0,
-           "rostered": 0, "gain": {}}
+           "rostered": 0}
 
     rosters = state["rosters"] or []
     r = next((x for x in rosters if str(x.get("owner_id")) == str(view)), None)
@@ -541,18 +555,20 @@ def my_situation(view: str) -> dict:
             out["slots"][kind] = [str(o) for o in order].index(str(view)) + 1
 
     mine = [x for x in value_rows() if str(x["owner_id"]) == str(view)]
-    # Best and worst contract measured against the round he cost in THIS
-    # league's draft, not against ADP. The only ADP the app has is the
-    # preseason board everyone drafted off, so in-season it reads ~0 for
-    # nearly every player and named a "best contract" almost at random.
+    # Measured on SURPLUS - price against market - which is the same basis the
+    # league-wide block on this page uses. Two definitions of "best contract"
+    # on one screen is worse than either of them.
+    #
+    # That comparison only became meaningful once a keeper price stopped being
+    # derived FROM adp. It used to be the cheaper of draft round and market, so
+    # the two numbers were the same by construction and the gap was
+    # structurally zero. The price is the draft round now, so they are
+    # independent and the gap is real.
     priced = [x for x in mine if x.get("eligible") and x.get("cost")
-              and x.get("drafted_round")]
+              and x.get("surplus") is not None]
     if priced:
-        def gained(x):
-            return x["cost"] - x["drafted_round"]
-        out["best"] = max(priced, key=gained)
-        out["worst"] = min(priced, key=gained)
-        out["gain"] = {str(x["player_id"]): gained(x) for x in priced}
+        out["best"] = max(priced, key=lambda x: x["surplus"])
+        out["worst"] = min(priced, key=lambda x: x["surplus"])
     out["kept"] = len(submitted_keepers().get(str(view)) or [])
 
     try:
@@ -693,19 +709,18 @@ def my_card(view: str) -> None:
     parts.append('</div>')
 
     shown = 0
-    gains = sit.get("gain") or {}
     for tag, p in (("good", sit["best"]), ("bad", sit["worst"])):
         if not p or (tag == "bad" and p is sit["best"]):
             continue
-        g = gains.get(str(p.get("player_id")), 0)
         shown += 1
         parts.append(
             '<div class="foot"><span class="chip %s">%s contract</span>'
-            '<span><b>%s</b> cost you <span class="mono">R%s</span>, keeps at '
-            '<span class="mono">R%s</span> &mdash; <b>%s</b></span></div>' % (
+            '<span><b>%s</b> keeps at <span class="mono">R%s</span> against an '
+            '<span class="mono">R%s</span> market &mdash; <b>%s</b></span></div>' % (
                 tag, "best" if tag == "good" else "worst", esc(p["name"]),
-                p["cost"] - g, p["cost"],
-                ("%s rounds" % theme.signed(g)) if g else "no change"))
+                p["cost"], p["adp"] if p["adp"] else "&mdash;",
+                ("%s rounds" % theme.signed(p["surplus"])) if p["surplus"]
+                else "line ball"))
     if not shown:
         parts.append('<div class="foot"><span class="tiny">Contracts appear here once the '
                      'draft has been held.</span></div>')
@@ -793,28 +808,25 @@ def render_pot_strip() -> None:
     second = int(round(pool * split["second"] / 100.0))
     third = int(round(pool * split["third"] / 100.0))
 
-    theme.bar("The money", "$%d in the pool &middot; $%d buy-in" % (pool, buy_in))
+    # One money block, not two. The payouts and the pot were adjacent bars
+    # answering the same question - what is there to play for - and reading
+    # them apart made the Chase prize look like a separate competition rather
+    # than the fourth number in the same list.
+    to_chase = min(owed, cap)
+    theme.bar("The money", "$%d pool &middot; $%d in the pot" % (pool, owed))
     glance([
         {"pct": 1.0, "color": "var(--acc)", "big": "$%d" % first,
-         "label": "Winner", "note": "%d%% of the pool" % int(split["first"])},
+         "label": "Winner", "note": "%d%% of the $%d pool" % (int(split["first"]), pool)},
         {"pct": second / float(first or 1), "color": "var(--acc2)", "big": "$%d" % second,
          "label": "Runner-up", "note": "%d%% of the pool" % int(split["second"])},
         {"pct": third / float(first or 1), "color": "var(--ink2)", "big": "$%d" % third,
-         "label": "Third", "note": "%d%% &mdash; and it sets the pot cap" % int(split["third"])},
-    ])
-
-    to_chase = min(owed, cap)
-    theme.bar("The pot", "$%d bid so far &middot; every dollar you spend, you owe" % owed)
-    glance([
-        {"pct": owed / float(budget * max(1, len(rows))), "color": "var(--good)",
-         "big": "$%d" % owed, "label": "In the pot",
-         "note": "FAAB spent across %d teams" % len(rows)},
-        {"pct": (to_chase / float(cap)) if cap else 0.0, "color": "var(--acc)",
-         "big": "$%d" % to_chase, "label": "Chase takes",
-         "note": "capped at $%d &mdash; the third-place prize" % cap},
-        {"pct": 1.0 if owed > cap else 0.0, "color": "var(--acc2)",
-         "big": "$%d" % max(0, owed - cap), "label": "Overflow",
-         "note": "anything above the cap splits back into the bracket"},
+         "label": "Third", "note": "%d%% &mdash; and it caps the Chase" % int(split["third"])},
+        {"pct": (to_chase / float(cap)) if cap else 0.0,
+         "color": "var(--good)" if to_chase else "var(--dim)",
+         "big": "$%d" % to_chase, "label": "The Chase",
+         "note": "FAAB bid so far, capped at $%d%s" % (
+             cap, " &middot; $%d overflows to the bracket" % (owed - cap)
+             if owed > cap else "")},
     ])
     me = next((r for r in rows if r["owner_id"] == VIEW), None)
     ledger_table(["Manager", "Budget left", "Owed at year end"], [[
@@ -831,36 +843,6 @@ def render_pot_strip() -> None:
             'and nobody owes anything. It fills as claims land &mdash; every FAAB dollar you '
             'spend is a real dollar at the end of the season, which is what stops a $%d budget '
             'being free money.</div>' % budget, unsafe_allow_html=True)
-
-
-def render_standings() -> None:
-    rows = season.standings()
-    if not rows:
-        return
-    cut = int(config.league()["playoff_teams"])
-    if season.nothing_played(rows):
-        theme.bar("The table", "week 1 &middot; nothing played")
-        st.markdown(
-            '<div class="banner"><b>Nothing has kicked off.</b> Eight teams at 0&ndash;0. This '
-            'fills in from Sunday night, and the top <b>%d</b> at the end of week %d go to the '
-            'bracket &mdash; the other four play the Chase.</div>' % (
-                cut, config.regular_season_weeks()), unsafe_allow_html=True)
-        return
-    extra = " &middot; median match on, so two results a week" if config.median_match() else ""
-    theme.bar("The table", "top %d make the bracket%s" % (cut, extra))
-    body = []
-    for r in rows:
-        body.append([
-            '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
-                700 if r["owner_id"] == VIEW else 550,
-                esc(team_of(r["owner_id"])), esc(who(r["owner_id"]))),
-            '<span class="mono">%s</span>' % r["record"],
-            '<span class="mono">%.1f</span>' % r["points_for"],
-            '<span class="chip good">bracket</span>' if r["in_bracket"]
-            else '<span class="chip">chase</span>',
-        ])
-    ledger_table(["Team", "W&ndash;L", "PF", ""], body,
-                 me_row=next((i for i, r in enumerate(rows) if r["owner_id"] == VIEW), None))
 
 
 def render_transactions() -> None:
@@ -965,29 +947,61 @@ def render_taxi_league(leaf=None) -> None:
     ledger_table(["Manager", "Used", "On taxi", ""], body,
                  me_row=next((i for i, r in enumerate(rows) if r["owner_id"] == VIEW), None))
 
-    mine = next((r for r in rows if r["owner_id"] == VIEW), None)
-    if mine:
-        theme.bar("Your taxi", "%d of %d used" % (mine["used"], mine["slots"]))
-        if not mine["players"]:
-            st.markdown(
-                '<div class="banner">Nothing stashed. Both of your rookie-draft picks belong '
-                'here until you promote them, and while they sit here they cost you no bench '
-                'spot and no keeper slot.</div>', unsafe_allow_html=True)
+    # Legality. Sleeper gates taxi on NFL experience and nothing else, so it
+    # will let someone stash a player they picked up off waivers.
+    theme.bar("Legal squads", "Sleeper cannot enforce this rule for us")
+    try:
+        bays = taxi.build(LG, SEASON)
+        flagged = taxi.compliance(bays, history.build(LG))
+    except Exception:
+        bays, flagged = {}, {}
+    if flagged:
+        st.markdown("".join(
+            '<div class="banner" style="border-color:var(--bad);margin-bottom:8px">'
+            '<b>%s</b> is stashing %s, who is not an eligible rookie. Taxi is for rookies '
+            '<b>you drafted</b> this year, off either board &mdash; not waiver pickups and '
+            'not veterans. He has to come off.</div>' % (
+                esc(who(o)), ", ".join(esc(p.name) for p in pods))
+            for o, pods in flagged.items()), unsafe_allow_html=True)
+    else:
+        st.markdown(
+            '<div class="banner"><b>Every taxi squad is legal.</b> Sleeper polices taxi by a '
+            'player&rsquo;s NFL experience &mdash; <code>taxi_allow_vets</code> blocks veterans '
+            'and nothing else &mdash; so it would happily let someone stash a player they '
+            'picked up off the wire. This is the check that catches it.</div>',
+            unsafe_allow_html=True)
+
+    # Your own squad, as slots with clocks on them rather than a table row.
+    # The clock is the thing you act on: year two is promote-or-release.
+    years = int(config.taxi_rules()["years"])
+    mine = bays.get(VIEW) or taxi.Bay(owner_id=VIEW, pods=[])
+    slots = int(config.taxi_rules()["slots"])
+    theme.bar("Your taxi", "%d of %d filled &middot; %d-year clocks" % (
+        len(mine.pods), slots, years))
+    pods = []
+    for i in range(slots):
+        if i < len(mine.pods):
+            pod = mine.pods[i]
+            last = pod.year >= years
+            pods.append(theme.taxi_pod(
+                pod.name, pod.position, "slot %d" % (i + 1), pod.year, years,
+                note=("Clock is up. Promote him \u2014 permanent, and he starts costing a "
+                      "rookie keeper slot \u2014 or release him." if last else
+                      "One more year of runway. Holding him is what creates the squeeze.")))
         else:
-            ledger_table(["Player", "Pos", "Market", "Costs you"], [[
-                '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
-                    esc(p["name"]), esc(p["team"] or "")),
-                esc(p["position"]),
-                ('<span class="mono">R%d</span>' % adp_board.rank_to_round(p["rank"]))
-                if p["rank"] else '<span class="tiny">unranked</span>',
-                '<span class="chip good">free</span>',
-            ] for p in mine["players"]])
-            st.markdown(
-                '<div class="tiny" style="margin-top:8px">Two years each, and promoting one does '
-                '<b>not</b> cost the rookie-keeper designation &mdash; he moves from costing '
-                'nothing to costing a rookie slot at your last round, with no three-year clock. '
-                'Promote onto a full roster and you cut somebody.</div>',
-                unsafe_allow_html=True)
+            pods.append(
+                '<div class="pod" style="border-style:dashed">'
+                '<div class="podtop"><span class="slotno">slot %d</span>'
+                '<span class="chip warn">open</span></div>'
+                '<div class="podname" style="color:var(--dim)">Empty</div>'
+                '<div class="podmeta">and it stays empty &mdash; squads lock at kickoff</div>'
+                '</div>' % (i + 1))
+    st.markdown('<div class="bay">%s</div>' % "".join(pods), unsafe_allow_html=True)
+    st.markdown(
+        '<div class="tiny" style="margin-top:8px">Promoting does <b>not</b> cost the '
+        'rookie-keeper designation &mdash; he moves from costing nothing to costing a rookie '
+        'slot at your last round, with no three-year clock. Promote onto a full roster and '
+        'you cut somebody.</div>', unsafe_allow_html=True)
 
 
 def _drafted_round(r: dict):
@@ -1084,7 +1098,13 @@ def render_power() -> None:
     rows = season.power()
     if not rows:
         return
-    theme.bar("Power rankings", season.power_basis(rows))
+    cut = int(config.league()["playoff_teams"])
+    # This absorbed the separate standings table. They were two league tables
+    # in a row answering nearly the same question, and the record, points and
+    # bracket cut are all here - the only thing the old block added was a
+    # second ordering of the same eight teams.
+    theme.bar("Power rankings", "%s &middot; top %d make the bracket" % (
+        season.power_basis(rows), cut))
     top = rows[0]["power"] or 1.0
 
     body = []
@@ -1106,14 +1126,21 @@ def render_power() -> None:
                 700 if r["owner_id"] == VIEW else 550,
                 esc(team_of(r["owner_id"])), esc(who(r["owner_id"]))),
             '<span class="mono">%s</span>' % r["record"],
+            '<span class="mono">%s</span>' % (
+                "%.1f" % r["points_for"] if r["results"] else "&mdash;"),
             '<div class="pwr"><span style="width:%d%%"></span></div>'
             '<div class="tiny">%.0f</div>' % (
                 int(round(100.0 * r["power"] / top)), r["power"]),
             chip,
         ])
-    ledger_table(["", "Team", "W&ndash;L", "Power", ""], body,
+    ledger_table(["", "Team", "W&ndash;L", "PF", "Power", ""], body,
                  me_row=next((i for i, r in enumerate(rows)
                               if r["owner_id"] == VIEW), None))
+    st.markdown(
+        '<div class="tiny" style="margin-top:6px">The bracket is decided on <b>record</b>, not '
+        'on this. Power ranks the eight by form and roster; the top %d by W&ndash;L at the end '
+        'of week %d are the ones who actually play for it.</div>' % (
+            cut, config.regular_season_weeks()), unsafe_allow_html=True)
     if not rows[0]["weight"]:
         st.markdown(
             '<div class="tiny" style="margin-top:8px">Nothing has been played, so this is '
@@ -1143,7 +1170,6 @@ def render_home(leaf=None):
     my_card(VIEW)
     render_matchups()
     render_pot_strip()
-    render_standings()
     render_power()
     render_top_values()
     render_transactions()
@@ -1608,111 +1634,6 @@ def render_keepers(leaf=None):
 # ---------------------------------------------------------------------------
 # TAXI BAY
 # ---------------------------------------------------------------------------
-
-def render_taxi(leaf=None):
-    tr = config.taxi_rules()
-    if leaf in (None, "bay"):
-        theme.bar("Taxi bay", "%d slots · %d-year clocks · promotion is permanent" % (
-            int(tr["slots"]), int(tr["years"])))
-        bays = {}
-        try:
-            bays = taxi.build(LG, SEASON)
-        except Exception:
-            bays = {}
-
-        if not any(b.pods for b in bays.values()):
-            st.markdown('<div class="banner"><b>%s</b><br>%s Nothing is stashed yet — the bays fill '
-                        'from this year\'s rookie draft.</div>' % (
-                            esc(taxi.eligibility_note()), esc(taxi.promote_cost_note())),
-                        unsafe_allow_html=True)
-
-        st.markdown(
-            '<div class="banner" style="margin-top:10px;border-style:solid;border-color:var(--acc)">'
-            '<b>Stashing costs you nothing but time.</b> Taxi burns no keeper slot and no bench spot, '
-            'and promoting a player off it — in year one or year two — leaves his rookie-keeper '
-            'designation intact. He keeps the last-round price and the no-clock; he just stops being '
-            'free and starts costing one of your %d rookie keeper slots. So a taxi stint is a free '
-            'two-year option on a rookie keeper, not a gamble on one. The scarce thing is the slot, '
-            'not the player.</div>' % int(config.keeper_rules()["rookie"]),
-            unsafe_allow_html=True)
-
-        mine = bays.get(VIEW) or taxi.Bay(owner_id=VIEW, pods=[])
-        mine.incoming_picks = config.rookie_rounds()
-        theme.bar("Your bay", "%d of %d filled \u00b7 %d rookie picks incoming" % (
-            len(mine.pods), mine.slots, mine.incoming_picks))
-        pods = []
-        for i in range(mine.slots):
-            if i < len(mine.pods):
-                pod = mine.pods[i]
-                last = pod.year >= int(tr["years"])
-                pods.append(theme.taxi_pod(
-                    pod.name, pod.position, "slot %d" % (i + 1), pod.year, int(tr["years"]),
-                    note=("Clock is up. Promote him \u2014 permanent, and he starts costing a rookie "
-                          "keeper slot \u2014 or release him." if last else
-                          "One more year of runway. Holding him is what creates the squeeze.")))
-            else:
-                pods.append(
-                    '<div class="pod" style="border-style:dashed">'
-                    '<div class="podtop"><span class="slotno">slot %d</span>'
-                    '<span class="chip good">open</span></div>'
-                    '<div class="podname" style="color:var(--dim)">Empty</div>'
-                    '<div class="podmeta">room for a rookie from this year\'s rookie draft</div>'
-                    '</div>' % (i + 1))
-        st.markdown('<div class="bay">%s</div>' % "".join(pods), unsafe_allow_html=True)
-        if mine.squeeze:
-            st.markdown(
-                '<div class="banner" style="border-color:var(--bad);margin-top:12px">'
-                '<b>%d with nowhere to go.</b> Two slots, %d rookie picks incoming, and %d of your '
-                'pods still has runway. One of this year\'s rookies has to make the active roster or '
-                'be passed on.</div>' % (
-                    mine.squeeze, mine.incoming_picks, len(mine.pods) - len(mine.expiring)),
-                unsafe_allow_html=True)
-
-        theme.bar("Every bay", "%d managers" % len(owner_ids()))
-        rows = []
-        for oid in owner_ids():
-            b = bays.get(oid) or taxi.Bay(owner_id=oid, pods=[])
-            b.incoming_picks = config.rookie_rounds()
-            rows.append([
-                '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
-                    esc(who(oid)), esc(team_of(oid))),
-                '<span class="mono">%d / %d</span>' % (len(b.pods), b.slots),
-                "<br>".join('%s <span class="tiny">%s · yr %d</span>' % (
-                    esc(p.name), esc(p.position), p.year) for p in b.pods) or
-                '<span class="tiny">empty</span>',
-                '<span class="mono">%d</span>' % b.incoming_picks,
-                ('<span class="chip bad">%d homeless</span>' % b.squeeze) if b.squeeze
-                else '<span class="chip good">room</span>',
-            ])
-        ledger_table(["Owner", "Slots", "Stashed", "Incoming picks", "Squeeze"], rows,
-                     me_row=owner_ids().index(VIEW) if VIEW in owner_ids() else None)
-
-        # Sleeper's taxi_allow_vets only blocks veterans - it will let someone stash
-        # a rookie they took in the VETERAN draft, which our rules do not allow.
-        # Nothing prevents it at the source, so we police it here.
-    # Compliance is one short table about the pods listed above it.
-    if leaf in (None, "bay"):
-        theme.bar("Taxi compliance", "Sleeper cannot enforce this rule for us")
-        try:
-            flagged = taxi.compliance(bays, history.build(LG))
-        except Exception:
-            flagged = {}
-        if flagged:
-            st.markdown("".join(
-                '<div class="banner" style="border-color:var(--bad);margin-bottom:8px">'
-                '<b>%s</b> is stashing %s, who is not an eligible rookie. Taxi is for '
-                'rookies <b>you drafted</b> this year, off either board &mdash; not waiver '
-                'pickups and not veterans. He has to come off.</div>' % (
-                    esc(who(o)), ", ".join(esc(p.name) for p in pods))
-                for o, pods in flagged.items()), unsafe_allow_html=True)
-        else:
-            st.markdown(
-                '<div class="banner"><b>Every taxi squad is legal.</b> Sleeper polices taxi by a '
-                'player\'s NFL experience, not by which of our drafts he came from — '
-                '<code>taxi_allow_vets</code> only blocks veterans. So it will happily let someone '
-                'stash a rookie they took in the veteran draft, and this check is the only thing '
-                'standing between the rule and the honour system. It runs against the rookie-draft '
-                'log every time this page loads.</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # THE POT
@@ -2621,7 +2542,7 @@ def render_bottom_bar() -> None:
 
 
 PAGES = {"home": render_home, "rules": render_rules}
-GROUP_PAGES = {"keepers": render_keepers, "draft": render_draft, "young": render_taxi,
+GROUP_PAGES = {"keepers": render_keepers, "draft": render_draft,
                "lottery": render_lottery, "wire": render_keepers, "pot": render_pot,
                "taxi": render_taxi_league}
 
