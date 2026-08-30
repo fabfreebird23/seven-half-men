@@ -506,7 +506,7 @@ def my_situation(view: str) -> dict:
     """
     out = {"record": None, "place": None, "played": 0, "faab_left": None, "owed": None,
            "best": None, "worst": None, "taxi": None, "slots": {}, "kept": 0,
-           "rostered": 0}
+           "rostered": 0, "gain": {}}
 
     rosters = state["rosters"] or []
     r = next((x for x in rosters if str(x.get("owner_id")) == str(view)), None)
@@ -541,10 +541,18 @@ def my_situation(view: str) -> dict:
             out["slots"][kind] = [str(o) for o in order].index(str(view)) + 1
 
     mine = [x for x in value_rows() if str(x["owner_id"]) == str(view)]
-    priced = [x for x in mine if x.get("surplus") is not None and x.get("eligible")]
+    # Best and worst contract measured against the round he cost in THIS
+    # league's draft, not against ADP. The only ADP the app has is the
+    # preseason board everyone drafted off, so in-season it reads ~0 for
+    # nearly every player and named a "best contract" almost at random.
+    priced = [x for x in mine if x.get("eligible") and x.get("cost")
+              and x.get("drafted_round")]
     if priced:
-        out["best"] = max(priced, key=lambda x: x["surplus"])
-        out["worst"] = min(priced, key=lambda x: x["surplus"])
+        def gained(x):
+            return x["cost"] - x["drafted_round"]
+        out["best"] = max(priced, key=gained)
+        out["worst"] = min(priced, key=gained)
+        out["gain"] = {str(x["player_id"]): gained(x) for x in priced}
     out["kept"] = len(submitted_keepers().get(str(view)) or [])
 
     try:
@@ -685,16 +693,19 @@ def my_card(view: str) -> None:
     parts.append('</div>')
 
     shown = 0
+    gains = sit.get("gain") or {}
     for tag, p in (("good", sit["best"]), ("bad", sit["worst"])):
         if not p or (tag == "bad" and p is sit["best"]):
             continue
+        g = gains.get(str(p.get("player_id")), 0)
         shown += 1
         parts.append(
-            '<div class="foot"><span class="chip %s">%s value</span>'
-            '<span><b>%s</b> costs <span class="mono">R%s</span> against an '
-            '<span class="mono">R%s</span> market</span></div>' % (
+            '<div class="foot"><span class="chip %s">%s contract</span>'
+            '<span><b>%s</b> cost you <span class="mono">R%s</span>, keeps at '
+            '<span class="mono">R%s</span> &mdash; <b>%s</b></span></div>' % (
                 tag, "best" if tag == "good" else "worst", esc(p["name"]),
-                p["cost"], p["adp"]))
+                p["cost"] - g, p["cost"],
+                ("%s rounds" % theme.signed(g)) if g else "no change"))
     if not shown:
         parts.append('<div class="foot"><span class="tiny">Contracts appear here once the '
                      'draft has been held.</span></div>')
@@ -868,7 +879,10 @@ def render_pot_strip() -> None:
     if not rows:
         return
     budget = int(config.faab_rules()["budget"])
-    owed = sum(r["budget_left"] for r in rows)
+    # You owe what you SPEND. Nobody has bid yet, so the pot is genuinely $0 -
+    # not $800 waiting to be handed over.
+    spent = sum(budget - r["budget_left"] for r in rows)
+    owed = spent
     cap = int(pot.cap_amount()[0])
     buy_in = int(config.buy_in() or 0)
     pool = buy_in * len(rows)
@@ -887,32 +901,34 @@ def render_pot_strip() -> None:
          "label": "Third", "note": "%d%% &mdash; and it sets the pot cap" % int(split["third"])},
     ])
 
-    theme.bar("The pot", "$%d unspent &middot; every dollar comes due" % owed)
+    to_chase = min(owed, cap)
+    theme.bar("The pot", "$%d bid so far &middot; every dollar you spend, you owe" % owed)
     glance([
         {"pct": owed / float(budget * max(1, len(rows))), "color": "var(--good)",
          "big": "$%d" % owed, "label": "In the pot",
-         "note": "unspent FAAB across %d teams" % len(rows)},
-        {"pct": min(1.0, owed / float(cap or 1)), "color": "var(--acc)",
-         "big": "$%d" % cap, "label": "Chase takes",
-         "note": "the cap &mdash; ties the third-place prize"},
-        {"pct": 1.0, "color": "var(--acc2)",
+         "note": "FAAB spent across %d teams" % len(rows)},
+        {"pct": (to_chase / float(cap)) if cap else 0.0, "color": "var(--acc)",
+         "big": "$%d" % to_chase, "label": "Chase takes",
+         "note": "capped at $%d &mdash; the third-place prize" % cap},
+        {"pct": 1.0 if owed > cap else 0.0, "color": "var(--acc2)",
          "big": "$%d" % max(0, owed - cap), "label": "Overflow",
-         "note": "splits back into the bracket"},
+         "note": "anything above the cap splits back into the bracket"},
     ])
     me = next((r for r in rows if r["owner_id"] == VIEW), None)
-    ledger_table(["Manager", "Spent", "Owed at year end"], [[
+    ledger_table(["Manager", "Budget left", "Owed at year end"], [[
         '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
             700 if r["owner_id"] == VIEW else 550, esc(who(r["owner_id"])),
             esc(team_of(r["owner_id"]))),
-        '<span class="mono">$%d</span>' % (budget - r["budget_left"]),
         '<span class="mono">$%d</span>' % r["budget_left"],
-    ] for r in sorted(rows, key=lambda x: -x["budget_left"])],
+        '<span class="mono">$%d</span>' % (budget - r["budget_left"]),
+    ] for r in sorted(rows, key=lambda x: x["budget_left"])],
         me_row=None)
-    if me is not None and me["budget_left"] == budget:
+    if owed == 0:
         st.markdown(
-            '<div class="tiny" style="margin-top:8px">Nobody has spent a dollar yet, so the pot '
-            'is at its maximum and every team owes the full $%d. It only moves when somebody '
-            'makes a claim.</div>' % budget, unsafe_allow_html=True)
+            '<div class="tiny" style="margin-top:8px">Nobody has bid yet, so the pot is empty '
+            'and nobody owes anything. It fills as claims land &mdash; every FAAB dollar you '
+            'spend is a real dollar at the end of the season, which is what stops a $%d budget '
+            'being free money.</div>' % budget, unsafe_allow_html=True)
 
 
 def render_standings() -> None:
@@ -1072,6 +1088,35 @@ def render_taxi_league(leaf=None) -> None:
                 unsafe_allow_html=True)
 
 
+def _drafted_round(r: dict):
+    """Which round he actually cost his owner, from this league's own draft.
+
+    The one valuation worth trusting in-season. The ADP board is the preseason
+    consensus everyone drafted off, so measuring a player against it in week 6
+    just replays August. What he went for in the room is a fact.
+    """
+    return r.get("drafted_round")
+
+
+def _drafted_cell(r: dict) -> str:
+    rd = _drafted_round(r)
+    if not rd:
+        return ('<span class="tiny">rookie draft</span>' if r.get("from_rookie_draft")
+                else '<span class="tiny">undrafted</span>')
+    cost = r.get("cost")
+    gain = (cost - rd) if cost else 0
+    return ('<span class="mono">R%d</span>%s' % (
+        rd, (' <span class="surplus %s">%s</span>' % (
+            theme.surplus_class(gain), theme.signed(gain))) if gain else ""))
+
+
+def _cheapest_first(r: dict):
+    """Latest keeper round first - a later round is a cheaper pick to give up.
+    Ties break on the earliest draft round, so the best player at that price
+    sorts above the others."""
+    return (-(r.get("cost") or 0), _drafted_round(r) or 99)
+
+
 def render_top_values() -> None:
     """The five best contracts in the league, wherever they sit.
 
@@ -1084,13 +1129,24 @@ def render_top_values() -> None:
         board = value_rows()
     except Exception:
         board = []
-    best = [r for r in board
-            if r.get("surplus") is not None and r.get("eligible") and r.get("cost")][:5]
+    priced = [r for r in board if r.get("eligible") and r.get("cost")]
+    # Ranked on the gap between what he cost in the draft and what he keeps
+    # for - both facts this league produced. Not against ADP: the only ADP
+    # here is the preseason board everyone drafted off, so that comparison
+    # reads zero for almost everyone and says nothing.
+    def gain(r):
+        rd = _drafted_round(r)
+        return (r["cost"] - rd) if rd else -99
+    best = sorted(priced, key=gain, reverse=True)[:5]
+    best = [r for r in best if gain(r) > 0]
     if not best:
         return
-    theme.bar("Best contracts in the league", "biggest gap between price and market")
+    theme.bar("Best contracts in the league",
+              "drafted early, kept late &middot; rounds gained")
     rows = []
     for r in best:
+        rd = _drafted_round(r)
+        g = r["cost"] - rd
         chips = []
         if r["kind"] == "rookie":
             chips.append('<span class="chip mag">rookie slot</span>')
@@ -1100,20 +1156,21 @@ def render_top_values() -> None:
         rows.append([
             '<div style="font-weight:650">%s</div><div class="tiny">%s &middot; %s</div>' % (
                 esc(r["name"]), esc(r["position"]), esc(team_of(r["owner_id"]))),
+            '<span class="mono">R%s</span>' % rd,
             '<span class="mono">R%s</span>' % r["cost"],
-            '<span class="mono">R%s</span>' % (r["adp"] if r["adp"] else "\u2014"),
             '<span class="surplus %s">%s</span>' % (
-                theme.surplus_class(r["surplus"]), theme.signed(r["surplus"])),
+                theme.surplus_class(g), theme.signed(g)),
             " ".join(chips),
         ])
-    ledger_table(["Player", "Costs", "Market", "Surplus", ""], rows,
+    ledger_table(["Player", "Drafted", "Keeps at", "Rounds gained", ""], rows,
                  me_row=next((i for i, r in enumerate(best)
                               if r["owner_id"] == VIEW), None))
     st.markdown(
-        '<div class="tiny" style="margin-top:8px">Rounds are what he would cost to keep for '
-        '<b>2027</b>, priced against today\'s market. A rookie in one of the two rookie slots '
-        'costs your last round and carries no three-year clock, which is why they sit at the '
-        'top of this list.</div>', unsafe_allow_html=True)
+        '<div class="tiny" style="margin-top:8px">What he cost in the draft against what he '
+        'keeps for in <b>2027</b> \u2014 both numbers this league produced. Market value is '
+        'deliberately not in here: the only ADP the app has is the preseason board everyone '
+        'drafted off, so it would say nothing you did not already know in August.</div>',
+        unsafe_allow_html=True)
 
 
 def render_home(leaf=None):
@@ -1439,13 +1496,13 @@ def render_keepers(leaf=None):
                 shown = board if scope == "Whole league" else [
                     r for r in board if r["owner_id"] == VIEW]
                 rows_vb = []
-                for r in shown[:60]:
-                    sur = r["surplus"]
+                for r in sorted(shown, key=_cheapest_first)[:60]:
                     chips = []
                     if r["kind"] == "rookie":
-                        chips.append('<span class="chip mag">rookie</span>')
+                        chips.append('<span class="chip mag">rookie slot</span>')
                     if r["from_rookie_draft"]:
-                        chips.append('<span class="chip acc">R%d</span>' % engine.rookie_draft_premium())
+                        chips.append('<span class="chip acc">R%d premium</span>'
+                                     % engine.rookie_draft_premium())
                     if r["bumped"]:
                         chips.append('<span class="chip warn">bumped</span>')
                     if not r["eligible"]:
@@ -1454,16 +1511,17 @@ def render_keepers(leaf=None):
                         '<div style="font-weight:650">%s</div><div class="tiny">%s &#183; %s</div>' % (
                             esc(r["name"]), esc(r["position"]), esc(team_of(r["owner_id"]))),
                         '<span class="mono">%s</span>' % ("R%d" % r["cost"] if r["cost"] else "&mdash;"),
-                        '<span class="mono">%s</span>' % ("R%d" % r["adp"] if r["adp"] else "&mdash;"),
-                        '<span class="surplus %s">%s</span>' % (
-                            theme.surplus_class(sur), theme.signed(sur)),
+                        _drafted_cell(r),
                         " ".join(chips),
                     ])
-                ledger_table(["Player", "Costs", "Market", "Surplus", ""], rows_vb)
+                ledger_table(["Player", "Keeps at", "Drafted", ""], rows_vb)
                 st.markdown(
-                    '<div class="tiny" style="margin-top:8px">Sorted by surplus, which is the only number '
-                    'that decides whether a slot is worth spending. Prices include the bump, so they are '
-                    'true in the context of the rest of that manager\'s slip rather than in isolation.'
+                    '<div class="tiny" style="margin-top:8px">Cheapest contracts first. <b>Market '
+                    'value is not shown during the season</b> \u2014 the only ADP this app has is '
+                    'the preseason consensus board you drafted off, so comparing a player against '
+                    'it would just tell you what you already decided in August. What is real is '
+                    'the round he keeps at against the round he cost you. Prices include the bump, '
+                    'so they are true in the context of the rest of that manager\'s slip.'
                     '</div>', unsafe_allow_html=True)
             else:
                 st.markdown(
@@ -1482,13 +1540,10 @@ def render_keepers(leaf=None):
                 fa = valueboard.free_agents(LG, limit=20, hist=hist_all)
             except Exception:
                 fa = []
-            ledger_table(["Player", "Costs", "Market", "Surplus", ""], [[
+            ledger_table(["Player", "Would keep at", ""], [[
                 '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
                     esc(f["name"]), esc(f["position"])),
                 '<span class="mono">R%d</span>' % f["cost"],
-                '<span class="mono">R%d</span>' % f["adp"],
-                '<span class="surplus %s">%s</span>' % (
-                    theme.surplus_class(f["surplus"]), theme.signed(f["surplus"])),
                 ('<span class="chip warn">carries R%d</span>' % f["cost"]) if f["carried"]
                 else '<span class="chip good">never drafted here</span>',
             ] for f in fa])

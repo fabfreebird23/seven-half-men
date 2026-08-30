@@ -1,29 +1,44 @@
-"""FAAB settlement: the cap decides who gets paid, not how much comes due."""
+"""FAAB settlement: the cap decides who gets paid, not how much comes due.
+
+You owe what you SPEND (league decision, 2026-08-30). It ran the other way
+round until then - unspent budget was the thing that came due - and the two
+rules point managers in opposite directions, so the inversion is asserted here
+rather than left to the module docstring.
+"""
 from __future__ import annotations
 
 import pytest
 
 from halfmen import config, pot
 
-# The simulated 2029 spends. $238 of unspent budget across eight teams.
+# The simulated 2029 spends. $562 of real money across eight teams.
 SPENDS = {"bijan": 100, "beant": 96, "amonra": 83, "taco": 74,
           "clay": 91, "whig": 62, "later": 11, "nabers": 45}
 
 
-def test_every_unspent_dollar_comes_due():
+def test_every_dollar_you_spend_comes_due():
     s = pot.settle(SPENDS)
-    assert s.total == sum(100 - v for v in SPENDS.values()) == 238
+    assert s.total == sum(SPENDS.values()) == 562
 
 
-def test_a_full_budget_owes_nothing():
+def test_an_untouched_budget_owes_nothing():
+    """The headline consequence of the inversion. Sitting on your budget is
+    free; it used to be the most expensive thing you could do."""
+    s = pot.settle({"a": 0, "b": 0, "c": 0})
+    assert s.total == 0
+    assert s.owed("a") == 0
+    assert s.to_chase == 0 and s.overflow == 0, "an empty pot pays nobody"
+
+
+def test_spending_the_whole_budget_owes_the_whole_budget():
     s = pot.settle(SPENDS)
-    assert s.owed("bijan") == 0
+    assert s.owed("bijan") == 100
 
 
-def test_the_quitter_owes_the_most():
+def test_the_big_spender_owes_the_most():
     s = pot.settle(SPENDS)
-    assert s.owed("later") == 89
-    assert max(b.owed for b in s.bills) == 89
+    assert s.owed("later") == 11, "barely bid, barely billed"
+    assert max(b.owed for b in s.bills) == 100
 
 
 def test_the_cap_is_the_third_place_prize():
@@ -55,7 +70,7 @@ def test_the_chase_winner_and_third_place_take_home_the_same_amount():
     """The point of the matching 10/10 at the bottom of the overflow split: once
     the pot clears the cap, the consolation TIES a playoff finish exactly."""
     for spends in ({"a": 100, "b": 60, "c": 20, "d": 30},
-                   {"a": 0, "b": 0, "c": 0, "d": 0, "e": 0, "f": 0, "g": 0, "h": 0}):
+                   {"a": 100, "b": 100, "c": 100, "d": 100}):
         s = pot.settle(spends)
         assert s.total > s.cap, "this case is meant to clear the cap"
         assert s.chase_total == s.third_total, spends
@@ -64,15 +79,15 @@ def test_the_chase_winner_and_third_place_take_home_the_same_amount():
 def test_below_the_cap_the_chase_winner_takes_less_than_third_place():
     """Not a wrinkle - it is the right way round. A small pot means everyone
     played, and the consolation should not out-earn a playoff finish for it."""
-    s = pot.settle({"a": 100, "b": 100, "c": 95})
-    assert s.total < s.cap
+    s = pot.settle({"a": 30, "b": 20, "c": 15})
+    assert s.total == 65 < s.cap
     assert s.chase_total == s.total < s.third_total
 
 
 def test_a_pot_smaller_than_the_cap_goes_entirely_to_the_chase_winner():
     """Which is right: a small pot means everybody actually played, and that is
     the year the consolation prize most needs the help."""
-    s = pot.settle({"a": 90, "b": 95, "c": 100})
+    s = pot.settle({"a": 5, "b": 4, "c": 6})
     assert s.total == 15 and s.to_chase == 15
     assert s.overflow == 0
 
@@ -99,16 +114,19 @@ def test_nothing_stays_with_the_owners():
 
 
 def test_a_pot_under_the_cap_leaves_the_champion_nothing():
-    tight = {k: 95 for k in SPENDS}          # $40 total
+    tight = {k: 5 for k in SPENDS}           # $40 total
     s = pot.settle(tight)
     assert s.total == 40
     assert s.to_chase == 40 and s.to_champion == 0
 
 
-def test_overspending_never_produces_a_negative_bill():
+def test_a_bill_can_never_exceed_the_budget():
+    """Sleeper should never report more spent than the budget allows, but a
+    bill for $120 against a $100 budget would be a real invoice to a real
+    person, so it is clamped rather than trusted."""
     s = pot.settle({"a": 120, "b": 50})
-    assert s.owed("a") == 0
-    assert s.total == 50
+    assert s.owed("a") == 100
+    assert s.total == 150
 
 
 def test_bills_are_sorted_biggest_spender_first():
@@ -124,6 +142,6 @@ def test_burndown_is_cumulative():
 def test_settlement_uses_the_configured_budget_and_cap():
     fr = config.faab_rules()
     assert fr["budget"] == 100 and fr["pot_cap"] == "third_place"
-    s = pot.settle({"a": 0})
+    s = pot.settle({"a": fr["budget"]})
     assert s.owed("a") == fr["budget"]
     assert s.cap == pot.cap_amount()[0], "the cap is derived, not read straight off config"

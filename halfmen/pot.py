@@ -1,8 +1,16 @@
-"""The consolation pot, funded by unspent FAAB.
+"""The consolation pot, funded by FAAB actually spent.
 
-Whatever waiver budget you did not spend by the end of the season, you owe.
-Every dollar comes due - the cap does not forgive anything, it only decides who
-gets paid.
+Every waiver dollar you bid is a real dollar you owe at the end of the season.
+Win a player for $30 of FAAB and you owe $30. Sit on your budget all year and
+you owe nothing.
+
+This was the other way round until 2026-08-30 - unspent budget was the thing
+that came due - and the inversion matters, because the two rules point managers
+in opposite directions. Charging for unspent money tells everyone to burn their
+budget; charging for spend puts a real price on every claim, so a bid has to be
+worth actual money rather than just worth more than the next guy's bid.
+
+The cap does not forgive anything. It only decides who gets paid.
 
 The cap is the THIRD-PLACE PRIZE rather than a fixed number (league vote,
 2026-08-06). Deriving it is the point: at a flat $200 against an $800 pool, a
@@ -121,7 +129,9 @@ def settle(spend_by_owner: Dict[str, int], *, chase_winner: str = None,
     fr = config.faab_rules()
     budget = int(fr["budget"])
     cap, derived = cap_amount()
-    bills = [Bill(owner_id=str(o), spent=int(s), owed=max(0, budget - int(s)))
+    # You owe what you SPENT. Capped at the budget so a data oddity cannot
+    # bill somebody for more than they could possibly have bid.
+    bills = [Bill(owner_id=str(o), spent=int(s), owed=min(budget, max(0, int(s))))
              for o, s in sorted(spend_by_owner.items(), key=lambda kv: -int(kv[1]))]
     total = sum(b.owed for b in bills)
     to_chase = min(total, cap)

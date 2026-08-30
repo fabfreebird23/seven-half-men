@@ -155,6 +155,24 @@ def rows(league_id: str = None, season: int = None, hist=None) -> List[dict]:
                 "adp": p.adp_round, "surplus": p.surplus,
                 "eligible": p.eligible, "reason": p.reason,
                 "from_rookie_draft": p.from_rookie_draft,
+                # What this league actually paid for him, and the only
+                # valuation worth comparing a keeper price against in-season:
+                # the ADP board is the preseason consensus everyone drafted
+                # off, so measuring against that just replays August.
+                #
+                # None for a rookie-draft pick, deliberately. His round came
+                # off a different board - "round 1" there is the first rookie
+                # taken, not the first player in the league - and setting it
+                # against a veteran keeper round compares two scales. That he
+                # has no veteran round at all is the entire reason the
+                # rookie-draft premium exists.
+                # Ask HISTORY, not the Price. `from_rookie_draft` is only
+                # set on the regular-keeper path, so a rookie-draft pick
+                # sitting in a rookie SLOT comes back False and slipped
+                # through with a round off the wrong board.
+                "drafted_round": (
+                    None if hist.has_rookie_draft_provenance(str(p.player_id))
+                    else hist.draft_round(str(p.player_id))),
             })
     out.sort(key=lambda r: (-(r["surplus"] if r["surplus"] is not None else -99),
                             r["cost"] or 99))

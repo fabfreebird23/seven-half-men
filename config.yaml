@@ -222,6 +222,20 @@ rules:
 
   faab:
     budget: 100
+    # WHAT YOU OWE IS WHAT YOU SPEND. Voted 2026-08-30, and it is the inverse
+    # of how this started: unspent budget used to be the thing that came due.
+    #
+    # The two rules push in opposite directions. Billing unspent money tells
+    # everyone to burn the budget or lose it, which turns week 13 into a
+    # bidding war over players nobody wants. Billing spend puts a real price
+    # on every claim: a $30 bid is thirty actual dollars, so it has to be
+    # worth that and not merely worth more than the next guy's bid.
+    #
+    # A consequence worth saying out loud: a quiet season is now a cheap
+    # season. If nobody bids, the pot is empty and the Chase winner takes
+    # nothing. That is the intended shape - the prize is funded by the
+    # aggression it is meant to price.
+    owe: spent               # spent | unspent
     # The cap is the THIRD-PLACE PRIZE, not a fixed number - voted 2026-08-06.
     # Deriving it means it can never drift above a playoff finish, at any buy-in:
     # at a flat $200 a bubble team in week 14 was close to indifferent between

@@ -341,19 +341,29 @@ def sections() -> List[tuple]:
           "out change." % (_ov()["chase"], _ov()["third"])),
 ]),
 
-("faab", "FAAB and the pot", "$%d for the season. Whatever you do not spend, you owe." % int(ab["budget"]), [
+("faab", "FAAB and the pot", "$%d for the season, and every dollar you spend is a real dollar."
+ % int(ab["budget"]), [
  ("p", "The Chase bracket — the four teams that miss the playoffs, playing weeks %s — does two "
        "things. It weights next year's veteran lottery, and it plays for a cash pot." % (
         ", ".join(str(w) for w in lg["chase_weeks"]))),
- ("p", "The pot is funded by <b>unspent FAAB</b>. Check out in October and sit on $85 and you pay "
-       "the most. Grind waivers all year and you pay nothing."),
+ ("p", "The pot is funded by <b>FAAB you actually spend</b>. Win a player for $30 and you owe "
+       "$30 at the end of the year. Sit on your budget all season and you owe nothing."),
+ ("note", "<b>This ran the other way round until 30 August 2026</b>, when unspent budget was the "
+          "thing that came due. The inversion is the point. Billing money you did <em>not</em> "
+          "spend tells eight managers to burn the budget or lose it, which turns the back half of "
+          "the season into a bidding war over players nobody wants. Billing spend puts a real "
+          "price on a claim \u2014 a $30 bid has to be worth thirty actual dollars, not merely "
+          "worth more than the next bid."),
+ ("note", "<b>A quiet season is a cheap season.</b> If nobody bids, the pot is empty and the "
+          "Chase winner takes nothing. That is intended: the prize is funded by exactly the "
+          "aggression it exists to price."),
  ("table", ["Where it goes", ""], [
    ["First $%d — the third-place prize" % _cap(), "to whoever wins the Chase bracket"],
    ["Everything above that", "rejoins the payout: %d%% champion, %d%% runner-up, %d%% third, "
                             "%d%% Chase winner" % (
      _ov()["first"], _ov()["second"], _ov()["third"], _ov()["chase"])],
  ]),
- ("note", "<b>The cap is a ceiling, not a discount.</b> Every unspent dollar comes due either "
+ ("note", "<b>The cap is a ceiling, not a discount.</b> Every dollar you bid comes due either "
           "way. The cap only decides <em>who</em> gets paid, which is what keeps the consolation "
           "prize from ever rivalling the title."),
  ("note", "<b>The cap is the third-place prize, not a fixed number</b> (voted 2026-08-06). At a "
@@ -361,8 +371,8 @@ def sections() -> List[tuple]:
           "between sneaking into the bracket and missing on purpose to play for the pot — the "
           "expected value of each came out around $70. Pinned to third place the consolation can "
           "never outrank a playoff finish, and it re-derives itself if the buy-in changes."),
- ("p", "The point of all of it: there is no free ride for quitting in November. You either play "
-       "or you pay."),
+ ("p", "The point of all of it: a waiver claim is a purchase, not a free roll. If he is worth "
+       "$30 to your season, bid $30 and pay it."),
  ("p", "One more waiver rule, and it is about price rather than permission. <b>Anyone can claim "
        "anyone.</b> There is no lock-out on picking a player back up after you cut him — but "
        "dropping him does not wipe what he costs to keep."),

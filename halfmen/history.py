@@ -143,22 +143,45 @@ def _picks_for(draft: dict, kind: str = None) -> List[dict]:
     return picks
 
 
-def _real_drafts(league_id: str) -> List[dict]:
-    """The drafts that count, in board order, per `drafts.sleeper_drafts`.
+def _real_drafts(league_id: str) -> List[tuple]:
+    """(draft, round_offset) for every draft that counts, in board order.
+
+    Two things this has to get right, both silent when wrong.
+
+    Which drafts count: five exist on Sleeper for 2026 and two are junk - the
+    never-started veteran board, and the rookie draft that went live at 16
+    ROUNDS and was abandoned. The junk rookie draft holds the same sixteen
+    picks as the real one, so reading everything recorded each of those
+    players twice.
+
+    And where each board's rounds SIT. A draft can be more than one Sleeper
+    draft: Sleeper fixes the round count when a board is created, so a
+    14-round veteran draft that began life as a 10-round board has to finish
+    on a second one. That second board numbers its own rounds from 1, but its
+    round 1 is the league's round 11 - and a keeper price is the draft round.
+    Without the offset every player taken in rounds 11-14 was recorded as a
+    1st- to 4th-rounder, which prices him as a keeper up to ten rounds more
+    expensive than he should be.
 
     Falls back to everything Sleeper returns when nothing is configured, which
-    is the right behaviour for a past season keyed in before the setting
-    existed and for any league that never had a junk draft.
+    is right for a past season keyed in before the setting existed and for any
+    league that never had a split draft.
     """
     drafts = sleeper.get_drafts(league_id) or []
-    want = []
-    for ids in (config.drafts().get("sleeper_drafts") or {}).values():
-        want.extend(str(x) for x in (ids or []))
-    if not want:
-        return drafts
+    groups = config.drafts().get("sleeper_drafts") or {}
+    if not groups:
+        return [(d, 0) for d in drafts]
     by_id = {str(d.get("draft_id")): d for d in drafts}
-    got = [by_id[i] for i in want if i in by_id]
-    return got or drafts
+    out = []
+    for ids in groups.values():
+        offset = 0
+        for did in (ids or []):
+            d = by_id.get(str(did))
+            if not d:
+                continue
+            out.append((d, offset))
+            offset += int((d.get("settings") or {}).get("rounds") or 0)
+    return out or [(d, 0) for d in drafts]
 
 
 def build(league_id: str = None) -> History:
@@ -202,15 +225,15 @@ def build(league_id: str = None) -> History:
         # rookie draft holds the same first sixteen picks as the real one, so
         # reading every draft recorded each of those players TWICE, which
         # inflates anything that counts seasons held.
-        drafts = _real_drafts(link["league_id"])
-        for d in drafts:
+        for d, offset in _real_drafts(link["league_id"]):
             kind = _draft_kind(d, first)
             for pick in _picks_for(d, kind):
                 pid = str(pick.get("player_id") or "")
                 if not pid:
                     continue
                 owner = str(pick.get("picked_by") or "")
-                rnd = pick.get("round")
+                # Onto the combined board. See _real_drafts.
+                rnd = (int(pick["round"]) + offset) if pick.get("round") else None
                 meta = players.get(pid) or {}
                 was_rookie = _was_rookie(meta, season)
                 ps = PlayerSeason(season=season, owner_id=owner,

@@ -110,17 +110,23 @@ def test_it_names_the_best_and_worst_contract_on_your_roster(monkeypatch):
     monkeypatch.setattr(valueboard, "rows", lambda *a, **k: [
         {"owner_id": ME, "player_id": "1", "name": "Bargain Bill", "position": "RB",
          "kind": "regular", "year": 1, "cost": 11, "adp": 3, "surplus": 8,
-         "eligible": True, "reason": ""},
+         "eligible": True, "reason": "", "drafted_round": 3},
         {"owner_id": ME, "player_id": "2", "name": "Albatross Andy", "position": "WR",
          "kind": "regular", "year": 2, "cost": 2, "adp": 9, "surplus": -7,
-         "eligible": True, "reason": ""},
+         "eligible": True, "reason": "", "drafted_round": 9},
         {"owner_id": "someone-else", "player_id": "3", "name": "Not Yours",
          "position": "TE", "kind": "regular", "year": 1, "cost": 5, "adp": 5,
+         "drafted_round": 5,
          "surplus": 0, "eligible": True, "reason": ""},
     ])
     body = home()
-    assert "Bargain Bill" in body and "best value" in body
-    assert "Albatross Andy" in body and "worst value" in body
+    # Measured against the round this league drafted him in, not against ADP -
+    # the only ADP the app has is the preseason board everyone drafted off, so
+    # in-season it reads ~0 for nearly everyone and picked a winner at random.
+    assert "Bargain Bill" in body and "best contract" in body
+    assert "+8" in body, "drafted R3, keeps at R11 - eight rounds gained"
+    assert "Albatross Andy" in body and "worst contract" in body
+    assert "-7" in body or "\u22127" in body, "drafted R9, keeps at R2"
     # Another manager's contract is not part of YOUR card. It can legitimately
     # appear further down the page, in the league-wide best-contracts block,
     # which is labelled as such so the two cannot be confused.
