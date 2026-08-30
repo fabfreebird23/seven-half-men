@@ -1,14 +1,17 @@
-"""What the league still has to vote on, and what has already been settled.
+"""What the league voted on: the questions, and now the answers.
 
 Year one is nothing but rule questions, and the answers were living in a group
 chat where they scroll away. This is the list, on the front page, with the real
 options next to each one so a vote does not have to start by re-explaining the
 choice.
 
-Only the OPEN ones live here. Once something is voted it belongs in the
-rulebook, not on a running list of recent news - the rulebook is where anyone
-looks in March when they have forgotten what was agreed, and two places to check
-is one too many.
+An item is OPEN until it appears under `settled.votes` in config.yaml, at which
+point the same item renders as a RESULT - same question, same options, but with
+the tally frozen and the answer called. That is deliberately one list rather
+than two: the reason an option lost is the most useful thing to still be able
+to read in March, and it disappears the moment results get rewritten as a bare
+line of prose. The rulebook carries the rule; this carries how the room got
+there, and who was in it.
 """
 from __future__ import annotations
 
@@ -27,7 +30,7 @@ def _cap_at(buy_in: float) -> int:
     return int(round(pool * config.payout_split()["third"] / 100.0))
 
 
-def open_items() -> List[Dict[str, Any]]:
+def _all_items() -> List[Dict[str, Any]]:
     buy_in = config.buy_in() or 100
     return [
         {
@@ -115,6 +118,48 @@ def open_items() -> List[Dict[str, Any]]:
                     "have changed. Worth saying out loud whether it can be voted down later.",
         },
     ]
+
+
+def _settled() -> Dict[str, Any]:
+    return dict((config.raw().get("settled") or {}).get("votes") or {})
+
+
+def open_items() -> List[Dict[str, Any]]:
+    """Still to vote on. Empty once everything is called."""
+    done = _settled()
+    return [it for it in _all_items() if it["id"] not in done]
+
+
+def closed_items() -> List[Dict[str, Any]]:
+    """Called votes, each carrying the answer and why it landed there.
+
+    The stored ballots are left in place rather than cleared, so the tally on
+    the page is the real one and stays auditable - including the fact that it
+    was seven of eight.
+    """
+    done = _settled()
+    out = []
+    for it in _all_items():
+        got = done.get(it["id"])
+        if not got:
+            continue
+        it = dict(it)
+        it["answer"] = got.get("answer") or ""
+        it["tally"] = got.get("tally") or ""
+        it["verdict"] = " ".join(str(got.get("note") or "").split())
+        # Which option won, so the row can be marked rather than described.
+        it["won"] = next((i for i, (lab, _d) in enumerate(it["options"])
+                          if lab.strip().lower() == it["answer"].strip().lower()), None)
+        out.append(it)
+    return out
+
+
+def turnout() -> str:
+    return str((config.raw().get("settled") or {}).get("turnout") or "")
+
+
+def settled_on() -> str:
+    return str((config.raw().get("settled") or {}).get("date") or "")
 
 
 PROPOSAL_URL = "https://claude.ai/code/artifact/308a42ba-a76e-4c8d-863a-f2d9b7acdd92"

@@ -71,7 +71,11 @@ def test_midseason_shows_the_record_and_what_is_left_of_the_budget(monkeypatch):
     assert "Standing" in body and "1st" in body, "one roster, so it is top of the table"
     assert "$29" in body
     assert "owed to the pot at year end" in body
-    assert "Week 9" in body and "5 to play" in body
+    # Derived, not hardcoded: the regular season is 13 weeks now (Sleeper runs
+    # the playoffs from week 14 at two weeks a round), and a test that pinned
+    # the number would have to be edited every time the schedule moves.
+    left = config.regular_season_weeks() - 9
+    assert "Week 9" in body and "%d to play" % left in body
 
 
 def test_spending_out_is_reported_as_owing_nothing_not_as_zero_left(monkeypatch):

@@ -23,7 +23,7 @@ import streamlit.components.v1 as components
 
 from halfmen import (adp_board, agenda, config, draftboard, engine, history, lottery,
                      live, minutes, voice,
-                     picks, pot, remote, rulebook, sleeper, storage, taxi, theme,
+                     picks, pot, remote, rulebook, season, sleeper, storage, taxi, theme,
                      valueboard)
 
 st.set_page_config(page_title="7½ Men", page_icon="🏈", layout="wide")
@@ -329,6 +329,7 @@ GROUPS = {
     # categories, and "The Wire" under a heading reading "The Wire" is noise.
     "inseason": [
         ("wire", "", [("wire", "The Wire")]),
+        ("taxi", "", [("taxi", "Taxi")]),
         ("pot", "", [("pot", "The Pot")]),
     ],
 }
@@ -822,52 +823,255 @@ def _waiting_on(cast: dict, everyone: list) -> str:
     return "Waiting on %s." % esc(", ".join(who(o) for o in missing))
 
 
-def render_home(leaf=None):
-    rosters = state["rosters"] or []
-    filled = sum(1 for r in rosters if (r.get("players") or []))
-    n_managers = len(config.managers())
+def render_matchups() -> None:
+    """This week's fixtures.
 
-    if FIRST:
+    There is no projections feed anywhere in this app - Sleeper returns points
+    already scored and the ADP file is season-long. So the edge shown is
+    preseason consensus weight and is labelled as that, and anything inside a
+    few points is called a coin flip rather than dressed up as 50.2%. Once
+    games start the real score replaces it.
+    """
+    wk = season.current_week()
+    games = season.matchups(wk)
+    if not games:
+        return
+    live = any(g["started"] for g in games)
+    theme.bar("Week %d" % wk, "live scores" if live
+              else "preseason consensus &middot; no games played yet")
+    rows = []
+    for g in games:
+        a, b = g["sides"]
+        mine = VIEW in (a["owner_id"], b["owner_id"])
+        if live:
+            verdict = '<span class="mono">%.1f &ndash; %.1f</span>' % (a["points"], b["points"])
+        elif g["too_close"]:
+            verdict = '<span class="chip">too close to call</span>'
+        else:
+            verdict = '<span class="chip good">%s by %.0f%%</span>' % (
+                esc(who(g["favourite"]).split()[0]), g["edge"])
+        rows.append([
+            '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
+                700 if mine else 550, esc(team_of(a["owner_id"])), esc(who(a["owner_id"]))),
+            '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
+                700 if mine else 550, esc(team_of(b["owner_id"])), esc(who(b["owner_id"]))),
+            verdict,
+        ])
+    ledger_table(["", "", ""], rows)
+    if not live:
         st.markdown(
-            '<div class="banner"><b>Season one.</b> Empty rosters, nobody has held anyone yet, '
-            'and every clock starts at zero after this year. The rookie draft runs first (%d '
-            'rounds), then the veteran draft (%d rounds). Both orders are drawn flat at random — '
-            'there are no standings to weight a lottery with. The keeper machinery below is live '
-            'and priced off real ADP, so you can already see what a pick will cost you to hold.'
-            '</div>' % (config.rookie_rounds(), config.veteran_rounds()),
+            '<div class="tiny" style="margin-top:8px">There is no weekly projection feed wired '
+            'up, so this is the two rosters weighed against the <b>preseason consensus board</b> '
+            '&mdash; not a score and not a win probability. Everyone drafted off the same board, '
+            'so most weeks land inside the margin where it says nothing at all.</div>',
             unsafe_allow_html=True)
 
-    my_card(VIEW)
-    render_agenda()
-    render_proposals()
 
-    theme.bar("The league", "%s · %s" % (esc(lg.get("name") or ""),
-                                         esc((lg.get("status") or "").replace("_", " "))))
+def render_pot_strip() -> None:
+    """What is owed, and what it is playing for."""
+    rows = season.standings()
+    if not rows:
+        return
+    budget = int(config.faab_rules()["budget"])
+    owed = sum(r["budget_left"] for r in rows)
+    cap = int(pot.cap_amount()[0])
+    theme.bar("The pot", "$%d unspent &middot; every dollar comes due" % owed)
     glance([
-        {"pct": n_managers / 8.0, "color": "var(--acc)", "big": str(n_managers),
-         "label": "Managers", "note": "all 8 seats filled"},
-        {"pct": (filled / max(1, len(rosters))), "color": "var(--acc2)",
-         "big": str(filled),
-         "label": "Rosters", "note": "0 of 8 \u2014 they fill at the draft"},
-        {"pct": min(1.0, adp_board.size() / 300.0), "color": "var(--acc2)",
-         "big": str(adp_board.size()),
-         "label": "ADP board", "note": "players on the consensus board, refreshed daily"},
-        {"pct": 1.0, "color": "var(--good)", "big": str(config.veteran_rounds()),
-         "label": "Vet draft", "note": "rounds \u2014 13 in year one so a rookie can be promoted"},
+        {"pct": owed / float(budget * max(1, len(rows))), "color": "var(--good)",
+         "big": "$%d" % owed, "label": "In the pot",
+         "note": "unspent FAAB across %d teams" % len(rows)},
+        {"pct": min(1.0, owed / float(cap or 1)), "color": "var(--acc)",
+         "big": "$%d" % cap, "label": "Chase takes",
+         "note": "the cap &mdash; third place money"},
+        {"pct": 1.0, "color": "var(--acc2)",
+         "big": "$%d" % max(0, owed - cap), "label": "Overflow",
+         "note": "splits back into the bracket"},
     ])
+    me = next((r for r in rows if r["owner_id"] == VIEW), None)
+    ledger_table(["Manager", "Spent", "Owed at year end"], [[
+        '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
+            700 if r["owner_id"] == VIEW else 550, esc(who(r["owner_id"])),
+            esc(team_of(r["owner_id"]))),
+        '<span class="mono">$%d</span>' % (budget - r["budget_left"]),
+        '<span class="mono">$%d</span>' % r["budget_left"],
+    ] for r in sorted(rows, key=lambda x: -x["budget_left"])],
+        me_row=None)
+    if me is not None and me["budget_left"] == budget:
+        st.markdown(
+            '<div class="tiny" style="margin-top:8px">Nobody has spent a dollar yet, so the pot '
+            'is at its maximum and every team owes the full $%d. It only moves when somebody '
+            'makes a claim.</div>' % budget, unsafe_allow_html=True)
 
-    theme.bar("Who's in", "%d managers" % n_managers)
-    rows = []
-    for oid in owner_ids():
-        rows.append([
-            '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
-                esc(who(oid)), esc(team_of(oid))),
-            '<span class="chip good">in</span>' if oid in {str(r.get("owner_id")) for r in rosters}
-            else '<span class="chip warn">pending</span>',
+
+def render_standings() -> None:
+    rows = season.standings()
+    if not rows:
+        return
+    cut = int(config.league()["playoff_teams"])
+    if season.nothing_played(rows):
+        theme.bar("The table", "week 1 &middot; nothing played")
+        st.markdown(
+            '<div class="banner"><b>Nothing has kicked off.</b> Eight teams at 0&ndash;0. This '
+            'fills in from Sunday night, and the top <b>%d</b> at the end of week %d go to the '
+            'bracket &mdash; the other four play the Chase.</div>' % (
+                cut, config.regular_season_weeks()), unsafe_allow_html=True)
+        return
+    extra = " &middot; median match on, so two results a week" if config.median_match() else ""
+    theme.bar("The table", "top %d make the bracket%s" % (cut, extra))
+    body = []
+    for r in rows:
+        body.append([
+            '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
+                700 if r["owner_id"] == VIEW else 550,
+                esc(team_of(r["owner_id"])), esc(who(r["owner_id"]))),
+            '<span class="mono">%s</span>' % r["record"],
+            '<span class="mono">%.1f</span>' % r["points_for"],
+            '<span class="chip good">bracket</span>' if r["in_bracket"]
+            else '<span class="chip">chase</span>',
         ])
-    ledger_table(["Owner", "Roster"], rows,
-                 me_row=owner_ids().index(VIEW) if VIEW in owner_ids() else None)
+    ledger_table(["Team", "W&ndash;L", "PF", ""], body,
+                 me_row=next((i for i, r in enumerate(rows) if r["owner_id"] == VIEW), None))
 
+
+def render_transactions() -> None:
+    """What the league has actually done lately."""
+    tx = season.transactions(limit=10)
+    theme.bar("Recent moves", "adds, claims and trades")
+    if not tx:
+        st.markdown(
+            '<div class="banner">No moves yet. Claims start landing once waivers run '
+            'on Wednesday.</div>', unsafe_allow_html=True)
+        return
+    rows = []
+    for t in tx:
+        who_did = ", ".join(esc(who(o)) for o in t["owners"] if o) or "&mdash;"
+        moved = []
+        for p in t["adds"]:
+            moved.append('<span class="chip good">+ %s</span>' % esc(p["name"]))
+        for p in t["drops"]:
+            moved.append('<span class="chip warn">&minus; %s</span>' % esc(p["name"]))
+        rows.append([
+            '<div style="font-weight:600">%s</div><div class="tiny">week %d</div>' % (
+                esc(t["kind"]), t["week"]),
+            who_did,
+            " ".join(moved) or "&mdash;",
+            ('<span class="mono">$%d</span>' % t["bid"]) if t["bid"] else "",
+        ])
+    ledger_table(["Move", "Who", "Players", "Bid"], rows)
+
+
+
+def render_taxi_league(leaf=None) -> None:
+    """Every taxi squad in the league, then yours.
+
+    Same shape as the wire because it answers the same kind of question: what
+    is out there, and what am I holding. Sleeper will show you one roster at a
+    time and there is no league-wide taxi view in it at all, so an empty slot
+    is invisible unless somebody opens eight rosters and counts.
+
+    Eligibility is any rookie you DRAFTED, off either board - the 12th-round
+    veteran-draft rookie qualifies exactly as much as the 1.01. So an open slot
+    is only worth flagging when the manager is holding a rookie who could fill
+    it, which is what the block leads with. From 2027 there is one draft and
+    the distinction stops existing.
+    """
+    rows = season.taxi()
+    if not rows:
+        st.markdown('<div class="banner">Could not read rosters from Sleeper just now.</div>',
+                    unsafe_allow_html=True)
+        return
+    slots = int(config.taxi_rules()["slots"])
+    wasting = [r for r in rows if r["wasting"]]
+    filled = sum(r["used"] for r in rows)
+
+    theme.bar("Taxi, league-wide", "%d of %d slots used" % (filled, slots * len(rows)))
+    st.markdown(
+        '<div class="banner"><b>Any rookie you drafted is eligible</b> &mdash; off the rookie '
+        'draft or the veteran draft, it makes no difference. Taxi sits <em>outside</em> your %d '
+        'active spots, so a rookie parked here costs you no bench place and no keeper slot for '
+        'two years. Squads are <b>declared before the first game of week one</b> and are shut '
+        'after that.</div>' % config.active_roster_size(), unsafe_allow_html=True)
+    if wasting:
+        n = sum(len(r["parkable"]) for r in wasting)
+        st.markdown(
+            '<div class="banner" style="border-color:var(--bad)">'
+            '<b>Declare before the first game kicks off.</b> A slot still empty at kickoff '
+            'stays empty for the season &mdash; it is not returned and it cannot be filled '
+            'later. <b>%d %s</b> on a bench right now that could be on taxi for free, held by '
+            '<b>%s</b>. Every one is an active roster spot being spent on a player the rules '
+            'say costs nothing. It has to be done in Sleeper; this page only counts it.</div>'
+            % (n, "rookie" if n == 1 else "rookies",
+               esc(", ".join(who(r["owner_id"]) for r in wasting))),
+            unsafe_allow_html=True)
+
+    body = []
+    for r in rows:
+        def chips(pl):
+            return "".join(
+                '<span class="chip" style="border-color:var(--%s);color:var(--%s)">%s</span> ' % (
+                    (p["position"] or "dim").lower(), (p["position"] or "dim").lower(),
+                    esc(p["name"])) for p in pl)
+        men = chips(r["players"]) or '<span class="tiny">nobody stashed</span>'
+        if r["wasting"]:
+            flag = '<span class="chip warn">%d could park</span>' % len(r["parkable"])
+            note = '<div class="tiny" style="margin-top:3px">on the bench: %s</div>' % chips(
+                r["parkable"])
+        elif r["open"]:
+            flag = '<span class="chip">%d open</span>' % r["open"]
+            note = '<div class="tiny" style="margin-top:3px">no rookies to park</div>'
+        else:
+            flag, note = '<span class="chip good">full</span>', ""
+        body.append([
+            '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
+                700 if r["owner_id"] == VIEW else 550,
+                esc(who(r["owner_id"])), esc(team_of(r["owner_id"]))),
+            '<span class="mono">%d/%d</span>' % (r["used"], r["slots"]),
+            men + note,
+            flag,
+        ])
+    ledger_table(["Manager", "Used", "On taxi", ""], body,
+                 me_row=next((i for i, r in enumerate(rows) if r["owner_id"] == VIEW), None))
+
+    mine = next((r for r in rows if r["owner_id"] == VIEW), None)
+    if mine:
+        theme.bar("Your taxi", "%d of %d used" % (mine["used"], mine["slots"]))
+        if not mine["players"]:
+            st.markdown(
+                '<div class="banner">Nothing stashed. Both of your rookie-draft picks belong '
+                'here until you promote them, and while they sit here they cost you no bench '
+                'spot and no keeper slot.</div>', unsafe_allow_html=True)
+        else:
+            ledger_table(["Player", "Pos", "Market", "Costs you"], [[
+                '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
+                    esc(p["name"]), esc(p["team"] or "")),
+                esc(p["position"]),
+                ('<span class="mono">R%d</span>' % adp_board.rank_to_round(p["rank"]))
+                if p["rank"] else '<span class="tiny">unranked</span>',
+                '<span class="chip good">free</span>',
+            ] for p in mine["players"]])
+            st.markdown(
+                '<div class="tiny" style="margin-top:8px">Two years each, and promoting one does '
+                '<b>not</b> cost the rookie-keeper designation &mdash; he moves from costing '
+                'nothing to costing a rookie slot at your last round, with no three-year clock. '
+                'Promote onto a full roster and you cut somebody.</div>',
+                unsafe_allow_html=True)
+
+
+def render_home(leaf=None):
+    """The in-season front page.
+
+    Ordered the way the question gets asked on a Sunday: who am I playing, what
+    is the money doing, where does that leave the table, and what has everyone
+    else been up to. The league votes used to live here and have come off - all
+    four are called, and a settled rule belongs in the rulebook rather than on a
+    running list of recent news. The results are still on the Rules page with
+    the tallies intact.
+    """
+    my_card(VIEW)
+    render_matchups()
+    render_pot_strip()
+    render_standings()
+    render_transactions()
 
 
 # ---------------------------------------------------------------------------
@@ -2301,7 +2505,8 @@ def render_bottom_bar() -> None:
 
 PAGES = {"home": render_home, "rules": render_rules}
 GROUP_PAGES = {"keepers": render_keepers, "draft": render_draft, "young": render_taxi,
-               "lottery": render_lottery, "wire": render_keepers, "pot": render_pot}
+               "lottery": render_lottery, "wire": render_keepers, "pot": render_pot,
+               "taxi": render_taxi_league}
 
 if PAGE in PAGES:
     PAGES[PAGE]()

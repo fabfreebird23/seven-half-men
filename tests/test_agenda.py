@@ -10,7 +10,7 @@ from halfmen import agenda, config, pot
 
 
 def test_every_item_offers_real_options():
-    for it in agenda.open_items():
+    for it in agenda._all_items():
         assert len(it["options"]) >= 2, "%s is not a choice" % it["title"]
         assert it["why"], it["title"]
         for label, note in it["options"]:
@@ -18,14 +18,37 @@ def test_every_item_offers_real_options():
 
 
 def test_the_four_asked_for_are_there():
-    ids = {it["id"] for it in agenda.open_items()}
+    ids = {it["id"] for it in agenda._all_items()}
     assert {"deadline", "vetoes", "waivers", "escalation"} <= ids
+
+
+def test_every_item_is_either_open_or_closed_never_both():
+    """The page renders open items as polls and closed ones as results. An
+    item in both lists would be asked and answered on the same screen."""
+    o = {i["id"] for i in agenda.open_items()}
+    c = {i["id"] for i in agenda.closed_items()}
+    assert not (o & c)
+    assert (o | c) == {i["id"] for i in agenda._all_items()}
+
+
+def test_a_called_vote_names_an_answer_that_was_actually_on_the_ballot():
+    """A settled answer is matched back to its option by LABEL, so a typo in
+    config.yaml would silently mark no option as the winner and the results
+    block would render four losers and no result."""
+    closed = agenda.closed_items()
+    assert closed, "nothing has been called yet"
+    for it in closed:
+        assert it["answer"], it["id"]
+        assert it["won"] is not None, (
+            "%s: settled answer %r matches none of %r"
+            % (it["id"], it["answer"], [l for l, _ in it["options"]]))
+        assert it["tally"] and it["verdict"], it["id"]
 
 
 def test_the_escalator_shows_what_it_does_to_the_pot_cap():
     """The cap is the third-place prize, so raising the buy-in raises the
     consolation ceiling automatically. Voting on one is voting on the other."""
-    esc = next(i for i in agenda.open_items() if i["id"] == "escalation")
+    esc = next(i for i in agenda._all_items() if i["id"] == "escalation")
     labels = " ".join(l for l, _ in esc["options"])
     assert "+$10" in labels and "+$20" in labels
     body = " ".join(n for _, n in esc["options"])

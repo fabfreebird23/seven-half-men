@@ -22,15 +22,50 @@ ROOKIE = 1          # Sleeper's player_type for a rookie-only draft
 VETERAN = 0
 
 
-def _draft_for(kind: int, league_id: str = None) -> Optional[dict]:
+def _configured_ids(kind: int) -> List[str]:
+    """The draft ids the rulebook says are real, in board order. [] if unset."""
+    key = "rookie" if kind == ROOKIE else "veteran"
+    got = (config.drafts().get("sleeper_drafts") or {}).get(key) or []
+    return [str(x) for x in got]
+
+
+def _parts_for(kind: int, league_id: str = None) -> List[dict]:
+    """Every Sleeper draft that makes up this one draft, in board order.
+
+    A draft can be more than one Sleeper draft. Sleeper fixes the round count
+    when a board is created, so a 14-round veteran draft that started life as
+    a 10-round board has to finish on a second one - two Sleeper drafts, one
+    actual draft, and the rounds continue rather than restart.
+
+    Which ids count is CONFIGURED, not detected. Detecting by player_type
+    picked whichever was created last out of five, two of which were never
+    used, so the site cheerfully reported a four-round veteran draft.
+    """
     try:
         drafts = sleeper.get_drafts(league_id or config.league_id()) or []
     except Exception:
         return []
-    for d in drafts:
-        if int((d.get("settings") or {}).get("player_type", VETERAN)) == kind:
-            return d
-    return None
+    want = _configured_ids(kind)
+    if want:
+        by_id = {str(d.get("draft_id")): d for d in drafts}
+        got = [by_id[i] for i in want if i in by_id]
+        if got:
+            return got
+        # Configured, but the league we are looking at has none of them - a
+        # different league id, or a test harness. Fall through and detect
+        # rather than reporting that the draft does not exist.
+    # Nothing configured: fall back to the old behaviour, oldest first so a
+    # draft in progress does not jump ahead of the one before it.
+    got = [d for d in drafts
+           if int((d.get("settings") or {}).get("player_type", VETERAN)) == kind]
+    got.sort(key=lambda d: d.get("created") or 0)
+    return got[:1]
+
+
+def _draft_for(kind: int, league_id: str = None) -> Optional[dict]:
+    """The FIRST part, for callers that only want the draft's identity."""
+    parts = _parts_for(kind, league_id)
+    return parts[0] if parts else None
 
 
 def state(kind: int = ROOKIE, league_id: str = None) -> Dict[str, Any]:
@@ -39,20 +74,40 @@ def state(kind: int = ROOKIE, league_id: str = None) -> Dict[str, Any]:
     `on_clock` is None when the draft has not started or has finished, so a
     caller can tell "nobody is on the clock" from "we could not work it out".
     """
-    d = _draft_for(kind, league_id)
-    if not d:
+    parts = _parts_for(kind, league_id)
+    if not parts:
         return {}
+    d = parts[0]
     st = d.get("settings") or {}
     teams = int(st.get("teams") or len(config.managers()))
-    rounds = int(st.get("rounds") or 0)
+    # Rounds ADD UP across the parts: two Sleeper boards of 10 and 4 are one
+    # 14-round draft, not a 4-round one.
+    rounds = sum(int((p.get("settings") or {}).get("rounds") or 0) for p in parts)
     timer = int(st.get("pick_timer") or 0)
     snake = (d.get("type") == "snake")
+    # The live one is the last part with anything still to do; otherwise the
+    # last part, so `status` reports the end of the draft and not the start.
+    tail = parts[-1]
 
-    try:
-        picks = sleeper.get_draft_picks(d["draft_id"], ttl=60 if d.get("status") == "drafting"
-                                        else 900) or []
-    except Exception:
-        picks = []
+    picks = []
+    offset = 0
+    for p in parts:
+        pr = int((p.get("settings") or {}).get("rounds") or 0)
+        try:
+            got = sleeper.get_draft_picks(
+                p["draft_id"], ttl=60 if p.get("status") == "drafting" else 900) or []
+        except Exception:
+            got = []
+        got = sorted(got, key=lambda x: int(x.get("pick_no") or 0))
+        for q in got:
+            q = dict(q)
+            # Renumber onto the combined board. Without this, round 11 comes
+            # back as round 1 and the board draws four picks on top of the
+            # first four of round one.
+            q["round"] = int(q.get("round") or 0) + offset
+            q["pick_no"] = int(q.get("pick_no") or 0) + offset * teams
+            picks.append(q)
+        offset += pr
 
     # draft_order maps owner -> slot; we want the slot order.
     order_by_slot = {int(v): str(k) for k, v in (d.get("draft_order") or {}).items()}
@@ -69,7 +124,7 @@ def state(kind: int = ROOKIE, league_id: str = None) -> Dict[str, Any]:
     over_run = rounds > want_rounds
     on_clock = None
     rnd = pick_in_round = None
-    if d.get("status") == "drafting" and made < total and all(order):
+    if tail.get("status") == "drafting" and made < total and all(order):
         rnd = made // teams + 1
         i = made % teams
         # A snake reverses the even rounds, so slot and pick number diverge.
@@ -79,12 +134,12 @@ def state(kind: int = ROOKIE, league_id: str = None) -> Dict[str, Any]:
 
     deadline = None
     if on_clock and timer:
-        last = d.get("last_picked") or d.get("start_time")
+        last = tail.get("last_picked") or tail.get("start_time")
         if last:
             deadline = last / 1000.0 + timer
 
     return {
-        "draft": d, "picks": picks, "status": d.get("status"),
+        "draft": d, "parts": parts, "picks": picks, "status": tail.get("status"),
         "rounds": rounds, "teams": teams, "timer": timer, "snake": snake,
         "order": order, "made": made, "total": total,
         "league_total": league_total, "over_run": over_run,

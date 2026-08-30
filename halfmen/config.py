@@ -28,6 +28,31 @@ def load() -> Dict[str, Any]:
     return cfg
 
 
+def raw() -> Dict[str, Any]:
+    """The whole config, for the few callers that read a top-level block that
+    has no accessor of its own (`settled`, mostly). Everything with a real
+    shape should get a named function instead."""
+    return load()
+
+
+def settled() -> Dict[str, Any]:
+    return dict(load().get("settled") or {})
+
+
+def median_match() -> bool:
+    """Every team also plays the league median each week."""
+    return bool(league().get("median_match", False))
+
+
+def regular_season_weeks() -> int:
+    return int(league().get("regular_season_weeks") or 13)
+
+
+def consolidated_from() -> int:
+    """First season the two drafts become one. 0 if never."""
+    return int(drafts().get("consolidated_from") or 0)
+
+
 def league() -> Dict[str, Any]:
     return load()["league"]
 

@@ -69,8 +69,8 @@ def sections() -> List[tuple]:
 ("year-one", "Season one is different", "Nobody has held anyone yet, so 2026 runs on its own rules.", [
  ("list", [
    "<b>No keepers.</b> Everyone starts empty. Every clock starts at zero <em>after</em> this season.",
-   "<b>Two drafts, same as every year.</b> The rookie draft (%d rounds) runs first, then the "
-   "veteran draft." % rook,
+   "<b>Two drafts — for the last time.</b> The rookie draft (%d rounds) runs first, then the "
+   "veteran draft. From %d it is one board: see below." % (rook, config.consolidated_from()),
    "<b>The veteran draft is %d rounds this year, not %d.</b> See the note below — it is the one "
    "deliberate year-one change." % (vet1, vet),
    "<b>Both orders are drawn flat at random.</b> There are no standings to weight a drum with. "
@@ -94,6 +94,27 @@ def sections() -> List[tuple]:
           "Promote a rookie and you are %d deep on a %d-man roster, so you cut your last pick to "
           "do it. A price you can see beats a round count nobody can."
           % (vet1 - 1, rook, config.active_roster_size() + 1, config.active_roster_size())),
+]),
+
+("one-draft", "From %d: one draft" % config.consolidated_from(),
+ "Passed 30 August 2026. Nothing here changes anything about the 2026 season.", [
+ ("list", [
+   "<b>One board, %d rounds, every player on it.</b> The rookie draft and the veteran draft "
+   "become a single draft." % int(config.drafts().get("consolidated_rounds") or 16),
+   "<b>Nobody is required to take a rookie.</b> That is the point of it. Two rookies currently "
+   "arrive free because they come off a board that costs no veteran capital; on one board they "
+   "cost a real pick. A rookie stops being an entitlement and starts being a decision.",
+   "<b>A kept rookie costs the round you drafted him in.</b> On the <em>normal</em> keeper path "
+   "only. The R%d premium exists because a rookie-draft pick had no round to point at — give him "
+   "a real round and we use it. Take a rookie in the 12th and he keeps at R12." % _prem(),
+   "<b>Rookie-designated keepers are untouched.</b> Two slots, your last rounds, no clock, "
+   "exactly as written today.",
+   "<b>The R%d premium becomes a legacy price.</b> It survives only for the sixteen players "
+   "taken in the 2026 rookie draft, then retires itself." % _prem(),
+   "<b>Winning the Chase costs you lottery balls.</b> Weeks %s stop being a lap of honour: the "
+   "money is real and so is the price." % "–".join(
+       str(w) for w in (lg["chase_weeks"][0], lg["chase_weeks"][-1])),
+ ]),
 ]),
 
 ("keepers", "Keepers", "Five a year: three regular, two rookie. Keeping a player costs you the "
@@ -250,7 +271,12 @@ def sections() -> List[tuple]:
 ("taxi", "The taxi squad", "%d slots. A place to park rookies you believe in but cannot use yet."
                            % int(tr["slots"]), [
  ("list", [
-   "Rookies from <b>that year's rookie draft only</b>.",
+   "<b>Any rookie you drafted this year</b> — off the rookie draft or the veteran draft, it "
+   "makes no difference. What qualifies him is that he is a rookie and you drafted him, not "
+   "which board he came off. A rookie you picked up on waivers does not qualify.",
+   "<b>Squads are declared before the first game of week one.</b> A slot still empty at kickoff "
+   "stays empty for the season — it is not returned and it cannot be filled later. The point of "
+   "the slot is that you commit to a player before you know anything.",
    "<b>You cannot start them. Ever.</b> Not for a bye, not for an injury.",
    "They do not count against your bench and they carry over free — no keeper slot used.",
    "You can hold a player up to <b>%d years</b>, but you only have %d slots. One player for two "
@@ -422,10 +448,22 @@ def sections() -> List[tuple]:
  ]),
 ]),
 
+("settled", "Put to a vote", "Four questions the league answered on %s. %s." % (
+    config.settled().get("date", ""), config.settled().get("turnout", "")), [
+ ("table", ["Question", "Answer", "Tally"],
+  [[v.get("_q", k), "<b>%s</b>" % v.get("answer", ""), v.get("tally", "")]
+   for k, v in [
+     ("deadline", dict(config.settled()["votes"]["deadline"], _q="Trade deadline")),
+     ("vetoes", dict(config.settled()["votes"]["vetoes"], _q="Trade vetoes")),
+     ("waivers", dict(config.settled()["votes"]["waivers"], _q="Waiver tiebreaker")),
+     ("escalation", dict(config.settled()["votes"]["escalation"], _q="Buy-in escalation")),
+   ]]),
+ ("p", "The full tallies, and which way each manager voted, are kept with the vote itself. "
+       "Seven of eight voted; the first three were decided without the eighth."),
+]),
+
 ("open", "Still being argued about", "What the rulebook does not settle yet.", [
  ("list", [
-   "<b>Does the buy-in escalate?</b> $%d for 2026 is settled. Whether it rises $10 or $20 a "
-   "year after that is not." % int(config.buy_in() or 0),
    "<b>Year two of the R%d ladder.</b> The written spec gives it as <code>min(5 - 3, adp)</code>, "
    "but taken literally over round numbers that picks the <em>earlier</em>, more expensive round "
    "— which would make a rookie-draft bust cost R%d against an R12 market. It is built as "

@@ -14,6 +14,12 @@ _SUFFIXES = {"jr", "sr", "ii", "iii", "iv", "v"}
 # Hand-fixes for spellings that normalization alone won't reconcile.
 _ALIASES = {
     "kennethwalker": "kennethwalkeriii",
+    # Six of the seven ADP sources call him "Ken Walker" and one calls him
+    # "Kenneth Walker III", so the consensus was landing on one key and the
+    # rostered player on the other. He showed up on the wire as an undrafted
+    # free agent while sitting on Clayton's roster, and was priced off the
+    # single-source row rather than the six-source one.
+    "kenwalker": "kennethwalkeriii",
     "marvinharrison": "marvinharrisonjr",
     "brianthomas": "brianthomasjr",
     "michaelpittman": "michaelpittmanjr",

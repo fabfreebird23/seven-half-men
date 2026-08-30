@@ -9,10 +9,63 @@ league:
   teams: 8
   playoff_teams: 4
   playoff_week_start: 14
-  regular_season_weeks: 14
-  chase_weeks: [15, 16, 17]   # consolation bracket
+  # Sleeper is the thing the league actually plays on, and it is set to a
+  # week-14 start at TWO WEEKS PER ROUND: semis 14-15, final 16-17. So the
+  # regular season is 13 weeks, not 14, and the Chase runs the full four
+  # weeks alongside the winners bracket rather than three. Voted to follow
+  # Sleeper rather than re-cut the schedule around a 14-week season.
+  regular_season_weeks: 13
+  playoff_weeks_per_round: 2
+  chase_weeks: [14, 15, 16, 17]   # consolation bracket, runs alongside
+  # Every team also plays the LEAGUE MEDIAN each week, so there are two
+  # results a week: your head-to-head, and you against the middle of the
+  # league. It was switched on in Sleeper from the start and never written
+  # down, which made the standings on this site disagree with the standings
+  # in the app. Written down now. It cuts schedule luck hard - a good team
+  # that runs into the week's high scorer still banks a win against the
+  # median.
+  median_match: true
 
 drafts:
+  # PASSED 2026-08-30, effective 2027: ONE draft, not two.
+  #
+  # Sixteen rounds, every player on one board, and nobody is required to take
+  # a rookie. That is the point of it - right now two rookies arrive free
+  # because they come off a board that costs no veteran capital, and on one
+  # board they cost a real pick. A rookie stops being an entitlement and
+  # starts being a decision.
+  #
+  # Nothing here changes 2026. The two drafts below already happened.
+  consolidated_from: 2027
+  consolidated_rounds: 16
+  # From 2027 a rookie kept on the NORMAL keeper path costs the round you
+  # actually drafted him in, because now he has one. Take him in the 12th and
+  # he keeps at R12. The R5 premium below survives only as a legacy price for
+  # the sixteen players taken in the 2026 rookie draft, then retires itself.
+  # ROOKIE-DESIGNATED keepers are untouched: two slots, your last rounds, no
+  # clock, exactly as written.
+  rookie_premium_legacy_only_from: 2027
+
+  # WHICH Sleeper drafts are the real ones, in board order.
+  #
+  # Five drafts exist on Sleeper and only three of them count. Two are junk:
+  # 1388606375256420352 is the original 14-round veteran board, never started,
+  # and 1388608052063657984 is the rookie draft that went live configured for
+  # 16 ROUNDS rather than 16 picks and was abandoned. Autodetecting by
+  # player_type picked whichever was created last, which is how the site came
+  # to describe the veteran draft as four rounds.
+  #
+  # The veteran draft is genuinely TWO drafts: Sleeper caps a board at the
+  # rounds it was created with, so rounds 1-10 ran on one and 11-14 on a
+  # second with the same seat order. They are listed in board order and read
+  # as one 14-round draft.
+  sleeper_drafts:
+    veteran:
+      - "1393111328339562496"   # rounds 1-10
+      - "1399627678364999680"   # rounds 11-14
+    rookie:
+      - "1391297052188626944"   # 2 rounds
+
   veteran_rounds: 14
   # 14, not 13. The two rookie-draft picks go to the TAXI squad before the
   # veteran draft, and taxi does not count against the 14 active spots - so the
@@ -52,6 +105,35 @@ roster:
   bench: 5
   ir: 1
 
+# Settled by league vote. Recorded here so the rulebook renders the ANSWER
+# rather than the question, and so nobody has to scroll a group chat in March.
+# 7 of 8 voted; Devin did not. The first three were already mathematically
+# decided without him. The buy-in was 4-3 and was called at flat $100.
+settled:
+  date: "2026-08-30"
+  turnout: "7 of 8 (Devin did not vote)"
+  votes:
+    deadline:
+      answer: "Week 12"
+      tally: "4-2-1 (wk12 / wk13 / wk10)"
+      note: "Two weeks of regular season left, so a deal still has to be made by
+             someone who is in it. Sleeper enforces this one - it was set to
+             week 11 and has been moved."
+    vetoes:
+      answer: "League vote, 5 of 8 within 24 hours"
+      tally: "4-2-1 (league vote / no vetoes / commish review)"
+      note: "Sleeper was set to need SIX votes. Moved to five."
+    waivers:
+      answer: "Leave Sleeper's rolling order alone"
+      tally: "7-0-0, unanimous"
+      note: "Self-correcting over a season, and it quietly compensates whoever
+             drew the back of the draft. No Sleeper change needed."
+    escalation:
+      answer: "Flat $100 forever"
+      tally: "4-3 (flat / +$10 a year)"
+      note: "Called at flat. The pot cap is the third-place prize, so it moves
+             on its own if the buy-in is ever revisited."
+
 rules:
   keepers:
     total: 5
@@ -89,7 +171,17 @@ rules:
   taxi:
     slots: 2
     years: 2
-    source: rookie_draft      # that year's rookie draft only
+    # ANY rookie you DRAFTED this year, from either board - not just the two
+    # off the rookie draft. A rookie taken in the 12th of the veteran draft is
+    # as taxi-eligible as one taken 1.01 in the rookie draft; what qualifies
+    # him is that he is a rookie and you drafted him, not which board he came
+    # off. This already matched `rookie_keepers.eligible_sources` below, which
+    # has always read "any NFL rookie you DRAFTED" - the two were in conflict.
+    #
+    # From 2027 there is only one draft, so this stops needing to be said.
+    source: any_drafted_rookie
+    eligible_sources: [rookie_draft, veteran_draft]
+    exclude_sources: [waiver, free_agent, trade]
     startable: false
     counts_against_bench: false
     counts_against_keepers: false
@@ -102,6 +194,18 @@ rules:
     #   second_year_only  only a year-2 promotion keeps it (the stricter reading)
     promotion_keeps_rookie_status: any_year
     in_season_adds: false
+    # Taxi squads are DECLARED, and the declaration closes when the first game
+    # of week one kicks off. Not week 4, not the trade deadline - kickoff.
+    #
+    # This is the rule Sleeper currently disagrees with: its `taxi_deadline` is
+    # set to week 4, which would let somebody watch a rookie for three weeks
+    # and then park him once he was safe. The whole point of the slot is that
+    # you commit to a player before you know anything.
+    #
+    # A slot left empty at kickoff stays empty for the season. It is not
+    # returned and it cannot be filled later.
+    declare_by: first_kickoff
+    sleeper_taxi_deadline_should_be: 0
     # Year one only: both rookie-draft picks are parked on taxi BEFORE the
     # veteran draft, not after. Taxi does not count against the 14 active
     # spots, so the board starts empty and 14 rounds fills it exactly. Do it
@@ -171,7 +275,8 @@ managers:
 # it is set the pot falls back to rules.faab.pot_cap_fallback and every prize
 # reads as unknown rather than as zero.
 payouts:
-  buy_in: 100               # dollars per team, 2026. Escalation still to vote.
+  buy_in: 100               # dollars per team. Voted FLAT FOREVER on 2026-08-30
+  escalation: none          # 4-3 over +$10 a year. See `settled` above.
   split:                    # percent of the pool, must total 100
     first: 60
     second: 25

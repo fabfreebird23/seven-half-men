@@ -31,10 +31,28 @@ def _table(season: int) -> Dict[str, dict]:
                 rank = float(row["consensus_rank"])
             except (KeyError, TypeError, ValueError):
                 continue
-            out[key] = {"name": row.get("name", ""), "position": row.get("position", ""),
-                        "rank": rank, "adp": _f(row.get("consensus_adp")),
-                        "sources": _i(row.get("n_sources"))}
+            got = {"name": row.get("name", ""), "position": row.get("position", ""),
+                   "rank": rank, "adp": _f(row.get("consensus_adp")),
+                   "sources": _i(row.get("n_sources"))}
+            # Two rows can normalize onto one key - a nickname the alias table
+            # reconciles ("Ken Walker" and "Kenneth Walker III" are one player
+            # on seven boards that cannot agree how to spell him). Last-write
+            # -wins would settle that on CSV row order, which is arbitrary and
+            # silent: the row backed by ONE source beat the row backed by six,
+            # and every keeper price downstream came off the wrong rank. Keep
+            # the better-sourced row, and break a tie on the better rank.
+            old = out.get(key)
+            if old is None or _rank_beats(got, old):
+                out[key] = got
     return out
+
+
+def _rank_beats(new: dict, old: dict) -> bool:
+    """Is `new` the more trustworthy row for a key both rows claim?"""
+    ns, os_ = new.get("sources") or 0, old.get("sources") or 0
+    if ns != os_:
+        return ns > os_
+    return (new.get("rank") or 1e9) < (old.get("rank") or 1e9)
 
 
 def _f(v) -> Optional[float]:
