@@ -204,15 +204,21 @@ rules:
     promotion_keeps_rookie_status: any_year
     in_season_adds: false
     # Taxi squads are DECLARED, and the declaration closes when the first game
-    # of week one kicks off. Not week 4, not the trade deadline - kickoff.
-    #
-    # This is the rule Sleeper currently disagrees with: its `taxi_deadline` is
-    # set to week 4, which would let somebody watch a rookie for three weeks
-    # and then park him once he was safe. The whole point of the slot is that
-    # you commit to a player before you know anything.
+    # of week one kicks off. The point of the slot is that you commit to a
+    # player before you know anything.
     #
     # A slot left empty at kickoff stays empty for the season. It is not
     # returned and it cannot be filled later.
+    #
+    # Sleeper's own `taxi_deadline` reads 4. What that 4 MEANS is not
+    # established - it was asserted here as "week 4" on no evidence, and
+    # Sleeper's own settings dialog offers preseason-flavoured options, so it
+    # may well already mean end of preseason / start of the regular season, in
+    # which case Sleeper agrees with us and there is nothing to change. Do not
+    # act on that number until somebody has read the selected option off the
+    # dropdown. Either way Sleeper cannot enforce the rule that matters here:
+    # it has no idea which of OUR boards a rookie came off, and no concept of
+    # the both-ways lock below.
     #
     # The lock is BOTH WAYS. Whoever is on taxi when the first game starts is
     # your taxi squad for the season - you cannot swap a rookie out for a
@@ -221,7 +227,6 @@ rules:
     # permanent (see `promotion` below) and costs you a roster spot.
     declare_by: first_kickoff
     locked_both_ways: true
-    sleeper_taxi_deadline_should_be: 0
     # Year one only: both rookie-draft picks are parked on taxi BEFORE the
     # veteran draft, not after. Taxi does not count against the 14 active
     # spots, so the board starts empty and 14 rounds fills it exactly. Do it
