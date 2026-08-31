@@ -124,6 +124,12 @@ def get_players() -> Dict[str, Any]:
     return data
 
 
+def nfl_state() -> Dict[str, Any]:
+    """Sleeper's own view of the NFL calendar: current week, and the date of
+    the first game. Cached for six hours - it changes once a week at most."""
+    return _disk("nfl_state", 21600, lambda: _get("state/nfl"))
+
+
 def league_chain(league_id: str) -> List[Dict[str, Any]]:
     """Walk previous_league_id back to the first season. Newest first."""
     chain: List[Dict[str, Any]] = []

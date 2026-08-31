@@ -19,6 +19,7 @@ Two things are deliberately NOT invented here:
 from __future__ import annotations
 
 import math
+from datetime import date
 from typing import Any, Dict, List, Optional
 
 from . import adp_board, config, sleeper
@@ -422,3 +423,49 @@ def power_basis(rows: List[dict] = None) -> str:
     if w >= 1:
         return "record and points only"
     return "%d%% record, %d%% roster strength" % (round(w * 100), round((1 - w) * 100))
+
+# --------------------------------------------------------------------------
+# the taxi deadline
+# --------------------------------------------------------------------------
+
+def kickoff(today: "date" = None) -> Optional["date"]:
+    """The first game of the season, from Sleeper's own NFL state.
+
+    Not hardcoded and not derived from the calendar. The date moves every year
+    and a wrong one here would be worse than none at all - it is the moment a
+    taxi squad locks for the season, and a manager who trusts a stale date
+    loses two roster spots over it.
+    """
+    try:
+        st = sleeper.nfl_state() or {}
+    except Exception:
+        return None
+    raw = str(st.get("season_start_date") or "")
+    try:
+        return date(*(int(x) for x in raw.split("-")))
+    except (TypeError, ValueError):
+        return None
+
+
+def taxi_deadline(today: "date" = None) -> Dict[str, Any]:
+    """When taxi squads lock, and how long is left.
+
+    Squads are declared before the first game and the lock runs both ways -
+    after it you cannot swap a rookie out, cannot shuttle anyone in for a bye,
+    and an empty slot stays empty for the season. So the number worth putting
+    on a front page is not the date, it is the days remaining.
+
+    Returns {} when the kickoff date is unavailable rather than guessing one.
+    """
+    when = kickoff()
+    if not when:
+        return {}
+    today = today or date.today()
+    left = (when - today).days
+    return {
+        "date": when,
+        "days_left": left,
+        "locked": left <= 0,
+        "urgent": 0 < left <= 7,
+        "label": when.strftime("%a %-d %b") if hasattr(when, "strftime") else str(when),
+    }

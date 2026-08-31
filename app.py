@@ -719,13 +719,24 @@ def my_card(view: str) -> None:
         color="var(--acc2)", off=not sit["kept"]))
     # An expiring pod is coloured apart: "2 of 2" and "2 of 2 with a decision to
     # make" must not look identical.
+    # Before kickoff the only thing that matters about this meter is how long
+    # is left to fill it: after the lock an empty slot stays empty all season.
+    dl = season.taxi_deadline()
+    if dl and not dl["locked"]:
+        taxi_note = ("locks %s &mdash; <b>%d day%s</b>" % (
+            dl["label"], dl["days_left"], "" if dl["days_left"] == 1 else "s")
+            if taxi_used < slots else "locks %s" % dl["label"])
+    elif expiring:
+        taxi_note = "%d pod%s expiring" % (expiring, "" if expiring == 1 else "s")
+    else:
+        taxi_note = "locked for the season" if dl else (
+            "bay is empty" if not taxi_used else "no decisions due")
     parts.append(meter(
-        "On taxi", "%d<small>/%d</small>" % (taxi_used, slots),
-        ("%d pod%s expiring" % (expiring, "" if expiring == 1 else "s") if expiring
-         else "bay is empty" if not taxi_used else "no decisions due"),
+        "On taxi", "%d<small>/%d</small>" % (taxi_used, slots), taxi_note,
         pips=[("var(--warn)" if i >= taxi_used - expiring else "var(--good)")
               if i < taxi_used else None for i in range(slots)],
-        color="var(--good)", off=not taxi_used))
+        color="var(--warn)" if (dl and not dl["locked"] and taxi_used < slots)
+        else "var(--good)", off=not taxi_used))
     parts.append('</div>')
 
     shown = 0
@@ -1177,6 +1188,60 @@ def render_power() -> None:
             'not against last week.</div>', unsafe_allow_html=True)
 
 
+def render_taxi_deadline() -> None:
+    """The one dated thing on this page.
+
+    Taxi squads lock when the first game kicks off, and the lock runs both
+    ways: after it you cannot swap a rookie out, cannot shuttle anybody in to
+    cover a bye, and a slot left open stays open for the season. That makes it
+    the only decision on the front page with a clock on it, and the clock is
+    the part worth printing - a date alone does not tell you it is close.
+
+    Goes quiet once the deadline passes. A countdown to a date in the past is
+    noise on every page load for the next four months.
+    """
+    dl = season.taxi_deadline()
+    if not dl or dl["locked"]:
+        return
+    try:
+        rows = season.taxi()
+    except Exception:
+        rows = []
+    mine = next((r for r in rows if r["owner_id"] == VIEW), None)
+    waiting = [r for r in rows if r["wasting"]]
+    days = dl["days_left"]
+
+    theme.bar("Taxi locks %s" % dl["label"],
+              "%d day%s left &middot; declared before the first game" % (
+                  days, "" if days == 1 else "s"))
+
+    if mine and mine["wasting"]:
+        st.markdown(
+            '<div class="banner" style="border-color:var(--bad)">'
+            '<b>You have %d rookie%s on your bench that could be on taxi.</b> %s. Taxi sits '
+            'outside your %d active spots, so this is a roster place you are spending for '
+            'nothing &mdash; and after kickoff the slot cannot be filled at all. It has to be '
+            'done in Sleeper.</div>' % (
+                len(mine["parkable"]), "" if len(mine["parkable"]) == 1 else "s",
+                esc(", ".join(p["name"] for p in mine["parkable"])),
+                config.active_roster_size()), unsafe_allow_html=True)
+    elif mine and not mine["open"]:
+        st.markdown(
+            '<div class="banner" style="border-color:var(--good)"><b>Your squad is set.</b> '
+            '%s. After %s they are locked in &mdash; the only way off taxi is to promote, '
+            'which is permanent.</div>' % (
+                esc(", ".join(p["name"] for p in mine["players"])), dl["label"]),
+            unsafe_allow_html=True)
+
+    if waiting:
+        st.markdown(
+            '<div class="tiny" style="margin-top:8px">Still to declare: <b>%s</b>. '
+            '%d of %d slots filled across the league.</div>' % (
+                esc(", ".join(who(r["owner_id"]) for r in waiting)),
+                sum(r["used"] for r in rows), sum(r["slots"] for r in rows)),
+            unsafe_allow_html=True)
+
+
 def render_home(leaf=None):
     """The in-season front page.
 
@@ -1188,6 +1253,7 @@ def render_home(leaf=None):
     the tallies intact.
     """
     my_card(VIEW)
+    render_taxi_deadline()
     render_matchups()
     render_pot_strip()
     render_power()

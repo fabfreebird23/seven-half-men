@@ -173,13 +173,46 @@ def test_an_expiring_taxi_pod_does_not_look_like_a_healthy_one(monkeypatch):
 
 
 def test_no_squeeze_means_no_warning(monkeypatch):
-    from halfmen import taxi
+    from halfmen import season, taxi
     monkeypatch.setattr(sleeper, "get_rosters", lambda lid: roster(wins=6, losses=3))
     monkeypatch.setattr(taxi, "build", lambda *a, **k: {
         ME: taxi.Bay(owner_id=ME, pods=[], incoming_picks=2)})
+    monkeypatch.setattr(season, "taxi_deadline", lambda *a, **k: {})
     body = home()
     assert "nowhere to go" not in body
     assert "bay is empty" in body
+
+
+def test_an_open_slot_before_kickoff_counts_down_instead_of_saying_empty(monkeypatch):
+    """An empty bay is only interesting because there is still time to fill it.
+    After the lock the slot is gone for the season, so before it the number
+    worth printing is the days remaining, not the word "empty"."""
+    from halfmen import season, taxi
+    monkeypatch.setattr(sleeper, "get_rosters", lambda lid: roster())
+    monkeypatch.setattr(taxi, "build", lambda *a, **k: {
+        ME: taxi.Bay(owner_id=ME, pods=[], incoming_picks=2)})
+    monkeypatch.setattr(season, "taxi_deadline", lambda *a, **k: {
+        "date": None, "days_left": 3, "locked": False, "urgent": True,
+        "label": "Wed 9 Sep"})
+    body = home()
+    assert "Wed 9 Sep" in body
+    assert "3 days" in body
+    assert "bay is empty" not in body
+
+
+def test_the_countdown_goes_quiet_once_the_deadline_passes(monkeypatch):
+    """A countdown to a date in the past is noise on every page load for the
+    next four months."""
+    from halfmen import season, taxi
+    monkeypatch.setattr(sleeper, "get_rosters", lambda lid: roster())
+    monkeypatch.setattr(taxi, "build", lambda *a, **k: {
+        ME: taxi.Bay(owner_id=ME, pods=[], incoming_picks=2)})
+    monkeypatch.setattr(season, "taxi_deadline", lambda *a, **k: {
+        "date": None, "days_left": -4, "locked": True, "urgent": False,
+        "label": "Wed 9 Sep"})
+    body = home()
+    assert "Taxi locks" not in body
+    assert "locked for the season" in body
 
 
 def test_the_record_says_whether_you_are_in_the_bracket(monkeypatch):
