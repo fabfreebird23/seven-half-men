@@ -213,3 +213,39 @@ def test_the_room_draws_in_the_order_the_managers_actually_chose():
     assert config.manager_name(slots[0]).startswith("Lucas")
     assert config.manager_name(slots[1]).startswith("Brandon")
     assert config.manager_name(slots[2]).startswith("Josh")
+
+
+# ------------------------------------------------- polling only while it is open
+
+def test_an_open_board_polls_and_a_finished_one_does_not():
+    """`run_every` is what makes the room a shared screen instead of eight
+    private ones - without it only the person entering the pick saw it land.
+    But a completed draft cannot change, and a page that reruns every few
+    seconds forever keeps asking GitHub about a file nobody is writing. The
+    call site picks the polling fragment or the plain render."""
+    import re
+    from pathlib import Path
+    src = Path(__file__).resolve().parent.parent.joinpath("app.py").read_text()
+
+    assert re.search(r"@st\.fragment\(run_every=_ROOM_POLL\)\s*\ndef room_live", src), \
+        "the open board must poll"
+    assert re.search(r"\ndef room_done\(", src), "the finished board must not"
+    assert "(room_live if live_board else room_done)" in src, \
+        "and the call site has to choose between them"
+    # Both render the same thing, so a finished board is not a different screen.
+    assert src.count("room_body(kind, order, rounds, snake)") >= 2
+
+
+def test_the_poll_interval_stays_longer_than_the_read_cache():
+    """The cache is what stops eight people costing eight GitHub reads. Poll
+    faster than the cache window and every viewer misses it, which is exactly
+    how the Babies and Boomer board burned the hourly REST quota on draft
+    night and went blank for the rest of the hour."""
+    import re
+    from pathlib import Path
+    from halfmen import remote
+    src = Path(__file__).resolve().parent.parent.joinpath("app.py").read_text()
+    poll = int(re.search(r"^_ROOM_POLL = (\d+)", src, re.M).group(1))
+    assert poll > remote._TTL, (
+        "poll %ss must be longer than the %ss read cache, or every viewer "
+        "misses the cache and the room costs one GitHub read each" % (poll, remote._TTL))

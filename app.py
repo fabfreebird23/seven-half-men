@@ -2019,9 +2019,27 @@ def draft_room(leaf=None) -> None:
     order = (_live_order(live.VETERAN) or config.veteran_slots()
              or first_draw().get("veteran") or owner_ids())
 
-    theme.bar("Draft room", "%d rounds &middot; %d picks &middot; this app is the record" % (
-        rounds, rounds * len(order)))
-    room_live(kind, order, rounds, snake)
+    made = len(picks.load(kind, SEASON))
+    total = rounds * len(order)
+    live_board = made < total
+    theme.bar("Draft room", "%d rounds &middot; %d picks &middot; %s" % (
+        rounds, total,
+        "live &middot; refreshing every %ds" % _ROOM_POLL if live_board
+        else "complete &middot; this app is the record"))
+    (room_live if live_board else room_done)(kind, order, rounds, snake)
+
+
+# How often an open draft room repaints itself for everyone watching.
+#
+# Deliberately a shade longer than remote._TTL (5s), so the process-wide read
+# cache absorbs the whole room: eight people polling on their own timers still
+# cost one GitHub read per cache window, not eight. Babies and Boomer ran this
+# at 5s with no cache in front of it and burned the 5,000/hour REST quota - per
+# GitHub USER, shared across every token - in minutes on draft night, which
+# blanked the board for the rest of the hour.
+#
+# Only an UNFINISHED board polls. See draft_room.
+_ROOM_POLL = 6
 
 
 def save_or_say(what: str, fn, *args, **kwargs) -> bool:
@@ -2048,8 +2066,25 @@ def save_or_say(what: str, fn, *args, **kwargs) -> bool:
         return False
 
 
-@st.fragment
+@st.fragment(run_every=_ROOM_POLL)
 def room_live(kind, order, rounds, snake) -> None:
+    """The open board, repainting itself every few seconds for the whole room.
+
+    Without this only the person who entered the pick saw it land; everyone
+    else sat on a stale board until they touched something. `run_every` is what
+    makes it a shared screen rather than eight private ones.
+    """
+    room_body(kind, order, rounds, snake)
+
+
+def room_done(kind, order, rounds, snake) -> None:
+    """The finished board. Same render, no polling - a completed draft cannot
+    change, and a page that reruns every few seconds forever is a page that
+    keeps asking GitHub about a file nobody is writing."""
+    room_body(kind, order, rounds, snake)
+
+
+def room_body(kind, order, rounds, snake) -> None:
     """Clock, entry and board, all in one fragment.
 
     Everything that changes when a pick lands lives in here, so
