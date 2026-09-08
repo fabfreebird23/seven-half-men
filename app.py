@@ -2024,6 +2024,30 @@ def draft_room(leaf=None) -> None:
     room_live(kind, order, rounds, snake)
 
 
+def save_or_say(what: str, fn, *args, **kwargs) -> bool:
+    """Run a write that goes to GitHub, and SAY SO when it fails.
+
+    Every one of these used to raise straight through the fragment, which in
+    Streamlit means the board vanishes for that viewer until something else
+    triggers a rerun - during a live draft, with eight people watching, and
+    with no clue that the pick did not land.
+
+    Throttling is the realistic cause: the REST quota is per GitHub user and a
+    room full of refreshes eats it. The board itself keeps rendering from cache,
+    so the right answer is to keep the page up and tell whoever pressed the
+    button what to do next.
+    """
+    try:
+        fn(*args, **kwargs)
+        return True
+    except Exception as exc:
+        st.error(
+            "Couldn't save %s \u2014 GitHub is throttling writes. The board stays live and "
+            "nothing already recorded is lost. Write this one down and log it again in a "
+            "minute. (%s)" % (what, type(exc).__name__))
+        return False
+
+
 @st.fragment
 def room_live(kind, order, rounds, snake) -> None:
     """Clock, entry and board, all in one fragment.
@@ -2089,8 +2113,9 @@ def room_controls(kind, order, rounds, snake, made, taken) -> None:
         heard = said.get("text", "")
         got = voice.match(heard, pool, exclude=taken)
         if got and got["sure"]:
-            picks.add(kind, got["player"], order, rounds, snake, SEASON)
-            rerun_here()
+            if save_or_say("that pick", picks.add, kind, got["player"],
+                           order, rounds, snake, SEASON):
+                rerun_here()
         elif got:
             st.session_state["room_pick"] = got["player"]["name"]
             st.markdown('<div class="heardline"><span class="k">Heard</span>&ldquo;%s&rdquo; '
@@ -2114,12 +2139,13 @@ def room_controls(kind, order, rounds, snake, made, taken) -> None:
     with c1:
         if st.button("Lock it in", type="primary", disabled=not chosen,
                      use_container_width=True):
-            picks.add(kind, labels[chosen], order, rounds, snake, SEASON)
-            rerun_here()
+            if save_or_say("that pick", picks.add, kind, labels[chosen],
+                           order, rounds, snake, SEASON):
+                rerun_here()
     with c2:
         if st.button("Undo last pick", disabled=not made):
-            picks.undo(kind, SEASON)
-            rerun_here()
+            if save_or_say("the undo", picks.undo, kind, SEASON):
+                rerun_here()
 
 
 def room_board(kind, order, rounds, snake) -> None:
@@ -2213,8 +2239,8 @@ def draft_entry(which: str, pick_order, rounds: int, snake: bool) -> None:
                 '<div class="banner" style="border-color:var(--bad);color:var(--bad);'
                 'margin-bottom:6px">%s</div>' % esc(p) for p in got["problems"][:12]),
                 unsafe_allow_html=True)
-        if got["picks"]:
-            picks.save(which, got["picks"], SEASON)
+        if got["picks"] and save_or_say("those picks", picks.save, which,
+                                        got["picks"], SEASON):
             st.markdown('<div class="banner" style="border-color:var(--acc)">Recorded '
                         '<b>%d</b> of %d picks. Anything flagged above was skipped &mdash; '
                         'fix the name and paste those lines again.</div>' % (

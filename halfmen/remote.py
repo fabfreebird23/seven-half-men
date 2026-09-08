@@ -37,6 +37,22 @@ _OWN_HOLD = 90.0
 _own: Dict[str, Tuple[float, Any]] = {}
 _bust = itertools.count()
 
+# The REST quota is 5,000/hour per GitHub USER, shared by every token that user
+# owns. A room full of people refreshing a live board burns it in minutes, and
+# a 403 then falls all the way through to the empty local file - which renders
+# as a blank board until the hour resets. Found the hard way on the Babies and
+# Boomer draft night, 2026-09-07.
+#
+# raw.githubusercontent.com serves the same file and does NOT count against the
+# REST quota. It is strictly a FALLBACK: it lags up to five minutes and ignores
+# cache-busting, so using it as the primary read hides fresh picks and hands
+# writes a stale sha (409 conflicts on every save).
+_RAW = "https://raw.githubusercontent.com"
+_THROTTLED = (403, 429)
+
+# One branch check per process rather than one per write.
+_branch_seen: set = set()
+
 
 def config() -> Optional[Tuple[str, str, str]]:
     """(token, repo, branch), or None when we should stay local.
@@ -69,9 +85,15 @@ def _headers(tok: str) -> dict:
 
 def _ensure_branch(repo: str, branch: str, tok: str) -> None:
     import requests
+    if (repo, branch) in _branch_seen:
+        return
     h = _headers(tok)
     r = requests.get("%s/repos/%s/branches/%s" % (_API, repo, branch), headers=h, timeout=15)
-    if r.status_code == 200:
+    # A throttled check is not evidence the branch is missing. Treating it as
+    # missing sent three more API calls trying to CREATE a branch that was
+    # already there, on every single save, while already over quota.
+    if r.status_code == 200 or r.status_code in _THROTTLED:
+        _branch_seen.add((repo, branch))
         return
     info = requests.get("%s/repos/%s" % (_API, repo), headers=h, timeout=15).json()
     default = info.get("default_branch", "main")
@@ -79,6 +101,26 @@ def _ensure_branch(repo: str, branch: str, tok: str) -> None:
                        headers=h, timeout=15).json()
     requests.post("%s/repos/%s/git/refs" % (_API, repo), headers=h, timeout=15,
                   json={"ref": "refs/heads/%s" % branch, "sha": ref["object"]["sha"]})
+    _branch_seen.add((repo, branch))
+
+
+def _blob_sha(raw: bytes) -> str:
+    """The git blob sha of these bytes, which is exactly the `sha` the contents
+    API wants back on an update. Lets a raw-CDN read still support a write."""
+    import hashlib
+    return hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
+
+
+def _raw_get(repo: str, branch: str, path: str, tok: str) -> Optional[bytes]:
+    """The same file, off the CDN, without touching the REST quota."""
+    import requests
+    h = {"Authorization": "token %s" % tok} if tok else {}
+    r = requests.get("%s/%s/%s/%s" % (_RAW, repo, branch, path), headers=h,
+                     params={"nocache": next(_bust)}, timeout=15)
+    if r.status_code == 404:
+        return None
+    r.raise_for_status()
+    return r.content
 
 
 def _fetch(path: str) -> Tuple[Optional[dict], Optional[str]]:
@@ -90,6 +132,14 @@ def _fetch(path: str) -> Tuple[Optional[dict], Optional[str]]:
                      params={"ref": branch, "_": next(_bust)}, timeout=15)
     if r.status_code == 404:
         return None, None
+    if r.status_code in _THROTTLED:
+        # Over quota. Serve the CDN copy rather than an empty board, and derive
+        # the sha ourselves so a save can still go through.
+        raw = _raw_get(repo, branch, path, tok)
+        if raw is None:
+            return None, None
+        text = raw.decode()
+        return (json.loads(text) if text.strip() else None), _blob_sha(raw)
     r.raise_for_status()
     j = r.json()
     body = base64.b64decode(j["content"]).decode()
