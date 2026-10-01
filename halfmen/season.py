@@ -22,7 +22,7 @@ import math
 from datetime import date
 from typing import Any, Dict, List, Optional
 
-from . import adp_board, config, sleeper
+from . import adp_board, config, pot, sleeper
 from .names import normalize_name
 
 # Below this edge the two rosters are not distinguishable and the honest
@@ -96,10 +96,25 @@ def standings(league_id: str = None) -> List[dict]:
             "points_for": pf,
             "results": w + l + t,
             "played": (w + l + t) // per_week,
-            "budget_left": max(0, int(config.faab_rules()["budget"])
-                               - _int(s.get("waiver_budget_used"))),
+            # Spent, not left - see below. `budget_left` is filled in after the
+            # loop, once the FAAB trade log is known.
+            "spent": _int(s.get("waiver_budget_used")),
             "moves": _int(s.get("total_moves")),
         })
+    # What is left to bid is the budget PLUS anything bought from another
+    # manager and MINUS anything sold. Subtracting spend from a flat budget
+    # reported the seller as richer than he is and the buyer as poorer.
+    try:
+        net = pot.traded_net(league_id or config.league_id())
+    except Exception:
+        net = {}
+    budget = int(config.faab_rules()["budget"])
+    for row in out:
+        n = int(net.get(row["owner_id"], 0))
+        row["traded_net"] = n
+        row["entitlement"] = max(0, budget + n)
+        row["budget_left"] = max(0, row["entitlement"] - row["spent"])
+
     out.sort(key=lambda x: (-x["wins"], -x["points_for"]))
     for i, row in enumerate(out, 1):
         row["place"] = i

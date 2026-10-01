@@ -145,3 +145,80 @@ def test_settlement_uses_the_configured_budget_and_cap():
     s = pot.settle({"a": fr["budget"]})
     assert s.owed("a") == fr["budget"]
     assert s.cap == pot.cap_amount()[0], "the cap is derived, not read straight off config"
+
+
+# ------------------------------------------------- FAAB moved by trade
+
+def test_traded_faab_is_not_spend():
+    """A transfer is not a purchase. The money has only changed hands, so it
+    creates no liability until somebody actually bids it."""
+    s = pot.settle({"seller": 0, "buyer": 0}, traded={"buyer": 50, "seller": -50})
+    assert s.total == 0
+    assert s.owed("seller") == 0 and s.owed("buyer") == 0
+
+
+def test_a_manager_who_bought_budget_is_billed_for_all_of_it():
+    """The leak this fixes. The bill used to be capped at a flat budget, so a
+    manager who traded in $50 and spent $150 was billed $100 - and the $50 he
+    bought went to the seller instead of into the pot."""
+    s = pot.settle({"buyer": 150}, traded={"buyer": 50})
+    assert s.owed("buyer") == 150, "every dollar bid comes due, bought or not"
+    assert s.total == 150
+
+
+def test_selling_budget_lowers_what_you_can_be_billed():
+    """He can no longer bid it, so he can no longer owe it."""
+    s = pot.settle({"seller": 100}, traded={"seller": -40})
+    b = next(x for x in s.bills if x.owner_id == "seller")
+    assert b.entitlement == 60
+    assert b.owed == 60, "a $100 figure against a $60 entitlement is bad data"
+
+
+def test_a_trade_moves_the_bill_but_not_the_pot_total():
+    """The league spends what the league spends. Who owes it changes; how much
+    reaches the Chase does not."""
+    no_trade = pot.settle({"a": 80, "b": 60})
+    traded = pot.settle({"a": 40, "b": 100}, traded={"b": 40, "a": -40})
+    assert no_trade.total == traded.total == 140
+
+
+def test_the_bill_still_cannot_exceed_what_he_could_have_bid():
+    """The cap is not gone, it just knows about trades now. An invoice to a
+    real person should never exceed his entitlement."""
+    s = pot.settle({"a": 999}, traded={"a": 25})
+    assert s.owed("a") == 125
+
+
+def test_the_trade_columns_are_reported_for_the_page():
+    s = pot.settle({"a": 10}, traded={"a": 30})
+    b = next(x for x in s.bills if x.owner_id == "a")
+    assert (b.received, b.sent, b.entitlement) == (30, 0, 130)
+    s2 = pot.settle({"a": 10}, traded={"a": -30})
+    b2 = next(x for x in s2.bills if x.owner_id == "a")
+    assert (b2.received, b2.sent, b2.entitlement) == (0, 30, 70)
+
+
+def test_settle_without_a_trade_log_behaves_exactly_as_before():
+    """Every existing caller passes no `traded`, and must be unaffected."""
+    assert pot.settle(SPENDS).total == pot.settle(SPENDS, traded={}).total
+
+
+def test_the_trade_log_reads_sleepers_waiver_budget_array(monkeypatch):
+    """Sleeper records a traded budget on the TRADE, not as a waiver claim."""
+    monkeypatch.setattr(pot.sleeper, "get_rosters", lambda lid: [
+        {"roster_id": 1, "owner_id": "alice"}, {"roster_id": 2, "owner_id": "bob"}])
+    monkeypatch.setattr(pot.sleeper, "get_transactions", lambda lid, wk: (
+        [{"type": "trade", "status": "complete",
+          "waiver_budget": [{"sender": 1, "receiver": 2, "amount": 25}]}] if wk == 3 else []))
+    moves = pot.faab_trades("x", weeks=range(1, 6))
+    assert moves == [{"week": 3, "amount": 25, "from": "alice", "to": "bob"}]
+    assert pot.traded_net("x", weeks=range(1, 6)) == {"bob": 25, "alice": -25}
+
+
+def test_an_incomplete_trade_moves_nothing(monkeypatch):
+    monkeypatch.setattr(pot.sleeper, "get_rosters", lambda lid: [
+        {"roster_id": 1, "owner_id": "alice"}, {"roster_id": 2, "owner_id": "bob"}])
+    monkeypatch.setattr(pot.sleeper, "get_transactions", lambda lid, wk: [
+        {"type": "trade", "status": "failed",
+         "waiver_budget": [{"sender": 1, "receiver": 2, "amount": 25}]}])
+    assert pot.faab_trades("x", weeks=[1]) == []

@@ -829,7 +829,7 @@ def render_pot_strip() -> None:
     budget = int(config.faab_rules()["budget"])
     # You owe what you SPEND. Nobody has bid yet, so the pot is genuinely $0 -
     # not $800 waiting to be handed over.
-    spent = sum(budget - r["budget_left"] for r in rows)
+    spent = sum(r["spent"] for r in rows)
     owed = spent
     cap = int(pot.cap_amount()[0])
     buy_in = int(config.buy_in() or 0)
@@ -865,7 +865,7 @@ def render_pot_strip() -> None:
             700 if r["owner_id"] == VIEW else 550, esc(who(r["owner_id"])),
             esc(team_of(r["owner_id"]))),
         '<span class="mono">$%d</span>' % r["budget_left"],
-        '<span class="mono">$%d</span>' % (budget - r["budget_left"]),
+        '<span class="mono">$%d</span>' % r["spent"],
     ] for r in sorted(rows, key=lambda x: x["budget_left"])],
         me_row=None)
     if owed == 0:
@@ -1731,10 +1731,14 @@ def render_pot(leaf=None):
     spends = {}
     try:
         spends = pot.spend_from_rosters(LG)
+        try:
+            traded = pot.traded_net(LG)
+        except Exception:
+            traded = {}
     except Exception:
         spends = {}
     spends = {o: spends.get(o, 0) for o in owner_ids()}
-    settlement = pot.settle(spends)
+    settlement = pot.settle(spends, traded=traded)
     complete = (lg.get("status") or "") == "complete"
 
     if leaf in (None, "pot"):

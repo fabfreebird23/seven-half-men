@@ -259,3 +259,29 @@ def test_win_rate_alone_cannot_carry_a_team_that_scores_nothing(league, monkeypa
             PLAYERS, ADP, monkeypatch)
     rows = {r["owner_id"]: r for r in season.power()}
     assert rows["strong"]["results_score"] > rows["lucky"]["results_score"] * 0.8
+
+
+def test_budget_left_accounts_for_bought_and_sold_faab(league, monkeypatch):
+    """Subtracting spend from a flat budget reported the seller as richer than
+    he is and the buyer as poorer - and on the Home page that is the number
+    people check before deciding what to bid."""
+    _league(league, {"buyer": (0, 0, 0, []), "seller": (0, 0, 0, [])})
+    monkeypatch.setattr(season.sleeper, "get_rosters", lambda lid: [
+        roster(1, "buyer", used=120), roster(2, "seller", used=10)])
+    monkeypatch.setattr(season.pot, "traded_net",
+                        lambda lid, weeks=None: {"buyer": 50, "seller": -50})
+    rows = {r["owner_id"]: r for r in season.standings()}
+    assert rows["buyer"]["entitlement"] == 150
+    assert rows["buyer"]["budget_left"] == 30, "bought $50, spent $120"
+    assert rows["seller"]["entitlement"] == 50
+    assert rows["seller"]["budget_left"] == 40, "sold $50, spent $10"
+    # Spend is spend either way - it is what reaches the pot.
+    assert rows["buyer"]["spent"] == 120 and rows["seller"]["spent"] == 10
+
+
+def test_a_league_with_no_faab_trades_is_unchanged(league, monkeypatch):
+    _league(league, {"a": (0, 0, 0, [])})
+    monkeypatch.setattr(season.sleeper, "get_rosters", lambda lid: [roster(1, "a", used=31)])
+    monkeypatch.setattr(season.pot, "traded_net", lambda lid, weeks=None: {})
+    r = season.standings()[0]
+    assert r["entitlement"] == 100 and r["budget_left"] == 69 and r["spent"] == 31

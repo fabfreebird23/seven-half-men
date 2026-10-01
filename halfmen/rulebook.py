@@ -371,6 +371,11 @@ def sections() -> List[tuple]:
  ("note", "<b>A quiet season is a cheap season.</b> If nobody bids, the pot is empty and the "
           "Chase winner takes nothing. That is intended: the prize is funded by exactly the "
           "aggression it exists to price."),
+ ("note", "<b>FAAB is tradeable, and trading it owes nothing.</b> A transfer is not a purchase "
+          "&mdash; no dollar reaches the pot until somebody actually bids it. What the trade "
+          "moves is how much each of you is <em>allowed</em> to bid: buy $50 of a rival&rsquo;s "
+          "budget and you may spend $150 and will owe every dollar of it; sell $50 and you may "
+          "spend $50. So a trade changes who pays, never how much the league pays."),
  ("table", ["Where it goes", ""], [
    ["First $%d — the third-place prize" % _cap(), "to whoever wins the Chase bracket"],
    ["Everything above that", "rejoins the payout: %d%% champion, %d%% runner-up, %d%% third, "

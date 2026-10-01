@@ -40,6 +40,13 @@ class Bill:
     owner_id: str
     spent: int
     owed: int
+    # FAAB moved by trade. `entitlement` is what this manager could legitimately
+    # bid all season: the budget, plus anything traded in, minus anything traded
+    # out. It is the cap on the bill - not a flat budget - because a manager who
+    # bought $50 of someone else's FAAB can legitimately spend $150.
+    received: int = 0
+    sent: int = 0
+    entitlement: int = 0
 
     @property
     def share(self) -> float:
@@ -125,13 +132,29 @@ def _share(amount: int, split: Dict[str, float]) -> Dict[str, int]:
 
 
 def settle(spend_by_owner: Dict[str, int], *, chase_winner: str = None,
-           champion: str = None) -> Settlement:
+           champion: str = None, traded: Dict[str, int] = None) -> Settlement:
+    """Who owes what. `traded` is owner -> NET FAAB received by trade, so a
+    manager who bought budget is billed for all of it when he spends it.
+
+    Without that, trading FAAB quietly drained the pot. The bill used to be
+    capped at a flat budget, so a manager who traded in $50 and then spent $150
+    was billed $100 - and the $50 he bought went to the seller instead of into
+    the pot. It is still a cap, because an invoice to a real person should not
+    exceed what he could possibly have bid; it just now knows what that is.
+    """
     fr = config.faab_rules()
     budget = int(fr["budget"])
     cap, derived = cap_amount()
-    # You owe what you SPENT. Capped at the budget so a data oddity cannot
-    # bill somebody for more than they could possibly have bid.
-    bills = [Bill(owner_id=str(o), spent=int(s), owed=min(budget, max(0, int(s))))
+    net = {str(k): int(v) for k, v in (traded or {}).items()}
+
+    def bill(owner: str, spent: int) -> Bill:
+        n = net.get(str(owner), 0)
+        ent = max(0, budget + n)
+        return Bill(owner_id=str(owner), spent=max(0, int(spent)),
+                    owed=min(ent, max(0, int(spent))),
+                    received=max(0, n), sent=max(0, -n), entitlement=ent)
+
+    bills = [bill(o, s)
              for o, s in sorted(spend_by_owner.items(), key=lambda kv: -int(kv[1]))]
     total = sum(b.owed for b in bills)
     to_chase = min(total, cap)
@@ -193,10 +216,63 @@ def _cumulative(xs: Sequence[int]) -> List[int]:
     return out
 
 
+def faab_trades(league_id: str, weeks: Sequence[int] = None) -> List[dict]:
+    """Every FAAB dollar moved between managers, from the transaction log.
+
+    Sleeper records a traded budget as a `waiver_budget` array on the trade:
+    [{"sender": roster_id, "receiver": roster_id, "amount": n}]. It is NOT a
+    waiver claim and must never be counted as spend - the money has not been
+    used yet, it has only changed hands.
+    """
+    roster_owner = {int(r["roster_id"]): str(r.get("owner_id") or "")
+                    for r in sleeper.get_rosters(league_id)}
+    weeks = list(weeks or range(1, 19))
+    out: List[dict] = []
+    for wk in weeks:
+        try:
+            rows = sleeper.get_transactions(league_id, wk) or []
+        except Exception:
+            continue
+        for t in rows:
+            if t.get("status") != "complete":
+                continue
+            for mv in (t.get("waiver_budget") or []):
+                try:
+                    amt = int(mv.get("amount") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if amt <= 0:
+                    continue
+                out.append({
+                    "week": wk, "amount": amt,
+                    "from": roster_owner.get(int(mv.get("sender") or -1), ""),
+                    "to": roster_owner.get(int(mv.get("receiver") or -1), ""),
+                })
+    return out
+
+
+def traded_net(league_id: str, weeks: Sequence[int] = None) -> Dict[str, int]:
+    """owner -> net FAAB received by trade. Negative means they sold budget."""
+    net: Dict[str, int] = {}
+    for mv in faab_trades(league_id, weeks):
+        if mv["to"]:
+            net[mv["to"]] = net.get(mv["to"], 0) + mv["amount"]
+        if mv["from"]:
+            net[mv["from"]] = net.get(mv["from"], 0) - mv["amount"]
+    return net
+
+
 def spend_from_rosters(league_id: str) -> Dict[str, int]:
-    """Sleeper tracks remaining budget on the roster itself
-    (`settings.waiver_budget_used`), which is the authoritative number once the
-    season is over - use it rather than replaying transactions."""
+    """FAAB actually bid on waiver claims, per owner.
+
+    Read off `settings.waiver_budget_used` rather than replayed from the log,
+    because it is the number Sleeper itself settles on at season end.
+
+    It counts WAIVER SPEND only. Budget moved by trade does not appear here,
+    which is correct: a transfer is not a purchase. The trade shows up instead
+    in `traded_net`, where it raises or lowers what that manager is allowed to
+    spend - see settle().
+    """
     out: Dict[str, int] = {}
     for r in sleeper.get_rosters(league_id):
         owner = str(r.get("owner_id") or "")

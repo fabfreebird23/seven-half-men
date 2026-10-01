@@ -250,6 +250,17 @@ rules:
     # nothing. That is the intended shape - the prize is funded by the
     # aggression it is meant to price.
     owe: spent               # spent | unspent
+    # FAAB is tradeable, and a transfer is NOT a purchase - no dollar enters
+    # the pot until somebody actually bids it. What a trade changes is how
+    # much each manager is ALLOWED to bid: buy $50 of someone's budget and you
+    # may spend $150, sell $50 and you may spend $50.
+    #
+    # That allowance is the cap on the bill. Capping at a flat $100 instead
+    # was a hole: a manager who bought $50 and spent $150 was billed $100, and
+    # the $50 he bought went to the seller rather than into the pot. Raised by
+    # a league mate, 2026-10-01, before anyone had traded any.
+    tradeable: true
+    bill_cap: entitlement    # budget + bought - sold
     # The cap is the THIRD-PLACE PRIZE, not a fixed number - voted 2026-08-06.
     # Deriving it means it can never drift above a playoff finish, at any buy-in:
     # at a flat $200 a bubble team in week 14 was close to indifferent between
