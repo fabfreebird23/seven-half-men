@@ -70,14 +70,77 @@ class Price:
     eligible: bool = True
     reason: str = ""
     from_rookie_draft: bool = False   # priced off the rookie-draft premium
+    adp_rank: Optional[float] = None  # overall consensus rank, for keeper value
 
     @property
-    def surplus(self) -> Optional[int]:
-        """Rounds of value: what the market says minus what you pay. Positive is
-        good - paying a 9th for a 2nd-round player is +7."""
+    def rounds_surplus(self) -> Optional[int]:
+        """Rounds of value: what the market says minus what you pay. Paying a
+        9th for a 2nd-round player is +7. The old measure, still used to
+        PROJECT slips (see valueboard.rows) so keeper value isn't circular."""
         if self.final_round is None or self.adp_round is None:
             return None
         return self.final_round - self.adp_round
+
+    @property
+    def surplus(self) -> Optional[int]:
+        """What keeping him is worth: his talent (talent_value at his ADP rank)
+        minus what his cost round's pick would actually land in this league's
+        keeper-depleted draft (the curve set_value_curve installs). Falls back
+        to rounds_surplus when either half is unknown. The rounds measure
+        scored an elite player kept early as ~0 - his 1st-round pick would only
+        have landed whoever was left once every team's keepers were gone."""
+        if _VALUE_CURVE and self.adp_rank and self.final_round:
+            return int(talent_value(self.adp_rank) - _VALUE_CURVE.get(int(self.final_round), 1))
+        return self.rounds_surplus
+
+
+# --------------------------------------------------------------------------
+# keeper value: talent minus what the cost round's pick actually lands
+# --------------------------------------------------------------------------
+_VALUE_CURVE: Optional[Dict[int, int]] = None
+
+
+def talent_value(rank) -> int:
+    """Draft-value curve at an overall ADP rank: #1 = 100, decaying ~3.5% a
+    pick - steep on purpose, the gap between the 1st and 35th player is far
+    bigger than between the 60th and 95th. Same curve as the Kreeper and B&B
+    hubs and the Draft Room."""
+    return max(1, round(100 * (0.965 ** (max(1, int(rank)) - 1))))
+
+
+def replacement_by_round(kept, n_teams: int, rounds: int) -> Dict[int, int]:
+    """{round: talent of the player that round's pick lands once keepers are
+    off the board}. `kept` is [(adp_rank, cost_round)] for every keeper. Kept
+    players leave the pool AND occupy their round's picks, so each round has
+    fewer free picks than teams; a round is valued at its middle free pick."""
+    kept_ranks = {int(r) for r, _ in kept if r}
+    per_round = Counter(int(c) for _, c in kept if c)
+
+    def nth_available(n: int) -> int:
+        seen, rank = -1, 0
+        while True:
+            rank += 1
+            if rank in kept_ranks:
+                continue
+            seen += 1
+            if seen >= n:
+                return rank
+
+    out, cum = {}, 0
+    for rnd in range(1, max(1, rounds) + 1):
+        free = max(1, n_teams - per_round[rnd])
+        out[rnd] = talent_value(nth_available(int(cum + free / 2)))
+        cum += free
+    return out
+
+
+def set_value_curve(curve: Optional[Dict[int, int]]) -> None:
+    global _VALUE_CURVE
+    _VALUE_CURVE = dict(curve) if curve else None
+
+
+def value_curve() -> Optional[Dict[int, int]]:
+    return dict(_VALUE_CURVE) if _VALUE_CURVE else None
 
 
 # --------------------------------------------------------------------------

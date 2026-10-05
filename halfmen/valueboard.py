@@ -52,21 +52,25 @@ def price_for(pid: str, *, hist, pmap: dict, owner: str = None,
     adp = adp_board.adp_round_for_player(meta) if meta else None
     last_round = int(last_round or config.veteran_rounds())
 
+    rank = _market_rank(str(pid), pmap)
     if slot is not None and hist.is_rookie_keeper_eligible(str(pid)):
-        return engine.price_rookie(str(pid), name, pos, slot=int(slot),
-                                   last_round=last_round, adp_round=adp)
-
-    year = hist.keeper_year(str(pid)) + 1
-    anchor = hist.keeper_anchor(str(pid))
-    return engine.price_regular(
-        str(pid), name, pos,
-        draft_round=anchor if anchor else hist.draft_round(str(pid)),
-        year=year, adp_round=adp,
-        from_rookie_draft=hist.has_rookie_draft_provenance(str(pid)))
+        p = engine.price_rookie(str(pid), name, pos, slot=int(slot),
+                                last_round=last_round, adp_round=adp)
+    else:
+        year = hist.keeper_year(str(pid)) + 1
+        anchor = hist.keeper_anchor(str(pid))
+        p = engine.price_regular(
+            str(pid), name, pos,
+            draft_round=anchor if anchor else hist.draft_round(str(pid)),
+            year=year, adp_round=adp,
+            from_rookie_draft=hist.has_rookie_draft_provenance(str(pid)))
+    if p is not None and rank < 1e9:
+        p.adp_rank = rank
+    return p
 
 
 def _plausible_slip(priced: List["engine.Price"], slot_of: Dict[str, int],
-                    kr: dict) -> List["engine.Price"]:
+                    kr: dict, by_value: bool = False) -> List["engine.Price"]:
     """The players a manager would actually put on next year's slip.
 
     Best `rookie` rookies into the rookie slots and best `regular` of everyone
@@ -74,8 +78,11 @@ def _plausible_slip(priced: List["engine.Price"], slot_of: Dict[str, int],
     spending at all. This is a projection, not the manager's decision, and it
     exists only so the bump has a realistic set of players to compete over.
     """
+    # ROUNDS, not keeper value: these projected slips are what the value curve
+    # is built from, so ranking them by value would be circular.
     def by_surplus(p):
-        return -(p.surplus if p.surplus is not None else -99)
+        s = p.surplus if by_value else p.rounds_surplus
+        return -(s if s is not None else -99)
 
     rookies = [p for p in priced if str(p.player_id) in slot_of]
     others = sorted([p for p in priced if str(p.player_id) not in slot_of], key=by_surplus)
@@ -116,6 +123,8 @@ def rows(league_id: str = None, season: int = None, hist=None) -> List[dict]:
     kr = config.keeper_rules()
     slots = int(kr["rookie"])
     out: List[dict] = []
+    collected = []          # (owner, price) - emitted once the value curve exists
+    kept = []               # (adp_rank, final_round) for every projected keeper
     for owner, pids in rosters.items():
         # There are only `slots` rookie keeper slots. Every rookie on the
         # roster used to be priced as though he were in the first one, which
@@ -147,33 +156,69 @@ def rows(league_id: str = None, season: int = None, hist=None) -> List[dict]:
             if p not in slip:
                 p.final_round = p.base_round
                 p.bumped = False
+        kept += [(p.adp_rank, p.final_round) for p in slip if p.adp_rank and p.final_round]
+        collected += [(owner, p) for p in priced]
+
+    # Keeper value needs to know how depleted the draft gets. There are no real
+    # keepers yet in year one, so every team's PROJECTED slip stands in (picked
+    # by rounds, so this isn't circular); real submitted keepers would be the
+    # better source once a season of them exists.
+    engine.set_value_curve(engine.replacement_by_round(
+        kept, len(rosters), int(config.veteran_rounds())))
+
+    # A second pass, by VALUE. Slips projected by rounds never keep an elite
+    # player at his 1st-round price (0 rounds of surplus), so pass one leaves
+    # the stars in the pool and makes an early pick look better than it is.
+    # Re-projecting every team's slip by value - with pass one's curve - puts
+    # them back, and the curve is rebuilt from that.
+    # Only the CURVE comes out of this pass: the prices shown stay pass one's
+    # (the bump among the rounds-projected slip), so snapshot and restore them.
+    snapshot = [(p, p.final_round, p.bumped) for _, p in collected]
+    kept = []
+    by_owner = {}
+    for owner, p in collected:
+        by_owner.setdefault(owner, []).append(p)
+    for owner, priced in by_owner.items():
         for p in priced:
-            out.append({
-                "owner_id": owner, "player_id": p.player_id, "name": p.name,
-                "position": p.position, "kind": p.kind, "year": p.year,
-                "cost": p.final_round, "base": p.base_round, "bumped": p.bumped,
-                "adp": p.adp_round, "surplus": p.surplus,
-                "eligible": p.eligible, "reason": p.reason,
-                "from_rookie_draft": p.from_rookie_draft,
-                # What this league actually paid for him, and the only
-                # valuation worth comparing a keeper price against in-season:
-                # the ADP board is the preseason consensus everyone drafted
-                # off, so measuring against that just replays August.
-                #
-                # None for a rookie-draft pick, deliberately. His round came
-                # off a different board - "round 1" there is the first rookie
-                # taken, not the first player in the league - and setting it
-                # against a veteran keeper round compares two scales. That he
-                # has no veteran round at all is the entire reason the
-                # rookie-draft premium exists.
-                # Ask HISTORY, not the Price. `from_rookie_draft` is only
-                # set on the regular-keeper path, so a rookie-draft pick
-                # sitting in a rookie SLOT comes back False and slipped
-                # through with a round off the wrong board.
-                "drafted_round": (
-                    None if hist.has_rookie_draft_provenance(str(p.player_id))
-                    else hist.draft_round(str(p.player_id))),
-            })
+            p.final_round, p.bumped = p.base_round, False
+        eligible = [p for p in priced if p.kind == "rookie"]
+        slot_of = {str(p.player_id): i for i, p in enumerate(eligible)}
+        slip = [p for p in _plausible_slip(priced, slot_of, kr, by_value=True)
+                if (p.surplus or 0) > 0]
+        engine.allocate(slip, owned.get(owner, Counter()))
+        kept += [(p.adp_rank, p.final_round) for p in slip if p.adp_rank and p.final_round]
+    engine.set_value_curve(engine.replacement_by_round(
+        kept, len(rosters), int(config.veteran_rounds())))
+    for p, fr, bumped in snapshot:
+        p.final_round, p.bumped = fr, bumped
+    for owner, p in collected:
+        out.append({
+            "owner_id": owner, "player_id": p.player_id, "name": p.name,
+            "position": p.position, "kind": p.kind, "year": p.year,
+            "cost": p.final_round, "base": p.base_round, "bumped": p.bumped,
+            "adp": p.adp_round, "surplus": p.surplus, "rounds": p.rounds_surplus,
+            "adp_rank": p.adp_rank,
+            "eligible": p.eligible, "reason": p.reason,
+            "from_rookie_draft": p.from_rookie_draft,
+            # What this league actually paid for him, and the only
+            # valuation worth comparing a keeper price against in-season:
+            # the ADP board is the preseason consensus everyone drafted
+            # off, so measuring against that just replays August.
+            #
+            # None for a rookie-draft pick, deliberately. His round came
+            # off a different board - "round 1" there is the first rookie
+            # taken, not the first player in the league - and setting it
+            # against a veteran keeper round compares two scales. That he
+            # has no veteran round at all is the entire reason the
+            # rookie-draft premium exists.
+            # Ask HISTORY, not the Price. `from_rookie_draft` is only
+            # set on the regular-keeper path, so a rookie-draft pick
+            # sitting in a rookie SLOT comes back False and slipped
+            # through with a round off the wrong board.
+            "drafted_round": (
+                None if hist.has_rookie_draft_provenance(str(p.player_id))
+                else hist.draft_round(str(p.player_id))),
+        })
     out.sort(key=lambda r: (-(r["surplus"] if r["surplus"] is not None else -99),
                             r["cost"] or 99))
     return out
@@ -226,8 +271,10 @@ def free_agents(league_id: str = None, limit: int = 30, hist=None) -> List[dict]
             carried = bool(hist.draft_round(pid) or hist.keeper_year(pid))
         else:
             cost, kind, carried = engine.waiver_anchor(last), "waiver", False
+        curve = engine.value_curve()
+        value = (engine.talent_value(row["rank"]) - curve.get(int(cost), 1)) if curve else cost - adp
         out.append({"name": row["name"], "position": row["position"], "player_id": pid,
-                    "cost": cost, "adp": adp, "surplus": cost - adp,
+                    "cost": cost, "adp": adp, "surplus": value, "rounds": cost - adp,
                     "kind": kind, "carried": carried})
         if len(out) >= limit:
             break

@@ -87,8 +87,11 @@ def get_draft_picks(draft_id: str, ttl: int = 900) -> List[Dict[str, Any]]:
     return _disk("picks_%s" % draft_id, ttl, lambda: _get("draft/%s/picks" % draft_id) or [])
 
 
-def get_matchups(league_id: str, week: int) -> List[Dict[str, Any]]:
-    return _disk("matchups_%s_%s" % (league_id, week), 1800,
+def get_matchups(league_id: str, week: int, ttl: int = 1800) -> List[Dict[str, Any]]:
+    """One week's per-roster scores. `ttl` is 30 min by default; the live
+    pages pass 30s while a game is on (disk-cached, so that's one Sleeper call
+    per 30s however many phones are open)."""
+    return _disk("matchups_%s_%s" % (league_id, week), ttl,
                  lambda: _get("league/%s/matchups/%s" % (league_id, week)) or [])
 
 

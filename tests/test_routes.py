@@ -19,7 +19,8 @@ SRC = Path(APP).read_text()
 
 
 def _groups():
-    ns = {}
+    from halfmen import config
+    ns = {"SEASON": config.season()}      # labels like "2027 Keepers" use it
     exec(re.search(r"GROUPS = \{.*?\n\}\n", SRC, re.S).group(0), ns)
     return ns["GROUPS"]
 
@@ -40,7 +41,7 @@ def test_every_leaf_in_the_nav_is_covered_here():
     """The count is deliberately hard-coded: adding a leaf without adding it to
     the walk below would leave a route untested, and most of them are dark in
     year one so nothing else would notice."""
-    assert len(ALL) == 12   # 10 leaves + home + rules
+    assert len(ALL) == 15   # 13 leaves + home + rules
 
 
 @pytest.mark.parametrize("qp", ALL, ids=lambda q: "/".join(q.values()))
@@ -306,10 +307,15 @@ def test_a_retired_link_lands_where_its_content_went(old, expect):
         assert got.get(k) == v, "%s -> %s" % (old, got)
 
 
-def test_the_in_season_sheet_carries_no_group_headings():
-    """Two destinations do not need sorting into categories, and a heading
-    reading "The Wire" above an item reading "The Wire" is noise."""
-    assert all(not glabel for _, glabel, _ in _groups()["inseason"])
+def test_the_in_season_sheet_headings_are_never_noise():
+    """In-season grew to six destinations (This Week's Live, Matchup and
+    next year's keepers, then the league pages), so it has headings now - but a
+    heading reading "The Wire" above a lone item reading "The Wire" is still
+    noise, and the league pages sit under one heading, not one each."""
+    groups = _groups()["inseason"]
+    assert groups[0][1] == "This Week"
+    for _, glabel, leaves in groups:
+        assert not (len(leaves) == 1 and glabel == leaves[0][1])
     assert any(glabel for _, glabel, _ in _groups()["offseason"])
 
 

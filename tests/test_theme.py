@@ -57,6 +57,10 @@ def test_the_stylesheet_only_references_tokens_the_palette_defines():
     import re
     defined = set(theme.palette_vars(theme.DEFAULT)) | {
         "--f-display", "--f-body", "--f-data", "--f-script", "--r", "--r-sm"}
+    # plus anything the stylesheet declares itself: the Kreeper-name aliases in
+    # :root and component-local colours like a badge's --c. A typo'd token is
+    # declared nowhere, so it still fails here.
+    defined |= set(re.findall(r"(--[a-z0-9-]+)\s*:", theme.css()))
     used = set(re.findall(r"var\((--[a-z0-9-]+)\)", theme.css()))
     missing = used - defined
     assert not missing, "stylesheet uses undefined tokens: %s" % sorted(missing)

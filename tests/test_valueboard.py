@@ -89,7 +89,14 @@ def test_the_board_sorts_by_surplus(monkeypatch):
                                                       anchors={"1": 9, "3": 4}))
     surpluses = [r["surplus"] for r in got]
     assert surpluses == sorted(surpluses, reverse=True)
-    assert got[0]["name"] == "Jeremiah Smith", "the R13 rookie keeper is the best value"
+    # Keeper value is talent minus what the cost round's pick would land, so
+    # an elite back at a 9th-round price outranks a rookie at R13. (By the old
+    # rounds measure - 13-2 vs 9-2 - the rookie led; that's the flaw the value
+    # measure fixes.) The rounds figure is still carried alongside.
+    assert got[0]["name"] == "Jahmyr Gibbs"
+    smith = next(r for r in got if r["name"] == "Jeremiah Smith")
+    gibbs = got[0]
+    assert smith["rounds"] > gibbs["rounds"]
 
 
 def test_prices_account_for_the_bump(monkeypatch):

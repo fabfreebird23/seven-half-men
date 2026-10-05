@@ -77,15 +77,24 @@ TEXT_PAIRS: List[Tuple[str, str]] = [
 FONT_URL = ("https://fonts.googleapis.com/css2?"
             "family=Pacifico"
             "&family=Big+Shoulders+Display:wght@400..800"
-            "&family=Archivo:wdth,wght@75..125,400..800"
-            "&family=IBM+Plex+Mono:wght@400;500;600&display=swap")
+            "&family=Archivo:wdth,wght@75..125,400..800&display=swap")
 
 _FONTS = """
   --f-display:'Big Shoulders Display','Archivo Narrow',system-ui,sans-serif;
   --f-body:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
-  --f-data:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  /* numbers in Archivo with aligned (tabular) figures, not a typewriter
+     mono: they still line up in columns, without looking typed */
+  --f-data:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   --f-script:'Pacifico','Snell Roundhand','Brush Script MT',cursive;
   --r:9px; --r-sm:7px;
+
+  /* Kreeper-hub component names, mapped onto this palette so the ported
+     weekly screens (Live, Matchup, the Command Center) speak Bloody Sunday:
+     crimson where Kreeper uses royal, blue where it uses gold. */
+  --panel:var(--card); --panel2:var(--card2); --muted:var(--ink2);
+  --teal:var(--good); --red:var(--bad); --amber:var(--warn); --royal:var(--acc); --g1:var(--acc);
+  --grad:linear-gradient(var(--acc), var(--acc)); --hl:linear-gradient(var(--acc2), var(--acc2));
+  --font-display:var(--f-display); --font-body:var(--f-body); --display-wt:800; --mono:var(--f-data);
 """
 
 SLEEPER_IMG = "https://sleepercdn.com/content/nfl/players/thumb/{pid}.jpg"
@@ -148,7 +157,7 @@ _TEMPLATE = """
   padding-top:1.4rem; padding-bottom:4rem; max-width:1160px;
 }
 html, body, [class*="css"], .stMarkdown, p, li, span, label{
-  font-family:var(--f-body); color:var(--ink);
+  font-family:var(--f-body); color:var(--ink); font-variant-numeric:tabular-nums;
   -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
 }
 .mono, .num{ font-family:var(--f-data); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
@@ -857,6 +866,242 @@ table.board td.rd{ background:var(--card2); font-family:var(--f-data); font-size
   *{ transition:none !important; }
   svg.liq .wv, svg.liq .bob{ animation:none !important; }
 }
+
+/* ---- whose phone it is: the team chip on the masthead + its dropdown ---- */
+.mast .mechip{ display:inline-flex; align-items:center; gap:7px; align-self:center; cursor:pointer;
+  user-select:none; background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.35);
+  border-radius:999px; padding:3px 12px 3px 3px; font-family:var(--f-body); font-size:12px;
+  font-weight:600; color:#fff; white-space:nowrap; text-transform:none; letter-spacing:0; }
+.mast .mechip i{ font-style:normal; opacity:.75; }
+.mast .mechip .av{ width:22px; height:22px; border-radius:50%; background:#fff; color:var(--acc);
+  display:inline-flex; align-items:center; justify-content:center; font-family:var(--f-display);
+  font-weight:800; font-size:10px; }
+.bb-pop.bb-pop-me{ top:70px; bottom:auto; left:auto; right:16px; transform:translateY(-8px) scale(.98);
+  width:min(300px, calc(100% - 32px)); }
+.bb-pop.bb-pop-me.on{ transform:none; }
+.bb-item .sub{ font-size:11px; font-weight:500; color:var(--dim); margin-left:10px; white-space:nowrap; float:right; }
+@media (max-width:640px){ .mast .mechip{ margin-left:auto; } .mast .yr{ display:none; } }
+
+/* ---- weekly screens ported from the Kreeper hub (see the aliases in :root) ---- */
+/* ================= This Week: Draft Room layout, Kreeper skin =================
+   Hero matchup card, action cards, panel tables, the slate, matchup cards and
+   slot-by-slot rows. Ported from the approved remock. */
+.mechip{ display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,.26);
+  border:1px solid rgba(255,255,255,.28); border-radius:999px; padding:4px 12px 4px 4px;
+  font-size:12px; font-weight:600; color:#fff !important; text-decoration:none !important; white-space:nowrap; }
+.mechip i{ font-style:normal; opacity:.7; }
+/* the site-wide link rule ([data-testid=stMarkdownContainer] a, !important)
+   would paint the chip, its initials and the picker cards accent-purple */
+[data-testid="stMarkdownContainer"] a.mechip{ color:#fff !important; }
+[data-testid="stMarkdownContainer"] a.tp{ color:var(--ink) !important; }
+[data-testid="stMarkdownContainer"] span.wav.wav{ color:#111 !important; }   /* .wav.wav: beats the span reset below */
+.mh-right{ display:flex; align-items:center; gap:14px; }
+.wav{ width:46px; height:46px; border-radius:10px; background:#fff; color:#111; display:inline-flex;
+  align-items:center; justify-content:center; font-family:var(--font-display); font-size:17px;
+  font-weight:700; flex:0 0 auto; }
+.wav.sm{ width:24px; height:24px; border-radius:50%; font-size:10px; }
+.wav.dim{ background:#d8d8de; }
+.weyebrow{ font-size:10px; font-weight:600; letter-spacing:1.6px; text-transform:uppercase;
+  color:var(--muted); margin:0 0 8px; }
+.weyebrow.pad{ margin:16px 0 8px; }
+
+.hero{ position:relative; border:1px solid var(--line); border-radius:14px; overflow:hidden; padding:18px 18px 0;
+  background:var(--panel); border-top:3px solid var(--royal); }
+.hrow{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.wwho{ display:flex; align-items:center; gap:12px; min-width:0; }
+.wwho.r{ text-align:right; }
+.wwho b{ display:block; font-family:var(--font-display); font-size:21px; font-weight:600; line-height:1.1; }
+.wwho em{ font-style:normal; font-size:10px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); }
+.wkpill{ font-size:10.5px; font-weight:600; letter-spacing:1.4px; color:#fff; border:1px solid rgba(255,255,255,.22);
+  background:rgba(251,8,73,.22); border-radius:999px; padding:4px 12px; white-space:nowrap; }
+.hnum{ display:flex; align-items:baseline; justify-content:space-between; margin:10px 0 8px; }
+.hnum .big{ font-family:var(--font-display); font-size:58px; font-weight:600; line-height:1; }
+.big.dim{ color:var(--dim); }
+.hk{ font-size:10px; font-weight:600; letter-spacing:1.8px; color:var(--muted); text-transform:uppercase; }
+.wpbar{ height:10px; border-radius:6px; background:rgba(255,255,255,.08); overflow:hidden; }
+.wpbar.sm{ height:6px; margin:10px 0 6px; }
+.wpbar i{ display:block; height:100%; background:var(--hl); border-radius:6px; }
+.hrow.lab{ margin:8px 0 14px; font-size:11px; color:var(--muted); }
+.hrow.lab b{ color:var(--teal); font-size:15px; }
+.hcells{ display:grid; grid-template-columns:repeat(4,1fr); margin:0 -18px; border-top:1px solid var(--line); }
+.hc{ padding:12px 18px 14px; border-left:1px solid var(--line); }
+.hc:first-child{ border-left:none; }
+.hc i{ display:block; font-style:normal; font-size:9.5px; font-weight:600; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; }
+.hc b{ display:block; font-family:var(--font-display); font-size:24px; font-weight:600; margin:3px 0 1px; }
+.hc b.good{ color:var(--teal); } .hc b.amber{ color:var(--amber); } .hc b.bad{ color:var(--red); }
+.hc span{ font-size:11.5px; color:var(--muted); }
+.lockline{ font-size:10.5px; font-weight:600; letter-spacing:1.4px; color:var(--muted); margin:14px 0 16px; text-transform:uppercase; }
+.lockline b{ color:var(--g1); }
+
+.todo{ --c:var(--amber); display:flex; gap:14px; align-items:center; background:var(--panel);
+  border:1px solid var(--line); border-radius:10px; padding:13px 14px; margin-bottom:8px; box-shadow:inset 3px 0 0 var(--c); }
+.todo.bad{ --c:var(--red); } .todo.good{ --c:var(--teal); }
+.todo .ic{ width:30px; height:30px; border-radius:8px; border:1px solid var(--c); color:var(--c);
+  display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+.todo b{ display:block; font-size:14px; font-weight:600; }
+.todo span{ font-size:12px; color:var(--muted); }
+.todo span b{ display:inline; color:var(--ink); }
+.todo .tv{ margin-left:auto; text-align:right; }
+.todo .tv b{ font-family:var(--font-display); font-size:22px; color:var(--c); }
+.todo .tv i{ font-style:normal; font-size:9px; font-weight:600; letter-spacing:1.4px; color:var(--muted); }
+.todo-foot{ font-size:12px; color:var(--muted); background:var(--panel); border:1px solid var(--line);
+  border-radius:10px; padding:11px 14px; }
+.todo-foot b{ color:var(--ink); }
+
+table.dt{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line);
+  border-radius:10px; overflow:hidden; font-size:13.5px; }
+table.dt td{ padding:8px 12px; border-top:1px solid var(--line); vertical-align:middle; }
+table.dt tr:first-child td{ border-top:none; }
+table.dt td.two b{ display:block; font-weight:600; font-size:13.5px; }
+table.dt td.two span{ display:block; font-size:10.5px; color:var(--muted); margin-top:2px; }
+table.dt td.two.w b{ color:var(--teal); }
+table.dt td.two b .pos{ display:inline !important; font-size:10px; color:var(--muted); font-weight:500; margin-left:4px; }
+table.dt td.rk{ font-family:var(--font-display); font-weight:600; color:var(--muted); font-size:16px; width:30px; text-align:center; }
+table.dt td.num{ text-align:right; white-space:nowrap; font-weight:500; }
+table.dt td.mut{ color:var(--muted); }
+table.dt tr.swap td{ background:rgba(215,112,16,.08); }
+.wslot{ display:inline-block; min-width:42px; text-align:center; font-size:10px; font-weight:700;
+  border:1px solid; border-radius:6px; padding:3px 6px; }
+td.barc{ width:30%; }
+.wbar{ height:6px; border-radius:4px; background:rgba(255,255,255,.07); overflow:hidden; }
+.wbar i{ display:block; height:100%; background:var(--hl); border-radius:4px; }
+
+.wstrip{ display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:6px; margin-bottom:6px; }
+.gm{ display:grid; grid-template-columns:1fr auto; gap:1px 8px; background:var(--panel); border:1px solid var(--line);
+  border-radius:8px; padding:8px 10px; font-size:12px; }
+.gm b{ text-align:right; } .gm em{ grid-column:1/-1; font-style:normal; font-size:9.5px; font-weight:600;
+  letter-spacing:1.2px; color:var(--muted); margin-top:3px; }
+.gm.in{ border-color:rgba(54,157,134,.6); } .gm.in em{ color:var(--teal); }
+.gm.pre{ border-color:rgba(87,142,213,.55); } .gm.pre em{ color:var(--g1); }
+.gm.post{ opacity:.55; padding:6px 9px; font-size:11px; }
+
+.lcard{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+.lcard.mine{ border-color:rgba(251,8,73,.5); box-shadow:0 0 0 1px rgba(251,8,73,.2) inset; margin-bottom:12px; padding-bottom:4px; }
+.lhead{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; }
+.lhead .two b{ font-family:var(--font-display); font-size:17px; font-weight:600; display:block; }
+.lhead .two span{ font-size:10.5px; color:var(--muted); display:block; }
+.lhead .two:last-child{ text-align:right; }
+.lhead .two.w b{ color:var(--teal); }
+.ls{ font-family:var(--font-display); font-size:30px; font-weight:600; display:flex; gap:8px; align-items:baseline; }
+.ls span{ color:var(--muted); font-size:18px; } .ls .dim{ color:var(--dim); }
+.lfoot{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); gap:8px; }
+.lfoot b{ color:var(--ink); }
+.lgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.lgrid .lhead{ grid-template-columns:1fr; gap:4px; }
+.lgrid .lhead .two:last-child{ text-align:left; }
+.lgrid .ls{ font-size:24px; } .lgrid .lfoot .mid{ display:none; }
+.forow{ display:grid; grid-template-columns:1fr 64px 1fr; align-items:center; border-top:1px solid var(--line);
+  margin:0 -14px; padding:0 14px; }
+.fo{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; }
+.fo.r{ flex-direction:row-reverse; text-align:right; }
+.fn b{ display:block; font-size:13.5px; font-weight:600; }
+.fn em{ font-style:normal; font-size:10px; color:var(--muted); }
+.fp{ font-family:var(--font-display); font-size:20px; font-weight:600; }
+.fo.live .fn em{ color:var(--g1); } .fo.inplay .fn em{ color:var(--teal); }
+.fp .proj{ color:var(--muted); font-size:15px; }
+.fp .proj::before{ content:"proj "; font-family:var(--font-body); font-size:9px; }
+.fm{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+.fm i{ font-style:normal; font-size:10px; color:var(--muted); }
+.fm i.pos{ color:var(--teal); } .fm i.neg{ color:var(--red); }
+.gs{ display:none; }
+
+.picker h3{ font-family:var(--font-display) !important; font-weight:600 !important; font-size:26px !important;
+  text-transform:uppercase; margin:2px 0 6px !important; padding:0 !important; }
+.picker p{ margin:0 0 14px; font-size:13px; line-height:1.55; color:var(--muted); }
+.tpgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+a.tp{ display:block; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--panel2);
+  text-decoration:none !important; color:var(--ink) !important; }
+a.tp b{ display:block; font-size:13.5px; } a.tp em{ font-style:normal; font-size:11px; color:var(--muted); }
+a.tp:hover, a.tp.on{ background:linear-gradient(var(--panel2),var(--panel2)) padding-box, var(--hl) border-box;
+  border:1px solid transparent; }
+.wk-cols{ display:grid; grid-template-columns:1fr 1.15fr; gap:20px; align-items:start; }
+
+/* The theme forces every markdown <span> to --ink (!important) so Streamlit's
+   own greys never leak in. These components colour their spans on purpose,
+   so they reset to inherit and re-assert their own colours at a higher
+   specificity. Slot chips carry their colour in --c because an inline
+   `color` would lose to the !important too. */
+[data-testid="stMarkdownContainer"] :is(.hero, .todo, .todo-foot, table.dt, .lcard, .wstrip, .picker, .mh-right, .lockline, .ktray, .kgrid) span{ color:inherit !important; }
+[data-testid="stMarkdownContainer"] .hero .big.dim, [data-testid="stMarkdownContainer"] .ls .dim{ color:var(--dim) !important; }
+[data-testid="stMarkdownContainer"] :is(.hk, .hc span, .todo div > span, table.dt td.two span, .lhead .two span, .ls span, .fp .proj, .kt span, .kc-top .pos, .ka){ color:var(--muted) !important; }
+[data-testid="stMarkdownContainer"] .kgrid span.wchip.amber.amber{ color:var(--amber) !important; border-color:rgba(215,112,16,.4); }
+[data-testid="stMarkdownContainer"] span.wchip.good.good{ color:var(--teal) !important; }
+[data-testid="stMarkdownContainer"] span.wchip.bad.bad{ color:var(--red) !important; }
+/* .wslot.wslot: out-ranks the inherit reset above, which carries a table.dt */
+[data-testid="stMarkdownContainer"] span.wslot.wslot{ color:var(--c, var(--muted)) !important; border-color:color-mix(in srgb, var(--c, #8a8a95) 35%, transparent);
+  background:color-mix(in srgb, var(--c, #8a8a95) 8%, transparent); }
+
+/* keeper outlook: the five-slot tray, then one card per player with his ladder */
+.hero.kh{ padding:0; } .hero.kh .hcells{ margin:0; border-top:none; }
+.ktray{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+.kt{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 10px; text-align:center; }
+.kt i{ display:block; font-style:normal; font-size:9.5px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.kt .kh-img{ width:52px; height:52px; border-radius:50%; object-fit:cover; background:var(--panel2); display:block; margin:0 auto 8px; }
+.kt b{ display:block; font-size:13px; font-weight:600; line-height:1.2; }
+.kt span{ display:block; font-size:11px; margin-top:3px; }
+.kt em{ font-style:normal; font-weight:600; } .kt em.good{ color:var(--teal); } .kt em.bad{ color:var(--red); }
+.kt.empty{ border-style:dashed; opacity:.6; } .kt.empty b{ font-family:var(--font-display); font-size:20px; margin:18px 0 4px; }
+.kgrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.kcard2{ display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--line);
+  border-radius:12px; padding:12px 14px; }
+.kcard2.keep{ box-shadow:inset 3px 0 0 var(--teal); } .kcard2.next{ box-shadow:inset 3px 0 0 var(--amber); }
+.kcard2.blocked{ opacity:.7; } .kcard2.cut{ opacity:.82; }
+.kcard2 .kh-img{ width:44px; height:44px; border-radius:50%; object-fit:cover; background:var(--panel2); flex:0 0 auto; }
+.kc-main{ flex:1; min-width:0; }
+.kc-top{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.kc-top b{ font-size:14px; font-weight:600; } .kc-top .pos{ font-size:11px; }
+.kc-top .wchip{ margin-left:auto; }
+.kladder{ display:flex; align-items:center; gap:6px; margin:8px 0 6px; flex-wrap:wrap; }
+.ks{ display:inline-flex; flex-direction:column; align-items:center; background:var(--panel2); border:1px solid var(--line);
+  border-radius:8px; padding:3px 9px; min-width:54px; }
+.ks i{ font-style:normal; font-size:9px; font-weight:600; letter-spacing:1px; color:var(--muted); }
+.ks b{ font-family:var(--font-display); font-size:15px; font-weight:600; }
+.ks.now{ border-color:rgba(251,8,73,.55); background:rgba(251,8,73,.12); }
+.ka{ font-size:12px; } .kb{ font-size:12px; color:var(--red) !important; font-weight:600; }
+.kc-how{ font-size:11px; color:var(--muted); }
+.kv{ text-align:right; flex:0 0 auto; }
+.kv b{ display:block; font-family:var(--font-display); font-size:24px; font-weight:600; line-height:1; }
+.kv i{ font-style:normal; font-size:9px; font-weight:600; letter-spacing:1.2px; color:var(--muted); text-transform:uppercase; }
+.kv.good b{ color:var(--teal); } .kv.bad b{ color:var(--red); }
+
+@media (max-width: 760px){
+  .wk-cols{ grid-template-columns:1fr; }
+  .hero .wkpill, .mh-right .mh-meta{ display:none; }
+  .wwho{ flex:1 1 0; gap:8px; } .wwho.r{ justify-content:flex-end; }
+  .wwho b{ font-size:15px; } .wwho em{ font-size:8.5px; letter-spacing:.8px; }
+  .wav{ width:34px; height:34px; font-size:13px; border-radius:8px; }
+  .hnum .big{ font-size:42px; }
+  .hcells{ grid-template-columns:1fr 1fr; } .hc:nth-child(3){ border-left:none; }
+  .hc:nth-child(n+3){ border-top:1px solid var(--line); } .hc b{ font-size:20px; }
+  .lgrid{ grid-template-columns:1fr; }
+  .lhead .two b{ font-size:14px; } .ls{ font-size:22px; }
+  .gl{ display:none; } .gs{ display:inline; } .fp{ font-size:17px; } .fn b{ font-size:12px; line-height:1.25; }
+  .forow{ grid-template-columns:1fr 46px 1fr; } .fo{ gap:6px; } .wslot{ min-width:36px; padding:2px 4px; font-size:9px; }
+  .tpgrid{ grid-template-columns:1fr; }
+  table.lb .pf{ display:none; } .pbar{ min-width:36px; }
+  table.lb td.two b{ font-size:12.5px; line-height:1.25; } .wchip{ padding:2px 6px; letter-spacing:.4px; }
+  .ktray{ grid-template-columns:repeat(3,1fr); } .kgrid{ grid-template-columns:1fr; }
+  .kt .kh-img{ width:40px; height:40px; } .kt b{ font-size:12px; }
+  td.barc{ width:22%; }
+}
+
+/* injury-risk badge in lineup rows: grey when it's the usual in-game risk,
+   amber worth watching, coral high, solid coral out. Doubled classes beat
+   the markdown-span colour reset. */
+table.dt td.risk{ width:1%; white-space:nowrap; text-align:right; padding-left:4px; padding-right:4px; }
+[data-testid="stMarkdownContainer"] td.risk span.rkp.rkp{ display:inline-block; font-size:10.5px; font-weight:600;
+  padding:2px 7px; border-radius:999px; border:1px solid var(--line); color:var(--muted) !important; }
+[data-testid="stMarkdownContainer"] td.risk span.rkp.rkp.watch{ color:var(--amber) !important;
+  border-color:color-mix(in srgb, var(--amber) 45%, transparent); }
+[data-testid="stMarkdownContainer"] td.risk span.rkp.rkp.high{ color:var(--red) !important;
+  border-color:color-mix(in srgb, var(--red) 50%, transparent); }
+[data-testid="stMarkdownContainer"] td.risk span.rkp.rkp.out{ color:#fff !important; background:var(--red); border-color:var(--red); }
+
+.wbar .g{ color:var(--acc); }
+
+/* Big Shoulders is this brand's display face at 800; the ported screens set
+   600, which reads thin in it */
+.hnum .big, .hc b, .wwho b, .ls, .fp, .todo .tv b, .kv b, .ks b, .kt.empty b{ font-weight:800; }
 </style>
 """
 
@@ -892,7 +1137,7 @@ def inject(palette: str = None) -> str:
     return palette
 
 
-def masthead(subtitle: str) -> None:
+def masthead(subtitle: str, right: str = "") -> None:
     # The build fingerprint is off the face of the masthead - it was diagnostic
     # clutter sitting on the brand band - but it is not gone. It rides in the
     # title attribute, so hovering the wordmark still answers the only question
@@ -901,7 +1146,7 @@ def masthead(subtitle: str) -> None:
     st.markdown(
         '<div class="mast" title="build %s"><span class="the">the</span>'
         '<span class="name">7<span class="half">&frac12;</span> Men</span>'
-        '<span class="yr">%s</span></div>' % (fingerprint(), subtitle),
+        '<span class="yr">%s</span>%s</div>' % (fingerprint(), subtitle, right),
         unsafe_allow_html=True)
 
 
