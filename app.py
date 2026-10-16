@@ -56,7 +56,7 @@ def _fresh_halfmen() -> None:
 _fresh_halfmen()
 
 from halfmen import (adp_board, agenda, config, draftboard, engine, history, lottery,
-                     live, minutes, voice,
+                     live, minutes, voice, playoffs, playoffs_view,
                      gameday, picks, pot, remote, rulebook, season, sleeper, storage, taxi,
                      theme, valueboard)
 
@@ -392,6 +392,7 @@ GROUPS = {
         ("wire", "The League", [("wire", "The Wire")]),
         ("taxi", "", [("taxi", "Taxi")]),
         ("pot", "", [("pot", "The Pot")]),
+        ("playoffs", "", [("playoffs", "Playoffs")]),
     ],
     # Everything here is dormant between February and August. It sat FIRST and
     # held eight of eleven leaves while the season it belongs to was already
@@ -1995,6 +1996,36 @@ def render_keeper_outlook() -> None:
                "picks with no clock; and a keeper lands on a pick you own." % int(kr["max_years"]))
 
 
+@st.cache_data(ttl=900, show_spinner="Simulating the rest of the season…")
+def get_playoff_outlook(me, week):
+    return playoffs.outlook(league_id=config.league_id(), season=SEASON, week=week, me=me)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_playoff_slate(me, week, slots, weeks):
+    return playoffs.playoff_slate(config.league_id(), SEASON, week, me, list(slots), list(weeks))
+
+
+def render_playoffs() -> None:
+    """The Draft Room's Playoffs tab: the rest of the season 10,000 times on the
+    real schedule — your seed spread, win % each week, the biggest game, the
+    league table and your starters' playoff-week matchups. The Chase bracket's
+    money is on The Pot; this is only who gets in."""
+    st.markdown('<div class="bar">Playoff picture<span class="n">10,000 simulations</span></div>',
+                unsafe_allow_html=True)
+    wk = season.current_week() or 1
+    out = get_playoff_outlook(VIEW, wk)
+    slate = None
+    if VIEW and out["settings"]["playoff_weeks"]:
+        try:
+            slate = get_playoff_slate(VIEW, wk, tuple(out["settings"]["slots"]),
+                                      tuple(out["settings"]["playoff_weeks"]))
+        except Exception:  # noqa: BLE001 — a schedule hiccup must not take the page down
+            slate = {"rows": []}
+    playoffs_view.render(out, VIEW, who, slate,
+                         pick_team_hint="Pick your team from the masthead to see where you finish.")
+
+
 def render_week(leaf=None):
     {"live": render_live, "matchup": render_matchup,
      "keepers": render_keeper_outlook}.get(leaf or "live", render_live)()
@@ -3527,7 +3558,7 @@ def render_bottom_bar() -> None:
 PAGES = {"home": render_home, "rules": render_rules}
 GROUP_PAGES = {"week": render_week, "keepers": render_keepers, "draft": render_draft,
                "lottery": render_lottery, "wire": render_keepers, "pot": render_pot,
-               "taxi": render_taxi_league}
+               "taxi": render_taxi_league, "playoffs": lambda leaf=None: render_playoffs()}
 
 player_data_warning()
 
