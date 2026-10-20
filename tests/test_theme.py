@@ -181,22 +181,22 @@ def _series(**kw):
 
 
 def test_burndown_draws_a_line_per_team():
-    svg = theme.burndown([_series(name="A"), _series(name="B")], 100, 4)
+    svg = theme.potfill([_series(name="A"), _series(name="B")], 100, 4)
     assert svg.count("<polyline") == 2
 
 
 def test_only_highlighted_lines_get_a_debt_bracket():
     """The bracket is the argument - the gap from the endpoint up to the ceiling
     IS the bill - so it is spent on the lines worth reading, not all eight."""
-    plain = theme.burndown([_series(), _series()], 100, 4)
-    keyed = theme.burndown([_series(key=True), _series()], 100, 4)
+    plain = theme.potfill([_series(), _series()], 100, 4)
+    keyed = theme.potfill([_series(key=True), _series()], 100, 4)
     assert plain.count("<circle") == 0
     assert keyed.count("<circle") == 1
 
 
 def test_burndown_pads_a_short_season():
     """Week 3 of the season should not stretch three points across seventeen."""
-    svg = theme.burndown([_series(values=[0, 12])], 100, 17)
+    svg = theme.potfill([_series(values=[0, 12])], 100, 17)
     pts = svg.split('points="')[1].split('"')[0].split()
     assert len(pts) == 17
     assert pts[-1].split(",")[1] == pts[1].split(",")[1], "flat after the last real week"
@@ -207,14 +207,14 @@ def test_burndown_labels_never_stack():
     right-hand labels land on top of each other."""
     import re
     flat = [_series(name="T%d" % i, values=[0, 90, 95, 96]) for i in range(8)]
-    svg = theme.burndown(flat, 100, 4)
+    svg = theme.potfill(flat, 100, 4)
     ys = [float(m) for m in re.findall(r'<text x="691" y="([\d.]+)"', svg)]
     assert len(ys) == 8
     assert all(b - a >= 14.9 for a, b in zip(sorted(ys), sorted(ys)[1:]))
 
 
 def test_burndown_survives_an_empty_league():
-    assert theme.burndown([], 100, 17) == ""
+    assert theme.potfill([], 100, 17) == ""
 
 
 def test_capital_strip_is_one_block_per_round():
@@ -293,3 +293,23 @@ def test_the_fingerprint_is_still_reachable_after_leaving_the_masthead():
     mast = src[src.index("def masthead"):src.index("def bar(")]
     assert 'title="build %s"' in mast
     assert "&middot; build" not in mast, "not on the face of it any more"
+
+
+def test_the_pot_chart_calls_the_SPEND_the_bill_not_the_leftover():
+    """The chart used to label each line with `budget - spend` and bracket the
+    empty space ABOVE it, because under the old rule the bill was whatever you
+    had not spent. Inverting the rule without inverting the picture left the
+    page arguing for the opposite behaviour."""
+    svg = theme.potfill([_series(name="Solo", values=[0, 12], key=True)], 100, 2)
+    assert "Solo  $12" in svg, "the label is what he has bid"
+    assert "Solo  $88" not in svg, "not what he has left"
+    assert "the most you could owe" in svg
+    assert "anything under it is owed" not in svg
+
+
+def test_a_highlighted_line_fills_the_area_beneath_it():
+    """Every dollar bid is a dollar owed, so the filled region IS the bill."""
+    keyed = theme.potfill([_series(values=[0, 40], key=True)], 100, 2)
+    plain = theme.potfill([_series(values=[0, 40])], 100, 2)
+    assert "<polygon" in keyed
+    assert "<polygon" not in plain, "background teams stay unfilled"

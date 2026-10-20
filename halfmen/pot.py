@@ -202,10 +202,19 @@ def weekly_spend(league_id: str, weeks: Sequence[int]) -> Dict[str, List[int]]:
     return out
 
 
-def burndown(weekly: Dict[str, List[int]]) -> Dict[str, List[int]]:
-    """Cumulative spend, which is what the chart plots. The gap between a line
-    and the budget ceiling in the final week is the bill."""
+def running_total(weekly: Dict[str, List[int]]) -> Dict[str, List[int]]:
+    """Cumulative spend per owner - what each has put into the pot so far.
+
+    Called `burndown` until 2026-10-20, which was the old rule's shape: budget
+    depleting toward a bill made of whatever was left. It builds UP now. The
+    line's HEIGHT is the bill, not the gap above it.
+    """
     return {o: _cumulative(v) for o, v in weekly.items()}
+
+
+# The old name, because a mislabelled chart is how this got confusing in the
+# first place. Remove once nothing outside this repo calls it.
+burndown = running_total
 
 
 def _cumulative(xs: Sequence[int]) -> List[int]:

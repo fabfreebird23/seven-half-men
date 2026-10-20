@@ -2545,7 +2545,7 @@ def render_pot(leaf=None):
     complete = (lg.get("status") or "") == "complete"
 
     if leaf in (None, "pot"):
-        theme.bar("The pot", "FAAB you spend comes due")
+        theme.bar("The pot", "what you bid is what you owe")
         played = sum(b.spent for b in settlement.bills) > 0
 
         if FIRST:
@@ -2574,7 +2574,7 @@ def render_pot(leaf=None):
                              settlement.to_champion, settlement.to_second,
                              settlement.to_third, settlement.to_chase_bonus)},
                 {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
-                 "label": "Budget", "note": "spend it or owe it"},
+                 "label": "Budget each", "note": "the most one manager could owe"},
             ])
         else:
             spent_total = sum(b.spent for b in settlement.bills)
@@ -2582,26 +2582,26 @@ def render_pot(leaf=None):
             glance([
                 {"pct": spent_total / max(1, pool), "color": "var(--acc)",
                  "big": "$%d" % spent_total,
-                 "label": "Burned so far", "note": "across all 8 teams"},
-                {"pct": (pool - spent_total) / max(1, pool), "color": "var(--acc2)",
+                 "label": "In the pot", "note": "bid so far across all 8 teams &mdash; "
+                                                "<b>every dollar of it is owed</b>"},
+                {"pct": (pool - spent_total) / max(1, pool), "color": "var(--good)",
                  "big": "$%d" % (pool - spent_total),
-                 "label": "Still to spend", "note": "every dollar of it is owed if it sits there"},
+                 "label": "Unbid", "note": "costs nobody anything while it sits there"},
                 {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
-                 "label": "Budget", "note": "spend it or owe it"},
+                 "label": "Budget each", "note": "the most one manager could owe"},
                 {"pct": 1.0, "color": "var(--dim)", "big": "$%d" % settlement.cap,
                  "label": "Pot cap", "note": "the third-place prize \u2014 the Chase can never "
                                              "outrank a playoff finish"},
             ])
             st.markdown(
-                '<div class="tiny" style="margin-top:8px">Nothing has been spent yet, so the "owed" '
-                'column below is just the full budget. It only means something once waivers open in '
-                'week 2.</div>', unsafe_allow_html=True)
+                '<div class="tiny" style="margin-top:8px">Nobody has bid yet, so the pot is '
+                'empty and the "owed" column below is zero for everyone. It fills as claims '
+                'land.</div>', unsafe_allow_html=True)
 
-        theme.bar("Burn-down", "week 1 \u2192 %d \u00b7 cumulative of $%d" % (
-            WEEKS, int(fr["budget"])))
+        theme.bar("Into the pot", "week 1 \u2192 %d &middot; what each has bid, running total" % WEEKS)
         try:
             weekly = pot.weekly_spend(LG, list(range(1, WEEKS + 1)))
-            curves = pot.burndown(weekly)
+            curves = pot.running_total(weekly)
         except Exception:
             curves = {}
         if any(any(v) for v in curves.values()):
@@ -2642,7 +2642,7 @@ def render_pot(leaf=None):
                     min(100, b.spent), col),
                 '<span class="mono" style="color:%s;font-weight:700">$%d</span>' % (col, b.owed),
             ])
-        ledger_table(["Owner", "Spent", "Burn", "Owed"], rows)
+        ledger_table(["Owner", "Bid", "Share of the pot", "Owed"], rows)
         _ov = config.overflow_split()
         st.markdown(
             '<div class="banner" style="margin-top:12px"><b>The cap is a ceiling, not a discount.</b> '

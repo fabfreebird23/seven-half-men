@@ -81,7 +81,7 @@ def sections() -> List[tuple]:
    "pick to do it &mdash; the choice is still yours, it just has a price."
    % config.active_roster_size(),
    "<b>No pot.</b> It needs a full season of FAAB data to settle against, so nothing is billed "
-   "until the %d offseason. The burn-down still tracks all season." % (int(lg["season"]) + 1),
+   "until the %d offseason. The running total still tracks all season." % (int(lg["season"]) + 1),
  ]),
  ("note", "<b>Why %d rounds.</b> Your active roster is %d and taxi holds %d rookies without "
           "counting against it. Both rookie-draft picks go to <b>taxi before the veteran draft "
@@ -466,8 +466,8 @@ def sections() -> List[tuple]:
    ("Weeks %s" % "-".join(str(w) for w in (lg["chase_weeks"][0], lg["chase_weeks"][-1])),
     "Chase bracket", "The four non-playoff teams play for the pot and for veteran lottery position."),
    ("Right after", "FAAB settles",
-    "Unspent budget is totted up and billed. Chase winner takes the first $%d, champion takes the "
-    "rest, split back into the payout." % _cap()),
+    "Every dollar you bid is totted up and billed. Chase winner takes the first $%d; anything "
+    "above that splits back into the payout." % _cap()),
    ("Then", "Keeper slips",
     "Everyone submits %d: %d regular, %d rookie, franchise tag included if you are using it. "
     "The franchise choice is final at submission." % (

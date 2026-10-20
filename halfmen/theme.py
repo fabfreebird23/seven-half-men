@@ -1247,16 +1247,18 @@ def pips(year: int, franchise: bool = False, rookie: bool = False) -> str:
     return "".join(out)
 
 
-def burndown(series: list, budget: int, weeks: int = 17) -> str:
-    """Cumulative FAAB spend, one line per team, against the budget ceiling.
+def potfill(series: list, budget: int, weeks: int = 17) -> str:
+    """Cumulative FAAB spend per team - what each has put into the pot.
 
-    The argument the chart makes is the gap: a dashed bracket runs from each
-    highlighted line's endpoint up to the ceiling, because that distance IS the
-    bill. Stating "you owe $89" in a table is a fact; drawing it as the empty space
-    above a flat line is the same fact with the shape of quitting attached.
+    The argument is the AREA UNDER the line: every dollar bid is a dollar owed,
+    so the filled region is literally the bill. This chart used to make the
+    opposite argument - it bracketed the empty space ABOVE each line and called
+    that the bill, which was true under the old rule, where unspent budget was
+    what came due. Inverting the rule without inverting the picture left the
+    page quietly arguing for the wrong behaviour.
 
     `series` is [{"name", "values", "colour", "key"}] - `key` lines are drawn
-    full strength with a bracket, everyone else recedes.
+    full strength and filled, everyone else recedes.
     """
     W, H, PL, PR, PT, PB = 880, 300, 46, 200, 18, 34
     if not series:
@@ -1274,7 +1276,7 @@ def burndown(series: list, budget: int, weeks: int = 17) -> str:
     ceiling = (
         '<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="var(--acc2)" stroke-width="1.5" '
         'stroke-dasharray="5 4"/><text x="%d" y="%.1f" font-family="var(--f-data)" '
-        'font-size="10" fill="var(--acc2)">$%d ceiling &#8212; anything under it is owed</text>'
+        'font-size="10" fill="var(--acc2)">$%d budget &#8212; the most you could owe</text>'
         % (PL, y(budget), W - PR, y(budget), PL + 5, y(budget) - 7, budget))
 
     lines, marks = "", []
@@ -1283,17 +1285,23 @@ def burndown(series: list, budget: int, weeks: int = 17) -> str:
         vals += [vals[-1]] * (n - len(vals))
         pts = " ".join("%.1f,%.1f" % (x(i), y(v)) for i, v in enumerate(vals))
         key, col = bool(srs.get("key")), srs.get("colour", "var(--dim)")
+        if key:
+            # The filled area IS the bill. Drawn before the stroke so the line
+            # still reads as the top edge of the money, not as a border on it.
+            lines += ('<polygon points="%s %.1f,%.1f %.1f,%.1f" fill="%s" opacity=".16"/>'
+                      % (pts, x(n - 1), y(0), x(0), y(0), col))
         lines += ('<polyline points="%s" fill="none" stroke="%s" stroke-width="%s" '
                   'opacity="%s" stroke-linejoin="round" stroke-linecap="round"/>'
                   % (pts, col, "2.6" if key else "1.3", "1" if key else ".55"))
         ey = y(vals[-1])
         if key:
+            # Bracket from the BASELINE up to the endpoint - the height owed.
             lines += ('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" '
                       'stroke-width="1" stroke-dasharray="3 3" opacity=".85"/>'
                       '<circle cx="%.1f" cy="%.1f" r="3.5" fill="%s"/>'
-                      % (x(n - 1), ey, x(n - 1), y(budget), col, x(n - 1), ey, col))
+                      % (x(n - 1), ey, x(n - 1), y(0), col, x(n - 1), ey, col))
         marks.append({"y": ey, "col": col, "key": key,
-                      "label": "%s  $%d" % (srs["name"][:16], budget - vals[-1])})
+                      "label": "%s  $%d" % (srs["name"][:16], vals[-1])})
 
     # Converging lines stack their labels on top of each other; push them apart.
     marks.sort(key=lambda m: m["y"])
@@ -1316,8 +1324,13 @@ def burndown(series: list, budget: int, weeks: int = 17) -> str:
         'fill="var(--dim)">wk %d</text>' % (x(w - 1), H - 9, w)
         for w in range(1, n + 1, max(1, (n - 1) // 4)))
 
-    return ('<svg viewBox="0 0 %d %d" class="chart" role="img" aria-label="Cumulative FAAB '
-            'spend by team">%s%s%s%s%s</svg>' % (W, H, grid, ticks, ceiling, lines, labels))
+    return ('<svg viewBox="0 0 %d %d" class="chart" role="img" aria-label="FAAB put into the '
+            'pot by team, cumulative">%s%s%s%s%s</svg>'
+            % (W, H, grid, ticks, ceiling, lines, labels))
+
+
+# Old name kept briefly; the chart it drew made the opposite argument.
+burndown = potfill
 
 
 def capital_strip(states: list) -> str:

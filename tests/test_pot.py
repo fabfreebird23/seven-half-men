@@ -134,9 +134,11 @@ def test_bills_are_sorted_biggest_spender_first():
     assert [b.owner_id for b in s.bills][0] == "bijan"
 
 
-def test_burndown_is_cumulative():
+def test_the_running_total_is_cumulative():
+    """It builds UP. It was called `burndown` until 2026-10-20, which was the
+    old rule's shape - a budget depleting toward a bill made of what was left."""
     weekly = {"a": [10, 0, 5, 0, 20]}
-    assert pot.burndown(weekly)["a"] == [10, 10, 15, 15, 35]
+    assert pot.running_total(weekly)["a"] == [10, 10, 15, 15, 35]
 
 
 def test_settlement_uses_the_configured_budget_and_cap():
