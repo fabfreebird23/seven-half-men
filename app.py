@@ -2550,11 +2550,11 @@ def render_pot(leaf=None):
 
         if FIRST:
             st.markdown(
-                '<div class="banner"><b>No pot in year one.</b> It needs a full season of FAAB data '
-                'to settle against, so nothing is billed until the %d offseason. The burn-down still '
-                'tracks live all season — the gap between your line and the $%d ceiling in week 17 '
-                '<em>is</em> the bill, and it is worth watching from week one.</div>' % (
-                    SEASON + 1, int(fr["budget"])), unsafe_allow_html=True)
+                '<div class="banner"><b>No pot in year one.</b> It needs a full season of FAAB '
+                'data to settle against, so nothing is billed until the %d offseason. The running '
+                'total still tracks live all season &mdash; the height of your line <em>is</em> '
+                'the bill, and it is worth watching from week one.</div>' % (SEASON + 1),
+                unsafe_allow_html=True)
 
         if complete:
             glance([
@@ -2574,24 +2574,40 @@ def render_pot(leaf=None):
                              settlement.to_champion, settlement.to_second,
                              settlement.to_third, settlement.to_chase_bonus)},
                 {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
-                 "label": "Budget each", "note": "the most one manager could owe"},
+                 "label": "Budget each",
+                 "note": "before any FAAB changed hands by trade"},
             ])
         else:
             spent_total = sum(b.spent for b in settlement.bills)
             pool = int(fr["budget"]) * len(settlement.bills)
+            _ovr = config.overflow_split()
+            cap = int(settlement.cap)
+            to_chase = min(spent_total, cap)
+            over = max(0, spent_total - cap)
+            mine = next((b for b in settlement.bills if b.owner_id == VIEW), None)
+            budget = int(fr["budget"])
+            # The pot fills against the WHOLE pool, not against the cap. Scaled
+            # to the cap it pins full the moment the cap is met and then tells
+            # you nothing for the rest of the season.
             glance([
                 {"pct": spent_total / max(1, pool), "color": "var(--acc)",
-                 "big": "$%d" % spent_total,
-                 "label": "In the pot", "note": "bid so far across all 8 teams &mdash; "
-                                                "<b>every dollar of it is owed</b>"},
-                {"pct": (pool - spent_total) / max(1, pool), "color": "var(--good)",
-                 "big": "$%d" % (pool - spent_total),
-                 "label": "Unbid", "note": "costs nobody anything while it sits there"},
-                {"pct": 1.0, "color": "var(--acc2)", "big": "$%d" % int(fr["budget"]),
-                 "label": "Budget each", "note": "the most one manager could owe"},
-                {"pct": 1.0, "color": "var(--dim)", "big": "$%d" % settlement.cap,
-                 "label": "Pot cap", "note": "the third-place prize \u2014 the Chase can never "
-                                             "outrank a playoff finish"},
+                 "big": "$%d" % spent_total, "label": "In the pot",
+                 "note": "bid so far, all %d teams &mdash; <b>every dollar of it is owed</b>"
+                         % len(settlement.bills)},
+                {"pct": to_chase / float(cap or 1), "color": "var(--good)",
+                 "big": "$%d" % to_chase, "label": "Chase takes",
+                 "note": ("capped at $%d, the third-place prize. <b>Full.</b>" % cap)
+                         if to_chase >= cap else
+                         "the first $%d of it, the third-place prize" % cap},
+                {"pct": over / float(max(1, pool - cap)), "color": "var(--acc2)",
+                 "big": "$%d" % over, "label": "Overflow",
+                 "note": ("splits %d/%d/%d/%d back into the bracket" % (
+                     int(_ovr["first"]), int(_ovr["second"]),
+                     int(_ovr["third"]), int(_ovr["chase"]))) if over else
+                         "nothing above the cap yet"},
+                {"pct": (mine.owed / float(budget)) if mine else 0.0, "color": "var(--warn)",
+                 "big": "$%d" % (mine.owed if mine else 0), "label": "Your bill",
+                 "note": "of your $%d &mdash; what you have bid is what you owe" % budget},
             ])
             st.markdown(
                 '<div class="tiny" style="margin-top:8px">Nobody has bid yet, so the pot is '

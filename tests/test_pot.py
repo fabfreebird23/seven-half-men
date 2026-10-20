@@ -224,3 +224,29 @@ def test_an_incomplete_trade_moves_nothing(monkeypatch):
         {"type": "trade", "status": "failed",
          "waiver_budget": [{"sender": 1, "receiver": 2, "amount": 25}]}])
     assert pot.faab_trades("x", weeks=[1]) == []
+
+
+# --------------------------------------------- what the four bowls must say
+
+def test_the_pot_bowls_fill_against_the_pool_not_the_cap():
+    """The pot bowl is scaled to every dollar the league could bid. Scaled to
+    the cap instead it pins full the moment the cap is met - week 6 in 2026 -
+    and then tells you nothing for the rest of the season."""
+    budget, teams = 100, 8
+    pool = budget * teams
+    s = pot.settle({str(i): 15 for i in range(teams)})      # $120, exactly the cap
+    assert s.total == s.cap == 120
+    assert s.total / float(pool) == 0.15, "the bowl reads 15%, not full"
+
+
+def test_the_chase_bowl_is_full_once_the_cap_is_met():
+    s = pot.settle({str(i): 15 for i in range(8)})
+    assert min(s.total, s.cap) / float(s.cap) == 1.0
+
+
+def test_overflow_is_zero_until_the_cap_is_cleared():
+    """And the very next dollar is the first to split back into the bracket."""
+    at_cap = pot.settle({str(i): 15 for i in range(8)})
+    assert at_cap.overflow == 0
+    one_more = pot.settle(dict({str(i): 15 for i in range(8)}, **{"0": 16}))
+    assert one_more.overflow == 1
