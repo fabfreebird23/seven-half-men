@@ -1359,6 +1359,7 @@ table.dt td.risk{ width:1%; white-space:nowrap; text-align:right; padding-left:4
 .kx .hmx-r{ display:grid; grid-template-columns:80px repeat(5,1fr); gap:4px; align-items:center; }
 [data-testid="stMarkdownContainer"] .kx .hmx-r.hd span{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--dim) !important; text-align:center; }
 [data-testid="stMarkdownContainer"] .kx .hmx-t{ font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:18px; color:var(--ink) !important; }
+.kx .hmx-c{ --h:0; }   /* each cell sets its own intensity inline */
 [data-testid="stMarkdownContainer"] .kx .hmx-c{ text-align:center; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:17px; padding:6px 0; border-radius:6px;
   color:var(--ink) !important; background:rgba(251,8,73,calc(var(--h) * .85 + .05)); }
 [data-testid="stMarkdownContainer"] .kx .hmx-c.none{ background:transparent; color:var(--line2) !important; }
