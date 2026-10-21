@@ -51,7 +51,7 @@ def rookie_draft_premium() -> int:
 def waiver_anchor(last_round: int = None) -> int:
     """An undrafted pickup has no draft round either, but he gets no premium -
     he prices off your last available pick, same as he always has."""
-    return int(last_round if last_round else config.veteran_rounds())
+    return int(last_round if last_round else config.keeper_rounds())
 
 
 @dataclass

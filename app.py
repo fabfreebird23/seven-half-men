@@ -522,7 +522,7 @@ def contract_card(p) -> str:
     if p.from_rookie_draft:
         chips.append('<span class="chip acc">Rookie-draft R%d</span>' % engine.rookie_draft_premium())
     if p.adp_round:
-        chips.append('<span class="chip">%d ADP R%d</span>' % (SEASON + 1, p.adp_round))
+        chips.append('<span class="chip">%d ADP R%d</span>' % (config.season() + 1, p.adp_round))
     if p.bumped:
         chips.append('<span class="chip warn">Bumped from R%d</span>' % p.base_round)
     if sur is not None:
@@ -2017,7 +2017,7 @@ def render_keeper_outlook() -> None:
              ("Blocked", str(len(blocked)), blocked[0]["name"] if blocked else "nobody aged out",
               "bad" if blocked else ""),
              ("Escalation", f"&minus;{bump} rds", f'year 2 &middot; year 3 is ADP, {kr["max_years"]} max', "")]
-    _lr = int(config.veteran_rounds())
+    _lr = int(config.keeper_rounds())
     _late = [r for r in keeps if (r.get("cost") or 0) >= _lr - 2]
     if _late:
         _num, _line = str(len(_late)), (f"of your {len(keeps)} would cost a round-{_lr - 2}-or-later pick — "
@@ -2287,7 +2287,7 @@ def render_keepers(leaf=None):
             'years one and two.</div>', unsafe_allow_html=True)
 
         becomes_cols = [1, 2, 3, 5, 8]
-        _n = config.veteran_rounds()
+        _n = config.keeper_rounds()
         grid = {(r, b): three_year_surplus(r, b) for r in range(1, _n + 1) for b in becomes_cols if b < r}
         _vmax = max([abs(v) for v in grid.values()] + [1])
         _best = max(grid.items(), key=lambda kv: kv[1], default=None)
@@ -2432,12 +2432,12 @@ def render_keepers(leaf=None):
                 name = meta.get("full_name") or str(pid)
                 adp = adp_board.adp_round_for_player(meta) if meta else None
                 yr = hist.keeper_year(str(pid)) + 1
-                dr = hist.draft_round(str(pid)) or config.veteran_rounds()
+                dr = hist.draft_round(str(pid)) or config.keeper_rounds()
                 from_rookie = hist.has_rookie_draft_provenance(str(pid))
                 if hist.is_rookie_keeper_eligible(str(pid)):
                     prices.append(engine.price_rookie(
                         str(pid), name, meta.get("position") or "", slot=0,
-                        last_round=config.veteran_rounds(), adp_round=adp))
+                        last_round=config.keeper_rounds(), adp_round=adp))
                 else:
                     # A rookie-draft player has no veteran round; the premium stands
                     # in for one and price_regular ignores draft_round entirely.

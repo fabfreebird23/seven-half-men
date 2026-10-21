@@ -53,6 +53,19 @@ def consolidated_from() -> int:
     return int(drafts().get("consolidated_from") or 0)
 
 
+def keeper_rounds(yr: int = None) -> int:
+    """Rounds in the draft that keepers are priced INTO — next season's.
+
+    From consolidated_from (2027) that is one 16-round board for rookies and
+    veterans together, so a last-round keeper costs R16 and the rookie slots
+    take R16 and R15, not R14 and R13."""
+    nxt = int(yr or season()) + 1
+    cf = consolidated_from()
+    if cf and nxt >= cf:
+        return int(drafts().get("consolidated_rounds") or 16)
+    return veteran_rounds(nxt)
+
+
 def league() -> Dict[str, Any]:
     return load()["league"]
 

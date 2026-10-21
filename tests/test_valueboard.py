@@ -41,13 +41,13 @@ PMAP = {
 def test_a_rookie_keeper_in_a_slot_prices_at_the_last_round():
     hist = FakeHistory(rookie_keepers={"2"})
     p = valueboard.price_for("2", hist=hist, pmap=PMAP, slot=0)
-    assert p.kind == "rookie" and p.final_round == config.veteran_rounds()
+    assert p.kind == "rookie" and p.final_round == config.keeper_rounds()
 
 
 def test_the_second_rookie_slot_is_the_round_before_it():
     hist = FakeHistory(rookie_keepers={"2"})
     p = valueboard.price_for("2", hist=hist, pmap=PMAP, slot=1)
-    assert p.final_round == config.veteran_rounds() - 1
+    assert p.final_round == config.keeper_rounds() - 1
 
 
 def test_a_rookie_with_no_slot_left_is_priced_as_a_regular_keeper():
@@ -166,7 +166,7 @@ def test_a_dropped_player_carries_the_round_he_was_drafted_in(monkeypatch):
 def test_a_player_never_drafted_here_is_the_only_cheap_one(monkeypatch):
     hist = FakeHistory(anchors={"1": 2})          # Gordon has no history
     got = {r["name"]: r for r in _fa_setup(monkeypatch, hist, ADP)}
-    assert got["Ollie Gordon II"]["cost"] == config.veteran_rounds()
+    assert got["Ollie Gordon II"]["cost"] == config.keeper_rounds()
     assert got["Ollie Gordon II"]["carried"] is False
 
 
@@ -175,7 +175,7 @@ def test_the_board_no_longer_calls_a_cut_second_rounder_a_last_round_pickup(monk
     league a dropped 2nd was an R13."""
     hist = FakeHistory(anchors={"1": 2})
     got = {r["name"]: r for r in _fa_setup(monkeypatch, hist, ADP)}
-    assert got["Jahmyr Gibbs"]["cost"] != config.veteran_rounds()
+    assert got["Jahmyr Gibbs"]["cost"] != config.keeper_rounds()
     assert got["Jahmyr Gibbs"]["surplus"] < got["Ollie Gordon II"]["surplus"]
 
 

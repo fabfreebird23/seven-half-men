@@ -50,7 +50,7 @@ def price_for(pid: str, *, hist, pmap: dict, owner: str = None,
     name = meta.get("full_name") or str(pid)
     pos = meta.get("position") or ""
     adp = _next_round(str(pid), meta)
-    last_round = int(last_round or config.veteran_rounds())
+    last_round = int(last_round or config.keeper_rounds())
 
     rank = _market_rank(str(pid), pmap)
     if slot is not None and hist.is_rookie_keeper_eligible(str(pid)):
@@ -178,7 +178,7 @@ def rows(league_id: str = None, season: int = None, hist=None) -> List[dict]:
     # by rounds, so this isn't circular); real submitted keepers would be the
     # better source once a season of them exists.
     engine.set_value_curve(engine.replacement_by_round(
-        kept, len(rosters), int(config.veteran_rounds())))
+        kept, len(rosters), int(config.keeper_rounds())))
 
     # A second pass, by VALUE. Slips projected by rounds never keep an elite
     # player at his 1st-round price (0 rounds of surplus), so pass one leaves
@@ -202,7 +202,7 @@ def rows(league_id: str = None, season: int = None, hist=None) -> List[dict]:
         engine.allocate(slip, owned.get(owner, Counter()))
         kept += [(p.adp_rank, p.final_round) for p in slip if p.adp_rank and p.final_round]
     engine.set_value_curve(engine.replacement_by_round(
-        kept, len(rosters), int(config.veteran_rounds())))
+        kept, len(rosters), int(config.keeper_rounds())))
     for p, fr, bumped in snapshot:
         p.final_round, p.bumped = fr, bumped
     for owner, p in collected:
@@ -271,7 +271,7 @@ def free_agents(league_id: str = None, limit: int = 30, hist=None) -> List[dict]
             if meta.get("full_name"):
                 rostered_keys.add(normalize_name(meta["full_name"]))
 
-    last = int(config.veteran_rounds())
+    last = int(config.keeper_rounds())
     out = []
     for key, row in sorted(table_items(), key=lambda kv: kv[1]["rank"]):
         if key in rostered_keys:

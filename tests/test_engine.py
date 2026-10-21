@@ -268,10 +268,10 @@ def test_a_rookie_draft_pick_redrafted_out_of_the_pool_has_a_real_round():
 
 def test_an_undrafted_pickup_gets_no_premium():
     """No rookie-draft provenance, so he prices off your last available pick."""
-    assert engine.waiver_anchor() == config.veteran_rounds()
+    assert engine.waiver_anchor() == config.keeper_rounds()
     p = engine.price_regular("a", "waiver find", "WR", draft_round=None, year=1,
                              adp_round=4, from_rookie_draft=False)
-    assert p.final_round == config.veteran_rounds()
+    assert p.final_round == config.keeper_rounds()
 
 
 def test_the_premium_still_has_to_land_on_a_pick_you_own():
@@ -327,9 +327,9 @@ def test_a_dropped_players_clock_does_not_reset():
 def test_only_a_never_drafted_player_reaches_the_last_round():
     """The one genuinely cheap route onto a roster."""
     undrafted = engine.price_regular("a", "x", "WR", draft_round=None, year=1, adp_round=3)
-    assert undrafted.final_round == config.veteran_rounds()
+    assert undrafted.final_round == config.keeper_rounds()
     drafted = engine.price_regular("b", "y", "WR", draft_round=2, year=1, adp_round=3)
-    assert drafted.final_round < config.veteran_rounds()
+    assert drafted.final_round < config.keeper_rounds()
 
 
 # --------------------------------------------------- ADP is relief, not a discount
