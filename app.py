@@ -522,7 +522,7 @@ def contract_card(p) -> str:
     if p.from_rookie_draft:
         chips.append('<span class="chip acc">Rookie-draft R%d</span>' % engine.rookie_draft_premium())
     if p.adp_round:
-        chips.append('<span class="chip">ADP R%d</span>' % p.adp_round)
+        chips.append('<span class="chip">%d ADP R%d</span>' % (SEASON + 1, p.adp_round))
     if p.bumped:
         chips.append('<span class="chip warn">Bumped from R%d</span>' % p.base_round)
     if sur is not None:
@@ -1986,7 +1986,7 @@ def _keeper_card_html(r: dict) -> str:
     val = (f'<div class="kv {"good" if v > 0 else "bad" if v < 0 else ""}"><b>{v:+d}</b><i>value</i></div>'
            if v is not None else
            f'<div class="kv"><b>&mdash;</b><i>{"blocked" if r["blocked"] else "no ADP"}</i></div>')
-    adp = f'ADP R{r["adp_rd"]} (#{int(r["adp"])})' if r["adp"] else "no ADP"
+    adp = f'{SEASON + 1} ADP R{r["adp_rd"]} (#{int(r["adp"])})' if r["adp"] else "no ADP"
     return (f'<div class="kcard2 {r["verdict"]}">{_headshot(r["_pid"])}<div class="kc-main">'
             f'<div class="kc-top"><b>{r["name"]}</b><span class="pos">{r["Pos"]} &middot; {r["nfl"] or "FA"}</span>'
             f'<span class="wchip {tone}">{lab}</span></div>'
@@ -2522,8 +2522,9 @@ def render_keepers(leaf=None):
                     'team\'s keepers are off the board, so an elite player kept early counts too. A '
                     'drafted player keeps at <b>the round he was drafted in</b>, so his price no '
                     'longer moves with ADP and the two columns say genuinely different things. '
-                    'Market is the preseason consensus board and will not shift much until next '
-                    'summer. Prices include the bump, so they are true in the context of the rest '
+                    'Market is next summer\'s ADP, projected from FantasyCalc\'s trade market &mdash; '
+                    'dynasty and redraft value averaged, dynasty alone for a player on IR or out for '
+                    'the year &mdash; with the preseason board for anyone it doesn\'t price. Prices include the bump, so they are true in the context of the rest '
                     'of that manager\'s slip.</div>', unsafe_allow_html=True)
             else:
                 st.markdown(

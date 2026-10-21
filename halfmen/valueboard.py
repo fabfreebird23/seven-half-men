@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Dict, List, Optional
 
-from . import adp_board, config, draftboard, engine, history, picks, sleeper
+from . import adp_board, config, draftboard, engine, history, nextyear, picks, sleeper
 from .names import normalize_name
 
 
@@ -49,7 +49,7 @@ def price_for(pid: str, *, hist, pmap: dict, owner: str = None,
     meta = pmap.get(str(pid)) or {}
     name = meta.get("full_name") or str(pid)
     pos = meta.get("position") or ""
-    adp = adp_board.adp_round_for_player(meta) if meta else None
+    adp = _next_round(str(pid), meta)
     last_round = int(last_round or config.veteran_rounds())
 
     rank = _market_rank(str(pid), pmap)
@@ -89,9 +89,23 @@ def _plausible_slip(priced: List["engine.Price"], slot_of: Dict[str, int],
     return sorted(rookies, key=by_surplus)[:int(kr["rookie"])] + others[:int(kr["regular"])]
 
 
+def _next_round(pid: str, meta: dict):
+    """The round he projects to go in NEXT summer's draft, from the next-year
+    rank; the consensus board's round when FantasyCalc doesn't price him."""
+    nr = nextyear.league_rank(pid)
+    if nr:
+        return adp_board.rank_to_round(nr)
+    return adp_board.adp_round_for_player(meta) if meta else None
+
+
 def _market_rank(pid: str, pmap: dict) -> float:
     """Where the market has him. Unranked players sort last, so a slot is never
     spent on somebody nobody has heard of while a ranked rookie misses out."""
+    # next season's price: the projected next-year ADP (halfmen/nextyear.py),
+    # the consensus board only for anyone FantasyCalc doesn't price
+    nr = nextyear.league_rank(pid)
+    if nr:
+        return float(nr)
     meta = pmap.get(str(pid)) or {}
     row = adp_board.table().get(normalize_name(meta.get("full_name") or ""))
     return float(row["rank"]) if row and row.get("rank") else 1e9
@@ -313,7 +327,7 @@ def franchise_candidates(owner_id: str, league_id: str = None, hist=None) -> Lis
         meta = pmap.get(str(pid)) or {}
         year = hist.keeper_year(str(pid)) + 1
         peak = hist.peak_round(str(pid))
-        adp = adp_board.adp_round_for_player(meta) if meta else None
+        adp = _next_round(str(pid), meta)
         if not peak or not adp:
             continue
         p = engine.price_franchise(str(pid), meta.get("full_name") or str(pid),
