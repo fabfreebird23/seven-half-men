@@ -532,7 +532,9 @@ def contract_card(p) -> str:
     price = ('<div class="rd">R%d</div><div class="sub">cost</div>' % p.final_round
              if p.final_round else '<div class="rd">&mdash;</div><div class="sub">no price</div>')
 
-    return ('<div class="contract %s"><div class="who">'
+    face = ('<img class="cface" src="https://sleepercdn.com/content/nfl/players/thumb/%s.jpg" alt="" '
+            'onerror="this.style.visibility=\'hidden\'">' % esc(p.player_id)) if getattr(p, "player_id", None) else ""
+    return ('<div class="contract %s">' + face + '<div class="who">'
             '<div class="nm">%s</div><div class="meta">%s</div>'
             '<div style="margin-top:9px">%s</div>'
             '<div class="tags2">%s</div>%s</div>'
@@ -1729,6 +1731,37 @@ def _faceoff_html(ctx: dict, sa: dict, sb: dict) -> str:
     return "".join(rows)
 
 
+def _h2h_html(ctx: dict, sa: dict, sb: dict) -> str:
+    """Slot by slot as head-to-head rows: points (actual once his game has
+    started, projection before) and an edge bar that fills toward the winner."""
+    pos_of, team_of = _pos_team_maps()
+
+    def val(side, pid):
+        if not pid or pid == "0":
+            return 0.0, False
+        stt = gameday.status(ctx["games"], team_of.get(pid, ""))
+        if stt in ("in", "post"):
+            return side["actual"].get(pid, 0.0), True
+        return ctx["proj"].get(pid, 0.0), False
+    rows = []
+    for slot, pa, pb in zip(ctx["slots"], sa["starters"], sb["starters"]):
+        va, la = val(sa, pa)
+        vb, lb = val(sb, pb)
+        d = va - vb
+        w = min(100.0, abs(d) / 20 * 100)
+        fill = f'<i style="width:{w:.0f}%"></i>'
+        na = _pname(pa) if pa and pa != "0" else "Empty"
+        nb = _pname(pb) if pb and pb != "0" else "Empty"
+        rows.append(
+            f'<div class="khs"><span class="xl-s">{slot}</span><b class="hn">{na}</b>'
+            f'<b class="hp{" win" if d > 0 else ""}{"" if la else " pj"}">{va:.1f}</b>'
+            f'<div class="he"><div class="hh l">{fill if d > 0 else ""}</div><span>{d:+.1f}</span>'
+            f'<div class="hh r">{fill if d < 0 else ""}</div></div>'
+            f'<b class="hp{" win" if d < 0 else ""}{"" if lb else " pj"}{" zero" if vb == 0 else ""}">{vb:.1f}</b>'
+            f'<b class="hn r">{nb}</b></div>')
+    return "".join(rows)
+
+
 def render_live() -> None:
     st.markdown(_ThemeShim.section_head('<span class="g">Live</span>', "every Kreeper matchup", page=True),
                 unsafe_allow_html=True)
@@ -1767,21 +1800,19 @@ def render_live() -> None:
             a, b = _outlook(ctx, sa), _outlook(ctx, sb)
             wp = _wp(a, b)
             mine = me is not None and sa["owner"] == me
+
+            def half(side, o, cls):
+                r = _rec_of(side["owner"])
+                img = _ph_img(_top_pid(ctx, side), "mm-f")
+                txt = (f'<div><span>{_team_of(side["owner"])}{" &middot; " + r if r else ""}</span>'
+                       f'<b>{o["points"]:.1f}</b><i>proj {o["final"]:.0f} &middot; {o["left"]} to play</i></div>')
+                return f'<div class="mm-s {cls}">' + (img + txt if cls == "a" else txt + img) + '</div>'
             cards.append(
-                f'<div class="lcard{" mine" if mine else ""}"><div class="lhead">'
-                f'{_two_div(sa["owner"], a["final"] > b["final"])}'
-                f'<div class="ls"><b>{a["points"]:.1f}</b><span>&ndash;</span><b class="dim">{b["points"]:.1f}</b></div>'
-                f'{_two_div(sb["owner"], b["final"] > a["final"])}</div>'
-                f'<div class="wpbar sm"><i style="width:{wp * 100:.0f}%"></i></div>'
-                f'<div class="lfoot"><span><b>{wp * 100:.0f}%</b> &middot; {a["left"]} to play</span>'
-                f'<span class="mid">proj {a["final"]:.0f}&ndash;{b["final"]:.0f}</span>'
-                f'<span>{b["left"]} to play &middot; <b>{(1 - wp) * 100:.0f}%</b></span></div>'
-                + (f'<div class="weyebrow pad">Slot by slot</div>{_faceoff_html(ctx, sa, sb)}' if mine else "")
-                + "</div>")
-        if me and cards and pairs[0][0]["owner"] == me:
-            st.markdown(cards[0] + f'<div class="lgrid">{"".join(cards[1:])}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="lgrid">{"".join(cards)}</div>', unsafe_allow_html=True)
+                f'<div class="mm{" me" if mine else ""}">{half(sa, a, "a")}'
+                f'<div class="mm-m"><b>{wp * 100:.0f}<sup>%</sup></b><div class="mm-bar"><i style="width:{wp * 100:.0f}%"></i></div></div>'
+                f'{half(sb, b, "b")}</div>'
+                + (f'<div class="weyebrow pad">Your matchup &middot; slot by slot</div>{_h2h_html(ctx, sa, sb)}' if mine else ""))
+        st.markdown('<div class="kx">' + "".join(cards) + '</div>', unsafe_allow_html=True)
         if not me:
             st.caption("Pick your team (masthead, top right) to see your matchup slot by slot.")
 
@@ -1986,9 +2017,17 @@ def render_keeper_outlook() -> None:
              ("Blocked", str(len(blocked)), blocked[0]["name"] if blocked else "nobody aged out",
               "bad" if blocked else ""),
              ("Escalation", f"&minus;{bump} rds", f'year 2 &middot; year 3 is ADP, {kr["max_years"]} max', "")]
-    st.markdown('<div class="hero kh"><div class="hcells">' + "".join(
-        f'<div class="hc"><i>{k}</i><b class="{c}">{v}</b><span>{s}</span></div>' for k, v, s, c in cells)
-        + "</div></div>", unsafe_allow_html=True)
+    _lr = int(config.veteran_rounds())
+    _late = [r for r in keeps if (r.get("cost") or 0) >= _lr - 2]
+    if _late:
+        _num, _line = str(len(_late)), (f"of your {len(keeps)} would cost a round-{_lr - 2}-or-later pick — "
+                                        f'<b>{_late[0]["name"]}</b> at R{_late[0]["cost"]}')
+    elif best:
+        _num, _line = f'{best["Value"]:+d}', f'keeper value — <b>{best["name"]}</b> is your best keep'
+    else:
+        _num, _line = "0", "keepers worth their price yet"
+    st.markdown(_bh("ink", f"{nxt} keepers · if the season ended today", _num, _line,
+                    grid=[(k, v, s_) for k, v, s_, _c in cells]), unsafe_allow_html=True)
     st.markdown(f'<div class="weyebrow pad">The five it would keep</div>{_keeper_tray_html(rows)}',
                 unsafe_allow_html=True)
 
@@ -2248,19 +2287,29 @@ def render_keepers(leaf=None):
             'years one and two.</div>', unsafe_allow_html=True)
 
         becomes_cols = [1, 2, 3, 5, 8]
-        head = ["Drafted in"] + ["Becomes an R%d" % b for b in becomes_cols]
-        rows = []
-        for r in range(1, config.veteran_rounds() + 1):
-            cells = ['<span class="mono" style="font-weight:700">R%d</span>' % r]
+        _n = config.veteran_rounds()
+        grid = {(r, b): three_year_surplus(r, b) for r in range(1, _n + 1) for b in becomes_cols if b < r}
+        _vmax = max([abs(v) for v in grid.values()] + [1])
+        _best = max(grid.items(), key=lambda kv: kv[1], default=None)
+        if _best:
+            (_r, _b), _v = _best
+            st.markdown(_bh("ink", "Where the value is · rounds banked over a three-year hold", theme.signed(_v),
+                            f"rounds banked by an <b>R{_r}</b> pick who turns into an R{_b} — "
+                            "a pick that plays to its slot banks nothing"), unsafe_allow_html=True)
+        head = '<div class="hmx-r hd"><span>Drafted in</span>' + "".join(
+            f"<span>becomes R{b}</span>" for b in becomes_cols) + "</div>"
+        body = ""
+        for r in range(1, _n + 1):
+            cells = ""
             for b in becomes_cols:
                 if b >= r:
-                    cells.append('<span class="tiny">-</span>')
+                    cells += '<span class="hmx-c none">&middot;</span>'
                     continue
-                v = three_year_surplus(r, b)
-                cells.append('<span class="surplus %s">%s</span>' % (
-                    theme.surplus_class(v), theme.signed(v)))
-            rows.append(cells)
-        ledger_table(head, rows)
+                v = grid[(r, b)]
+                cells += (f'<span class="hmx-c" style="--h:{max(0.0, v) / _vmax:.2f}">'
+                          f'{theme.signed(v)}</span>')
+            body += f'<div class="hmx-r"><span class="hmx-t">R{r}</span>{cells}</div>'
+        st.markdown(f'<div class="kx hmx">{head}{body}</div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="tiny" style="margin-top:8px">Blank cells are players who never beat where '
             'you took them. Reading down any column shows the thesis: the later you find him, the '
@@ -2403,16 +2452,20 @@ def render_keepers(leaf=None):
                     p_.adp_rank = r_
             engine.allocate(prices, owned)
             slip = engine.best_slip(prices)
+            _tot = engine.total_surplus(slip)
+            _best = max(slip, key=lambda p: p.surplus or -99, default=None)
+            st.markdown(_bh("ink", "Your slip · %d keepers" % len(slip), theme.signed(_tot),
+                            "keeper value across the slip" + (
+                                f' — <b>{esc(_best.name)}</b> at R{_best.final_round} is the best of it'
+                                if _best and _best.final_round else ""),
+                            photo=_best.player_id if _best else None), unsafe_allow_html=True)
             st.markdown("".join(contract_card(p) for p in slip), unsafe_allow_html=True)
             errs = engine.validate(slip)
             if errs:
                 for e in errs:
                     st.markdown('<div class="banner" style="border-color:var(--bad);'
                                 'color:var(--bad)">%s</div>' % esc(e), unsafe_allow_html=True)
-            st.markdown('<div class="card" style="margin-top:10px"><div class="eyebrow">'
-                        'Total keeper value</div><div style="font-family:var(--f-display);'
-                        'font-size:30px">%s</div></div>' % theme.signed(
-                            engine.total_surplus(slip)), unsafe_allow_html=True)
+            pass  # the total leads the slip as its hero
 
 
         # ---------------------------------------------------------------- value board
@@ -3216,6 +3269,15 @@ def render_draft(leaf=None):
         owned_by = draftboard.owned_rounds(LG, SEASON)
         keep_by = submitted_keepers()
         rounds_n = config.veteran_rounds(SEASON)
+        _mine = owned_by.get(VIEW, Counter())
+        _missing = [r for r in range(1, rounds_n + 1) if _mine.get(r, 0) <= 0]
+        _extra = [r for r in range(1, rounds_n + 1) if _mine.get(r, 0) > 1]
+        if VIEW:
+            st.markdown(_bh("ink", f"Draft capital · {SEASON} veteran draft", str(sum(_mine.values())),
+                            "picks you hold" + (
+                                f" — missing R{', R'.join(map(str, _missing))}" if _missing else " — every round of your own")
+                            + (f", plus extra R{', R'.join(map(str, _extra))}" if _extra else "")),
+                        unsafe_allow_html=True)
         cap_rows = []
         for c in draftboard.capital(order, keep_by, SEASON, LG):
             oid = c["owner_id"]

@@ -1352,6 +1352,27 @@ table.dt td.risk{ width:1%; white-space:nowrap; text-align:right; padding-left:4
 .kx .xl-n b{ font-size:13.5px !important; }
 /* the status banner's edge is crimson here (Kreeper's is gold) */
 .kx.bh.ink::after{ background:#fb0849 !important; }
+
+/* ==== offseason pages ===================================================== */
+/* What a keeper costs: the matrix as a crimson heat-map */
+.kx.hmx{ display:grid; gap:4px; max-width:760px; }
+.kx .hmx-r{ display:grid; grid-template-columns:80px repeat(5,1fr); gap:4px; align-items:center; }
+[data-testid="stMarkdownContainer"] .kx .hmx-r.hd span{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--dim) !important; text-align:center; }
+[data-testid="stMarkdownContainer"] .kx .hmx-t{ font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:18px; color:var(--ink) !important; }
+[data-testid="stMarkdownContainer"] .kx .hmx-c{ text-align:center; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:17px; padding:6px 0; border-radius:6px;
+  color:var(--ink) !important; background:rgba(251,8,73,calc(var(--h) * .85 + .05)); }
+[data-testid="stMarkdownContainer"] .kx .hmx-c.none{ background:transparent; color:var(--line2) !important; }
+/* Set my keepers: a face on every contract, the price in Big Shoulders */
+.contract{ display:grid !important; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; }
+.contract .cface{ width:64px; height:64px; border-radius:10px; object-fit:cover !important; object-position:top !important; max-width:none !important; filter:grayscale(1); background:var(--card2); }
+.contract .price .rd{ font-family:'Big Shoulders Display',sans-serif !important; font-weight:900 !important; font-size:44px !important; }
+/* the draft room's on-the-clock card as a crimson banner */
+.clockcard{ background:#c8063b !important; border:0 !important; padding:18px 22px !important; }
+.clockcard .k{ color:#ffd0dc !important; }
+.clockcard .w{ color:var(--ink) !important; font-weight:900 !important; font-size:48px !important; }
+.clockcard .v{ font-weight:900 !important; font-size:56px !important; }
+.clockcard .tm{ color:#ffd0dc !important; }
+.clockcard.late{ background:#101011 !important; box-shadow:inset 5px 0 0 var(--bad); }
 </style>
 """
 
