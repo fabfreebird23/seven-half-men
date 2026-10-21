@@ -17,6 +17,7 @@ import time
 from collections import Counter
 from typing import Dict, List
 
+import re
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -981,6 +982,10 @@ def render_taxi_league(leaf=None) -> None:
     filled = sum(r["used"] for r in rows)
 
     theme.bar("Taxi, league-wide", "%d of %d slots used" % (filled, slots * len(rows)))
+    _w = wasting[0] if wasting else None
+    st.markdown(_bh("ink", "Taxi · league-wide", f'{filled}<small style="font-size:.5em">/{slots * len(rows)}</small>',
+                    "slots used" + (f' — <b>{esc(who(_w["owner_id"]))}</b> has a rookie on the bench who could park for free'
+                                    if _w else " — every squad that can be full is full")), unsafe_allow_html=True)
     st.markdown(
         '<div class="banner"><b>Any rookie you drafted is eligible</b> &mdash; off the rookie '
         'draft or the veteran draft, it makes no difference. Taxi sits <em>outside</em> your %d '
@@ -1005,31 +1010,19 @@ def render_taxi_league(leaf=None) -> None:
 
     body = []
     for r in rows:
-        def chips(pl):
-            return "".join(
-                '<span class="chip" style="border-color:var(--%s);color:var(--%s)">%s</span> ' % (
-                    (p["position"] or "dim").lower(), (p["position"] or "dim").lower(),
-                    esc(p["name"])) for p in pl)
-        men = chips(r["players"]) or '<span class="tiny">nobody stashed</span>'
+        men = "".join(f'<span class="txc">{esc(p["name"])}</span>' for p in r["players"])
         if r["wasting"]:
-            flag = '<span class="chip warn">%d could park</span>' % len(r["parkable"])
-            note = '<div class="tiny" style="margin-top:3px">on the bench: %s</div>' % chips(
-                r["parkable"])
+            men += "".join(f'<span class="txc dash">{esc(p["name"])} on the bench</span>' for p in r["parkable"])
+            flag, cls = f'{len(r["parkable"])} could park', " warn"
         elif r["open"]:
-            flag = '<span class="chip">%d open</span>' % r["open"]
-            note = '<div class="tiny" style="margin-top:3px">no rookies to park</div>'
+            flag, cls = f'{r["open"]} open', ""
         else:
-            flag, note = '<span class="chip good">full</span>', ""
-        body.append([
-            '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
-                700 if r["owner_id"] == VIEW else 550,
-                esc(who(r["owner_id"])), esc(team_of(r["owner_id"]))),
-            '<span class="mono">%d/%d</span>' % (r["used"], r["slots"]),
-            men + note,
-            flag,
-        ])
-    ledger_table(["Manager", "Used", "On taxi", ""], body,
-                 me_row=next((i for i, r in enumerate(rows) if r["owner_id"] == VIEW), None))
+            flag, cls = "full", ""
+        body.append(
+            f'<div class="tx{" me" if r["owner_id"] == VIEW else ""}{cls}"><div class="tx-n"><b>{esc(who(r["owner_id"]))}</b>'
+            f'<span>{esc(team_of(r["owner_id"]))}</span></div><div class="tx-s">{men or "<span class=txc>nobody stashed</span>"}</div>'
+            f'<em>{r["used"]}/{r["slots"]}</em><span class="tx-f">{flag}</span></div>')
+    st.markdown('<div class="kx">' + "".join(body) + "</div>", unsafe_allow_html=True)
 
     # Legality. Sleeper gates taxi on NFL experience and nothing else, so it
     # will let someone stash a player they picked up off waivers.
@@ -1067,20 +1060,16 @@ def render_taxi_league(leaf=None) -> None:
         if i < len(mine.pods):
             pod = mine.pods[i]
             last = pod.year >= years
-            pods.append(theme.taxi_pod(
-                pod.name, pod.position, "slot %d" % (i + 1), pod.year, years,
-                note=("Clock is up. Promote him \u2014 permanent, and he starts costing a "
-                      "rookie keeper slot \u2014 or release him." if last else
-                      "One more year of runway. Holding him is what creates the squeeze.")))
-        else:
             pods.append(
-                '<div class="pod" style="border-style:dashed">'
-                '<div class="podtop"><span class="slotno">slot %d</span>'
-                '<span class="chip warn">open</span></div>'
-                '<div class="podname" style="color:var(--dim)">Empty</div>'
-                '<div class="podmeta">and it stays empty &mdash; squads lock at kickoff</div>'
-                '</div>' % (i + 1))
-    st.markdown('<div class="bay">%s</div>' % "".join(pods), unsafe_allow_html=True)
+                f'<div class="kt{" last" if last else ""}">{_ph_img(pod.player_id, "kh-img")}'
+                f'<i>slot {i + 1} &middot; year {pod.year} of {years}</i><b>{esc(pod.name)}</b>'
+                f'<span>{esc(pod.position)} &middot; '
+                + ("clock is up — promote or release" if last else "can't start · free of bench · no keeper slot")
+                + '</span></div>')
+        else:
+            pods.append(f'<div class="kt empty"><i>slot {i + 1}</i><b>open</b>'
+                        '<span>and it stays empty — squads lock at kickoff</span></div>')
+    st.markdown('<div class="ktray txtray">%s</div>' % "".join(pods), unsafe_allow_html=True)
     st.markdown(
         '<div class="tiny" style="margin-top:8px">Promoting does <b>not</b> cost the '
         'rookie-keeper designation &mdash; he moves from costing nothing to costing a rookie '
@@ -1096,6 +1085,12 @@ def _drafted_round(r: dict):
     just replays August. What he went for in the room is a fact.
     """
     return r.get("drafted_round")
+
+
+def _dtxt(r: dict) -> str:
+    """'drafted R3' / 'undrafted' / 'rookie draft' as plain text for a list row."""
+    t = re.sub("<[^>]+>", "", _drafted_cell(r)).strip()
+    return t if t in ("undrafted", "rookie draft") else f"drafted {t}"
 
 
 def _drafted_cell(r: dict) -> str:
@@ -1483,22 +1478,55 @@ def _two_div(owner: str, win: bool = False) -> str:
             f'<span>{config.manager_name(owner)}</span></div>')
 
 
+_THUMB = "https://sleepercdn.com/content/nfl/players/thumb/{}.jpg"
+
+
+def _ph_img(pid, cls: str) -> str:
+    return (f'<img class="{cls}" src="{_THUMB.format(pid)}" alt="" onerror="this.style.visibility=\'hidden\'">'
+            if pid else "")
+
+
+def _top_pid(ctx: dict, side: dict):
+    """The side's best projected starter — the face its scoreboard half wears."""
+    ps = [p for p in (side.get("starters") or []) if p and p != "0"]
+    return max(ps, key=lambda p: ctx["proj"].get(p, 0.0)) if ps else None
+
+
+def _rec_of(owner: str) -> str:
+    try:
+        return str(my_situation(owner).get("record") or "")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def _hero_html(a: str, b: str, *, pill: str, big_a: float, big_b: float, kicker: str,
-               wp: float, sub_a: str, sub_b: str, cells: list) -> str:
-    cell = "".join(f'<div class="hc"><i>{k}</i><b class="{c}">{v}</b><span>{s}</span></div>'
-                   for k, v, s, c in cells)
+               wp: float, sub_a: str, sub_b: str, cells: list, photo_a=None, photo_b=None) -> str:
+    """The matchup as the Draft Room's scoreboard, in Kreeper's colours: your
+    side royal with your best player, theirs black, the win probability as the
+    gold cover number in the middle, then four tiles."""
+    tiles = "".join(f'<div><span>{k}</span><b class="{c}">{v}</b><i>{s_}</i></div>' for k, v, s_, c in cells)
+    ra, rb = _rec_of(a), _rec_of(b)
+    lab = f"{kicker} · {pill}".replace("&middot;", "·").upper()
     return (
-        '<div class="hero"><div class="hrow">'
-        f'<div class="wwho"><span class="wav">{_initials(a)}</span><div><b>{_team_of(a)}</b><em>{sub_a}</em></div></div>'
-        f'<div class="wk"><span class="wkpill">&#9679; {pill}</span></div>'
-        f'<div class="wwho r"><div><b>{_team_of(b)}</b><em>{sub_b}</em></div><span class="wav dim">{_initials(b)}</span></div>'
-        '</div>'
-        f'<div class="hnum"><span class="big">{big_a:.1f}</span><span class="hk">{kicker}</span>'
-        f'<span class="big dim">{big_b:.1f}</span></div>'
-        f'<div class="wpbar"><i style="width:{wp * 100:.0f}%"></i></div>'
-        f'<div class="hrow lab"><span><b>{wp * 100:.0f}%</b> YOU</span><span class="hk">win probability</span>'
-        f'<span>{(1 - wp) * 100:.0f}%</span></div>'
-        f'<div class="hcells">{cell}</div></div>')
+        f'<div class="kx xb"><div class="xb-s me">{_ph_img(photo_a, "xb-ph")}<div class="xb-t">'
+        f'<span>{_team_of(a)}{" &middot; " + ra if ra else ""}</span><b>{big_a:.1f}</b><i>{sub_a}</i></div></div>'
+        f'<div class="xb-m"><span class="xb-k">{lab}</span><b>{wp * 100:.0f}<sup>%</sup></b><em>win probability</em>'
+        f'<div class="xb-bar"><i style="width:{wp * 100:.0f}%"></i></div></div>'
+        f'<div class="xb-s op"><div class="xb-t"><span>{_team_of(b)}{" &middot; " + rb if rb else ""}</span>'
+        f'<b>{big_b:.1f}</b><i>{sub_b}</i></div>{_ph_img(photo_b, "xb-ph")}</div></div>'
+        f'<div class="kx xb-tiles">{tiles}</div>')
+
+
+def _bh(tone: str, kick: str, num, line: str, *, photo=None, grid=None) -> str:
+    """A page's cover: royal when it wants you to act, black with a gold edge
+    when it's telling you where you stand."""
+    g = ""
+    if grid:
+        g = '<div class="bh-grid">' + "".join(f'<div><span>{k}</span><b>{v}</b><i>{s_}</i></div>'
+                                              for k, v, s_ in grid) + '</div>'
+    ph = _ph_img(photo, "bh-duo") if (photo and not grid) else ""
+    return (f'<div class="kx bh {tone}{" has-grid" if grid else ""}"><div class="bh-l"><span class="bh-k">{kick}</span>'
+            f'<b class="bh-n">{num}</b><em>{line}</em></div>{g}{ph}</div>')
 
 
 def _advice(me: str, week: int) -> dict | None:
@@ -1545,8 +1573,8 @@ def _todo_html(me: str, adv: dict) -> str:
         cards.append(("&#10003;", f"Your Week {wk} lineup is the best one you have",
                       "Nothing to change.", "", "", "good"))
     html = "".join(
-        f'<div class="todo {c}"><span class="ic">{ic}</span><div><b>{t}</b><span>{s}</span></div>'
-        f'<div class="tv"><b>{v}</b><i>{k}</i></div></div>' for ic, t, s, v, k, c in cards)
+        f'<div class="todo {c}{" hot" if (i == 0 and c != "good") else ""}"><span class="ic">{ic}</span><div><b>{t}</b><span>{s}</span></div>'
+        f'<div class="tv"><b>{v}</b><i>{k}</i></div></div>' for i, (ic, t, s, v, k, c) in enumerate(cards))
     left = my_situation(me).get("faab_left")
     if left is not None:
         html += f'<div class="todo-foot">Waivers run Wednesday &middot; <b>${left}</b> FAAB left.</div>'
@@ -1554,7 +1582,8 @@ def _todo_html(me: str, adv: dict) -> str:
 
 
 def _lineup_rows(ctx: dict, side: dict, *, flag=frozenset(), show_actual=True) -> str:
-    """Slot / player / bar / points rows for one lineup as set."""
+    """One lineup as one list: slot, face, name and game, a royal-to-gold bar,
+    the risk chip and the points. A flagged row (one to bench) turns royal."""
     pos_of, team_of = _pos_team_maps()
     vals = []
     for pid in side["starters"]:
@@ -1564,17 +1593,18 @@ def _lineup_rows(ctx: dict, side: dict, *, flag=frozenset(), show_actual=True) -
     rows = []
     for slot, pid, v in zip(ctx["slots"], side["starters"], vals):
         if not pid or pid == "0":
-            rows.append(f'<tr class="swap"><td>{_slot_chip("", slot)}</td><td class="two"><b>Empty</b>'
-                        '<span>nobody in this slot</span></td><td class="barc"></td><td class="risk"></td>'
-                        '<td class="num">0.0</td></tr>')
+            rows.append(f'<div class="xl swap"><span class="xl-s">{slot}</span><span></span>'
+                        '<div class="xl-n"><b>Empty</b><i>nobody in this slot</i></div><div class="xl-b"></div>'
+                        '<div class="xl-r"></div><b class="xl-p">0.0</b></div>')
             continue
-        pos, tm = pos_of.get(pid, ""), team_of.get(pid, "")
+        tm = team_of.get(pid, "")
+        risk = _risk_td(ctx, pid).replace('<td class="risk"', '<div class="xl-r"').replace("</td>", "</div>")
         rows.append(
-            f'<tr class="{"swap" if pid in flag else ""}"><td>{_slot_chip(pos, slot)}</td>'
-            f'<td class="two"><b>{_pname(pid)}</b><span>{tm} &middot; {gameday.game_label(ctx["games"], tm)}</span></td>'
-            f'<td class="barc"><div class="wbar"><i style="width:{100 * v / mx:.0f}%;background:{_POSC.get(pos, "")}"></i></div></td>'
-            f'{_risk_td(ctx, pid)}<td class="num">{v:.1f}</td></tr>')
-    return '<table class="dt">' + "".join(rows) + "</table>"
+            f'<div class="xl{" swap" if pid in flag else ""}"><span class="xl-s">{slot}</span>{_ph_img(pid, "xl-f")}'
+            f'<div class="xl-n"><b>{_pname(pid)}</b><i>{tm} &middot; {gameday.game_label(ctx["games"], tm)}</i></div>'
+            f'<div class="xl-b"><i style="width:{100 * v / mx:.0f}%"></i></div>{risk}'
+            f'<b class="xl-p">{v:.1f}</b></div>')
+    return '<div class="kx xl-wrap">' + "".join(rows) + "</div>"
 
 
 def _picker_html(compact: bool = False) -> str:
@@ -1624,7 +1654,7 @@ def _render_home_my_week(me: str, cur: int) -> None:
                         "amber" if adv["swaps"] or adv["holes"] else "good") if adv else
                        ("Lineup", "&mdash;", "no game that week", ""))
         st.markdown(_hero_html(
-            me, pair[1]["owner"],
+            me, pair[1]["owner"], photo_a=_top_pid(ctx, pair[0]), photo_b=_top_pid(ctx, pair[1]),
             pill=f"Week {cur} &middot; {'final' if done else 'live' if started else 'preview'}",
             big_a=a["points"] if started else a["final"], big_b=b["points"] if started else b["final"],
             kicker="final" if done else "live" if started else "projected", wp=_wp(a, b),
@@ -1782,7 +1812,7 @@ def render_matchup() -> None:
     pre = sorted((g for g in ctx["games"].values() if g.get("state") == "pre"), key=gameday.kickoff_ts)
     started = _week_started(ctx)
     st.markdown(_hero_html(
-        me, sb["owner"], pill=f"Week {aw} &middot; {'live' if started else 'preview'}",
+        me, sb["owner"], photo_a=_top_pid(ctx, sa), photo_b=_top_pid(ctx, sb), pill=f"Week {aw} &middot; {'live' if started else 'preview'}",
         big_a=a["final"], big_b=b["final"], kicker="projected final", wp=_wp(a, b),
         sub_a="you &middot; lineup as set", sub_b="their lineup as set",
         cells=[("Lineup", f'{len(adv["swaps"])} change{"s" if len(adv["swaps"]) != 1 else ""}'
@@ -2403,30 +2433,36 @@ def render_keepers(leaf=None):
                                  horizontal=True, label_visibility="collapsed", key="vb_scope")
                 shown = board if scope == "Whole league" else [
                     r for r in board if r["owner_id"] == VIEW]
+                ranked = sorted(shown, key=lambda x: -(x["surplus"] if x["surplus"] is not None else -99))[:60]
+                top = next((r for r in ranked if r["surplus"] is not None), None)
+                if top:
+                    st.markdown(_bh("ink", "Value board · what everyone would cost to keep", theme.signed(top["surplus"]),
+                                    f'<b>{esc(top["name"])}</b> keeps at R{top["cost"]}'
+                                    + (" in a rookie slot" if top["kind"] == "rookie" else "")
+                                    + (f' — market R{top["adp"]}' if top["adp"] else ""),
+                                    photo=top["player_id"]), unsafe_allow_html=True)
+                vmax = max([abs(r["surplus"] or 0) for r in ranked] + [1])
                 rows_vb = []
-                for r in sorted(shown, key=lambda x: -(
-                        x["surplus"] if x["surplus"] is not None else -99))[:60]:
-                    chips = []
+                for r in ranked:
+                    tags = []
                     if r["kind"] == "rookie":
-                        chips.append('<span class="chip mag">rookie slot</span>')
+                        tags.append("rookie slot")
                     if r["from_rookie_draft"]:
-                        chips.append('<span class="chip acc">R%d premium</span>'
-                                     % engine.rookie_draft_premium())
+                        tags.append("R%d premium" % engine.rookie_draft_premium())
                     if r["bumped"]:
-                        chips.append('<span class="chip warn">bumped</span>')
+                        tags.append("bumped")
                     if not r["eligible"]:
-                        chips.append('<span class="chip bad">wall</span>')
-                    rows_vb.append([
-                        '<div style="font-weight:650">%s</div><div class="tiny">%s &#183; %s</div>' % (
-                            esc(r["name"]), esc(r["position"]), esc(team_of(r["owner_id"]))),
-                        '<span class="mono">%s</span>' % ("R%d" % r["cost"] if r["cost"] else "&mdash;"),
-                        _drafted_cell(r),
-                        '<span class="mono">%s</span>' % ("R%d" % r["adp"] if r["adp"] else "&mdash;"),
-                        '<span class="surplus %s">%s</span>' % (
-                            theme.surplus_class(r["surplus"]), theme.signed(r["surplus"])),
-                        " ".join(chips),
-                    ])
-                ledger_table(["Player", "Keeps at", "Drafted", "Market", "Surplus"], rows_vb)
+                        tags.append("wall")
+                    sv = r["surplus"]
+                    rows_vb.append(
+                        f'<div class="wv{" me" if r["owner_id"] == VIEW else ""}">{_ph_img(r["player_id"], "xl-f")}'
+                        f'<div class="wv-n"><b>{esc(r["name"])}</b><span>{esc(r["position"])} &middot; {esc(team_of(r["owner_id"]))}</span></div>'
+                        f'<div class="wv-c"><b>{"R%d" % r["cost"] if r["cost"] else "&mdash;"}</b>'
+                        f'<span>{_dtxt(r)} &middot; market {"R%d" % r["adp"] if r["adp"] else "&mdash;"}</span></div>'
+                        f'<div class="wv-b"><i class="{"neg" if (sv or 0) < 0 else ""}" style="width:{max(3, 100 * abs(sv or 0) / vmax):.0f}%"></i></div>'
+                        f'<em class="{"neg" if (sv or 0) < 0 else ""}">{theme.signed(sv)}</em>'
+                        f'<span class="wv-t">{" &middot; ".join(tags)}</span></div>')
+                st.markdown('<div class="kx">' + "".join(rows_vb) + "</div>", unsafe_allow_html=True)
                 st.markdown(
                     '<div class="tiny" style="margin-top:8px">Sorted by keeper value &mdash; his '
                     'talent minus what his cost round\'s pick would actually land once every '
@@ -2589,30 +2625,24 @@ def render_pot(leaf=None):
             # The pot fills against the WHOLE pool, not against the cap. Scaled
             # to the cap it pins full the moment the cap is met and then tells
             # you nothing for the rest of the season.
-            glance([
-                {"pct": spent_total / max(1, pool), "color": "var(--acc)",
-                 "big": "$%d" % spent_total, "label": "In the pot",
-                 "note": "bid so far, all %d teams &mdash; <b>every dollar of it is owed</b>"
-                         % len(settlement.bills)},
-                {"pct": to_chase / float(cap or 1), "color": "var(--good)",
-                 "big": "$%d" % to_chase, "label": "Chase takes",
-                 "note": ("capped at $%d, the third-place prize. <b>Full.</b>" % cap)
-                         if to_chase >= cap else
-                         "the first $%d of it, the third-place prize" % cap},
-                {"pct": over / float(max(1, pool - cap)), "color": "var(--acc2)",
-                 "big": "$%d" % over, "label": "Overflow",
-                 "note": ("splits %d/%d/%d/%d back into the bracket" % (
-                     int(_ovr["first"]), int(_ovr["second"]),
-                     int(_ovr["third"]), int(_ovr["chase"]))) if over else
-                         "nothing above the cap yet"},
-                {"pct": (mine.owed / float(budget)) if mine else 0.0, "color": "var(--warn)",
-                 "big": "$%d" % (mine.owed if mine else 0), "label": "Your bill",
-                 "note": "of your $%d &mdash; what you have bid is what you owe" % budget},
-            ])
-            st.markdown(
-                '<div class="tiny" style="margin-top:8px">Nobody has bid yet, so the pot is '
-                'empty and the "owed" column below is zero for everyone. It fills as claims '
-                'land.</div>', unsafe_allow_html=True)
+            _bidders = sum(1 for b in settlement.bills if b.spent > 0)
+            st.markdown(_bh(
+                "ink", "The pot · what you bid is what you owe", f"${spent_total}",
+                "in the pot — " + (f"all of it to the <b>Chase</b> winner, capped and full" if to_chase >= cap
+                                   else f"the first ${cap} goes to the <b>Chase</b> winner"),
+                grid=[("Chase takes", f"${to_chase}", "capped · full" if to_chase >= cap else f"of the ${cap} cap"),
+                      ("Overflow", f"${over}", ("splits %d/%d/%d/%d into the bracket" % (
+                          int(_ovr["first"]), int(_ovr["second"]), int(_ovr["third"]), int(_ovr["chase"])))
+                       if over else "nothing above the cap yet"),
+                      ("Your bill", f"${mine.owed if mine else 0}", f"of your ${budget}"),
+                      ("Teams bidding", str(_bidders), f"of {len(settlement.bills)}")]),
+                unsafe_allow_html=True)
+            # (this used to say "nobody has bid yet" whatever the pot held)
+            if spent_total == 0:
+                st.markdown(
+                    '<div class="tiny" style="margin-top:8px">Nobody has bid yet, so the pot is '
+                    'empty and the "owed" column below is zero for everyone. It fills as claims '
+                    'land.</div>', unsafe_allow_html=True)
 
         theme.bar("Into the pot", "week 1 \u2192 %d &middot; what each has bid, running total" % WEEKS)
         try:
@@ -2647,18 +2677,14 @@ def render_pot(leaf=None):
     # Settlement is where the burn-down ends up; two views of one pot.
     if leaf in (None, "pot"):
         theme.bar("Settlement", "who owes what")
-        rows = []
-        for b in settlement.bills:
-            col = "var(--bad)" if b.owed > 50 else ("var(--warn)" if b.owed > 20 else "var(--good)")
-            rows.append([
-                '<div style="font-weight:650">%s</div><div class="tiny">%s</div>' % (
-                    esc(who(b.owner_id)), esc(team_of(b.owner_id))),
-                '<span class="mono">$%d</span>' % b.spent,
-                '<div class="bar-track"><i style="width:%d%%;background:%s"></i></div>' % (
-                    min(100, b.spent), col),
-                '<span class="mono" style="color:%s;font-weight:700">$%d</span>' % (col, b.owed),
-            ])
-        ledger_table(["Owner", "Bid", "Share of the pot", "Owed"], rows)
+        _bud = max(1, int(fr["budget"]))
+        rows = "".join(
+            f'<div class="sp{" me" if b.owner_id == VIEW else ""}"><b>{esc(who(b.owner_id))}</b>'
+            f'<div class="sp-b"><i class="live" style="width:{min(100, 100 * b.spent / _bud):.0f}%"></i></div>'
+            f'<em>${b.owed}</em><span>owed &middot; ${b.spent} bid</span></div>'
+            for b in sorted(settlement.bills, key=lambda b: -b.owed))
+        st.markdown('<div class="kx">' + rows + "</div>", unsafe_allow_html=True)
+
         _ov = config.overflow_split()
         st.markdown(
             '<div class="banner" style="margin-top:12px"><b>The cap is a ceiling, not a discount.</b> '
