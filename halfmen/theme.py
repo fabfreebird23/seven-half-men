@@ -1366,6 +1366,235 @@ td.two .tw{ display:flex; align-items:center; gap:10px; min-width:0; } td.two .t
 [data-testid="stMarkdownContainer"] .kx .ch span{ font-size:11.5px; color:var(--muted) !important; }
   .kx .tc-c{ grid-template-columns:1fr; } .kx .tc-x{ padding:0; }
   .kx .sp{ grid-template-columns:80px 1fr 40px; } .kx .sp span{ display:none; }
+/* =====================================================================
+   3D MOTION. Eleven pieces, mocked in design/anim3d.html and built here.
+   1-4 are the Kreeper League's, ported; the rest exist because of rules
+   only this league has. Every one of them stands still under
+   prefers-reduced-motion (the block at the end).
+   ===================================================================== */
+/* 1. fight-night entrance - app._intro adds .in once per page load, so it
+      plays when you arrive and never on Live's 30-second refresh */
+.kx.gw.in .gw-s.l, .kx.xb.in .xb-s.me{ animation:kx-inL .9s cubic-bezier(.2,.9,.2,1) both; }
+.kx.gw.in .gw-s.r, .kx.xb.in .xb-s.op{ animation:kx-inR .9s cubic-bezier(.2,.9,.2,1) both; }
+[data-testid="stMarkdownContainer"] .kx.gw.in .gw-vs, [data-testid="stMarkdownContainer"] .kx.xb.in .xb-vs{
+  animation:kx-vs 1s .5s cubic-bezier(.3,1.6,.4,1) backwards; }
+.kx.gw.in .gw-m b, .kx.gw.in .gw-m em, .kx.xb.in .xb-m b, .kx.xb.in .xb-m em{ animation:kx-up .6s .9s ease-out both; }
+.kx.gw.in, .kx.xb.in{ animation:kx-shake .35s 1s ease-out; }
+@keyframes kx-inL{ from{ transform:perspective(900px) translateX(-55%) translateZ(-260px) rotateY(32deg); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes kx-inR{ from{ transform:perspective(900px) translateX(55%) translateZ(-260px) rotateY(-32deg); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes kx-vs{ 0%{ transform:perspective(400px) scale(3) rotateY(540deg) skewX(-8deg); opacity:0; } 70%{ opacity:1; }
+  100%{ transform:perspective(400px) scale(1) rotateY(0) skewX(-8deg); } }
+@keyframes kx-up{ from{ transform:translateY(14px); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes kx-shake{ 0%,100%{ translate:0; } 25%{ translate:-5px 0; } 50%{ translate:4px 0; } 75%{ translate:-2px 0; } }
+
+/* 2. tilt + shine - the covers and the award cards lean toward the pointer
+      and a blue glint follows it (pointer handler in app._NAV_JS) */
+.kx.gw, .kx.xb, .kx .sup{ position:relative; transition:transform .15s ease-out; }
+.kx.gw::after, .kx.xb::after, .kx .sup::after{ content:""; position:absolute; inset:0; z-index:4; pointer-events:none; mix-blend-mode:screen;
+  border-radius:inherit; background:linear-gradient(105deg,transparent 35%,rgba(160,200,255,.2) 48%,transparent 60%); background-size:250% 100%;
+  background-position:var(--sx,130%) 0; transition:background-position .15s ease-out; }
+
+/* 3. split-flap scores on Live (app._flap): only the digits that changed flip */
+[data-testid="stMarkdownContainer"] .kx .fl{ display:inline-flex !important; gap:.05em; vertical-align:top; font-size:inherit !important; letter-spacing:0 !important;
+  color:inherit !important; text-transform:none !important; overflow:visible !important; }
+[data-testid="stMarkdownContainer"] .kx .fl span{ display:block !important; font-size:inherit !important; letter-spacing:0 !important; color:inherit !important;
+  text-transform:none !important; white-space:nowrap; }
+[data-testid="stMarkdownContainer"] .kx .fl span.fd{ position:relative; display:inline-block !important; width:.6em; height:1.08em; line-height:1.08em; text-align:center;
+  overflow:visible !important; perspective:3em; }
+[data-testid="stMarkdownContainer"] .kx .fl span.fd.pt{ width:.26em; }
+.kx .fd.s{ background:#1c1a1b linear-gradient(transparent calc(50% - .5px),#000 calc(50% - .5px),#000 calc(50% + .5px),transparent calc(50% + .5px)); border-radius:.08em; }
+.kx .fd.pt.s{ background:none; }
+[data-testid="stMarkdownContainer"] .kx .fd > span{ position:absolute !important; left:0; right:0; height:50%; overflow:hidden !important; background:#1c1a1b; }
+[data-testid="stMarkdownContainer"] .kx .fd > span > span{ position:absolute; left:0; right:0; height:1.08em; }
+[data-testid="stMarkdownContainer"] .kx .fd .t, [data-testid="stMarkdownContainer"] .kx .fd .ft{ top:0; border-radius:.08em .08em 0 0; }
+[data-testid="stMarkdownContainer"] .kx .fd .t > span, [data-testid="stMarkdownContainer"] .kx .fd .ft > span{ top:0; }
+[data-testid="stMarkdownContainer"] .kx .fd .b, [data-testid="stMarkdownContainer"] .kx .fd .fb{ bottom:0; border-radius:0 0 .08em .08em; }
+[data-testid="stMarkdownContainer"] .kx .fd .b > span, [data-testid="stMarkdownContainer"] .kx .fd .fb > span{ bottom:0; }
+[data-testid="stMarkdownContainer"] .kx .fd .t{ border-bottom:1px solid #000; }
+[data-testid="stMarkdownContainer"] .kx .fd .ft{ z-index:2; transform-origin:bottom; backface-visibility:hidden; animation:kx-ft .3s ease-in forwards; }
+[data-testid="stMarkdownContainer"] .kx .fd .fb{ z-index:2; transform-origin:top; transform:rotateX(90deg); animation:kx-fb .3s .3s ease-out forwards; }
+@keyframes kx-ft{ to{ transform:rotateX(-90deg); } } @keyframes kx-fb{ to{ transform:rotateX(0); } }
+.kx .mm.me .mm-s.a .fd.s, [data-testid="stMarkdownContainer"] .kx .mm.me .mm-s.a .fd > span{ background-color:#7a0424; }
+.kx .fl-d{ display:inline-block; vertical-align:top; margin-left:6px; font-family:'Archivo',sans-serif; font-style:normal; font-size:12px; font-weight:700;
+  color:var(--teal); animation:kx-gain 2.4s ease-out both; }
+@keyframes kx-gain{ 0%{ opacity:0; transform:translateY(6px); } 15%,70%{ opacity:1; transform:none; } 100%{ opacity:0; } }
+
+/* 4. contract flip - Home's best contracts: the price on the front, the
+      three-year ladder on the back. Hover leans it, tap turns it. */
+.kx.kflips{ display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+.kx .kflip{ perspective:1000px; height:178px; cursor:pointer; outline:none; }
+.kx .kf-in{ position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .72s cubic-bezier(.3,1.3,.4,1); }
+.kx .kflip.on .kf-in{ transform:rotateY(180deg); }
+@media (hover:hover){ .kx .kflip:hover:not(.on) .kf-in{ transform:rotateY(-13deg) rotateX(7deg); } }
+.kx .kflip:focus-visible .kf-f, .kx .kflip:focus-visible .kf-b{ box-shadow:0 0 0 2px var(--kg); }
+.kx .kf-f, .kx .kf-b{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; border-radius:12px;
+  border:1px solid var(--kl); padding:12px 13px; display:flex; flex-direction:column; overflow:hidden; }
+.kx .kf-f{ background:var(--kink); }
+.kx .kflip.me .kf-f, .kx .kflip.me .kf-b{ border-color:var(--kg); }
+.kx .kf-b{ transform:rotateY(180deg); background:linear-gradient(160deg,#2a0a14,#120307); gap:4px; }
+.kx .kf-top{ display:flex; gap:10px; align-items:center; min-width:0; }
+.kx .kf-top img{ width:42px; height:42px; border-radius:50%; object-fit:cover !important; object-position:top !important; background:var(--panel2); flex:none; }
+.kx .kf-top > div{ min-width:0; }
+.kx .kf-top b{ display:block; font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:18px; line-height:1.05; text-transform:uppercase;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-testid="stMarkdownContainer"] .kx .kf-top span{ display:block; font-size:11px; color:var(--muted) !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.kx .kf-own{ display:flex; align-items:center; gap:6px; margin-top:auto; font-size:11px; color:var(--muted); }
+.kx .kf-own i.mf.mf{ width:20px; height:20px; border-width:1px; font-size:8px; }
+.kx .kf-px{ display:flex; align-items:baseline; gap:10px; margin-top:8px; }
+.kx .kf-px b{ font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:42px; line-height:1; color:var(--kr2); }
+.kx .kf-px em{ font-style:normal; font-size:12px; color:var(--muted); }
+.kx .kf-px em.p{ color:var(--teal); } .kx .kf-px em.n{ color:var(--bad); }
+[data-testid="stMarkdownContainer"] .kx .kf-b > span{ font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:#f0d7de !important; }
+.kx .kf-st{ display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#f0d7de; border-bottom:1px solid rgba(255,255,255,.1); padding:3px 0; }
+.kx .kf-st b{ font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:15px; color:var(--kg); }
+.kx .kf-st.wall, .kx .kf-st.wall b{ color:var(--bad); }
+
+/* 5. the skyline - last week's eight scores as solids, each manager on top
+      of his own tower (Week in Review) */
+.kx.sky{ display:flex; align-items:flex-end; justify-content:space-between; gap:8px; height:230px; padding:62px 10px 26px;
+  perspective:900px; background:var(--kink); border:1px solid var(--kl); border-radius:12px; margin:0 0 12px; overflow:hidden; }
+.kx .sky-t{ position:relative; flex:1; max-width:70px; transform-style:preserve-3d; transform:rotateX(12deg) rotateY(-16deg); }
+.kx .sky-s{ position:relative; width:100%; height:0; border-radius:3px 3px 0 0;
+  background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 52%,black));
+  box-shadow:12px 0 0 -2px color-mix(in srgb,var(--c) 38%,black); animation:kx-grow 1.3s cubic-bezier(.2,.9,.3,1) var(--dl,0s) forwards; }
+.kx .sky-t i.mf.mf{ position:absolute; left:50%; top:-60px; margin-left:-17px; border-color:var(--c); }
+.kx .sky-t b{ position:absolute; top:-24px; left:-10px; right:-10px; text-align:center; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:17px; }
+[data-testid="stMarkdownContainer"] .kx .sky-t span{ position:absolute; bottom:-22px; left:-10px; right:-10px; text-align:center; font-size:10.5px; color:var(--muted) !important; }
+@keyframes kx-grow{ to{ height:var(--h); } }
+
+/* 6. the two drums - a glass globe on a stand per drum. The balls are the
+      managers' faces, sized by their weight, at real 3D positions; the
+      cluster turns while each ball counter-turns to keep its face out, and
+      the cage turns the other way. */
+.kx.drums{ display:flex; gap:28px; justify-content:center; flex-wrap:wrap; margin:6px 0 4px; }
+.kx .drum{ position:relative; width:200px; height:244px; }
+.kx .drum .glb{ position:absolute; left:0; top:0; width:200px; height:200px; perspective:560px; }
+.kx .drum .glass{ position:absolute; inset:0; border-radius:50%; z-index:3; pointer-events:none;
+  background:radial-gradient(circle at 31% 24%,rgba(255,255,255,.34),rgba(255,255,255,.06) 18%,transparent 32%),
+             radial-gradient(circle at 70% 82%,rgba(255,255,255,.08),transparent 26%),
+             radial-gradient(circle at 50% 50%,transparent 58%,rgba(0,0,0,.5) 100%);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.12), inset 0 0 28px var(--tint,rgba(87,142,213,.2)); }
+.kx .drum .back{ position:absolute; inset:0; border-radius:50%; z-index:0; background:radial-gradient(circle at 50% 62%,var(--tint,rgba(87,142,213,.2)) 0,rgba(10,9,10,.92) 66%); }
+.kx .drum .cage{ position:absolute; inset:0; z-index:2; transform-style:preserve-3d; animation:kx-cage 14s linear infinite reverse; }
+.kx .drum .cage i{ position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,255,255,.16); }
+.kx .drum .cage i:nth-child(2){ transform:rotateY(60deg); } .kx .drum .cage i:nth-child(3){ transform:rotateY(120deg); }
+.kx .drum .cage i:nth-child(4){ transform:rotateX(90deg); border-color:rgba(255,255,255,.22); }
+.kx .drum .spin{ position:absolute; left:50%; top:50%; z-index:1; transform-style:preserve-3d; animation:kx-turn 9s linear infinite; }
+.kx .drum .ball{ position:absolute; transform-style:preserve-3d; }
+.kx .drum .fc3{ width:var(--d,32px); height:var(--d,32px); margin:calc(var(--d,32px) / -2) 0 0 calc(var(--d,32px) / -2); animation:kx-face 9s linear infinite; }
+.kx .drum .bob{ width:100%; height:100%; animation:kx-bob var(--bt,1.6s) ease-in-out var(--bd,0s) infinite alternate; }
+.kx .drum .orb{ position:relative; width:100%; height:100%; border-radius:50%; overflow:hidden;
+  box-shadow:0 0 0 2px var(--bc,var(--kg)), 0 6px 10px -4px rgba(0,0,0,.7); background:var(--panel2); }
+.kx .drum .orb.out{ filter:grayscale(1) brightness(.55); }
+.kx .drum .orb img{ width:100%; height:100%; object-fit:cover !important; object-position:center 30% !important; display:block; }
+.kx .drum .orb em{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-style:normal;
+  font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:calc(var(--d,32px) * .42); color:var(--muted); }
+.kx .drum .orb::after{ content:""; position:absolute; inset:0; border-radius:50%;
+  background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.55),rgba(255,255,255,.1) 22%,transparent 40%),
+             radial-gradient(circle at 50% 50%,transparent 52%,rgba(0,0,0,.62) 100%); }
+.kx .drum .axle{ position:absolute; left:50%; top:50%; width:12px; height:12px; margin:-6px; border-radius:50%; z-index:4;
+  background:radial-gradient(circle at 35% 30%,#fff,#8a8486 55%,#2b2729); box-shadow:0 0 0 2px rgba(0,0,0,.4); }
+.kx .drum .stand{ position:absolute; left:50%; top:190px; width:80px; height:36px; margin-left:-40px;
+  background:linear-gradient(180deg,#3a3537,#1b1819); clip-path:polygon(32% 0,68% 0,100% 100%,0 100%); }
+.kx .drum .floor{ position:absolute; left:50%; top:222px; width:150px; height:18px; margin-left:-75px; border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.65),transparent 70%); }
+[data-testid="stMarkdownContainer"] .kx .drum-l{ display:block; text-align:center; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted) !important; }
+@keyframes kx-turn{ from{ transform:rotateX(-14deg) rotateY(0); } to{ transform:rotateX(-14deg) rotateY(360deg); } }
+@keyframes kx-face{ from{ transform:rotateY(0) rotateX(14deg); } to{ transform:rotateY(-360deg) rotateX(14deg); } }
+@keyframes kx-cage{ from{ transform:rotateX(-14deg) rotateY(0); } to{ transform:rotateX(-14deg) rotateY(360deg); } }
+@keyframes kx-bob{ from{ transform:translateY(-5px); } to{ transform:translateY(5px); } }
+
+/* 7. the pot as a vessel - every spender's coin drops in, biggest first;
+      it fills to the Chase cap and anything over runs off the side */
+.kx.vbox{ display:flex; align-items:center; justify-content:center; gap:28px; background:var(--kink); border:1px solid var(--kl);
+  border-radius:12px; padding:22px 16px; margin:0 0 14px; flex-wrap:wrap; }
+.kx .coins{ display:flex; flex-direction:column-reverse; gap:5px; min-width:120px; }
+.kx .coin{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); opacity:0; animation:kx-coin .45s var(--dl,0s) forwards; }
+.kx .coin b{ font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:16px; color:var(--ink); }
+.kx .coin i.mf.mf{ width:26px; height:26px; border-color:var(--kr2); }
+@keyframes kx-coin{ from{ opacity:0; transform:translateX(-14px) rotateY(80deg); } to{ opacity:1; transform:none; } }
+.kx .vessel{ position:relative; width:130px; height:190px; perspective:640px; flex:none; }
+.kx .vs-in{ position:absolute; inset:0; transform:rotateX(9deg); transform-style:preserve-3d; }
+.kx .glassv{ position:absolute; inset:0; border:2px solid var(--line2); border-radius:9px 9px 30px 30px; overflow:hidden;
+  background:linear-gradient(100deg,rgba(255,255,255,.06),transparent 42%); }
+.kx .fillv{ position:absolute; left:0; right:0; bottom:0; height:0; background:linear-gradient(180deg,var(--kr2),#8a0427);
+  animation:kx-fill 2.4s cubic-bezier(.3,.8,.4,1) forwards; }
+.kx .fillv::before{ content:""; position:absolute; top:-7px; left:-50%; width:200%; height:14px; border-radius:50%; background:var(--kr2);
+  opacity:.85; animation:kx-slosh 3.1s ease-in-out infinite; }
+@keyframes kx-fill{ to{ height:var(--lvl,0%); } }
+@keyframes kx-slosh{ 0%,100%{ transform:translateX(-6px) rotate(-1.2deg); } 50%{ transform:translateX(6px) rotate(1.2deg); } }
+.kx .capv{ position:absolute; left:-8px; right:-8px; border-top:2px dashed var(--teal); z-index:3; }
+[data-testid="stMarkdownContainer"] .kx .capv span{ position:absolute; left:calc(100% + 6px); top:-9px; font-size:10.5px; letter-spacing:.06em;
+  color:var(--teal) !important; white-space:nowrap; }
+.kx .spill{ position:absolute; top:-2px; right:-15px; width:13px; height:0; background:var(--kg); border-radius:0 0 6px 6px; opacity:.9;
+  animation:kx-spill 1.3s 2.2s ease-in forwards; }
+@keyframes kx-spill{ to{ height:var(--sp,0px); } }
+.kx .vnote{ max-width:240px; font-size:12.5px; color:var(--muted); line-height:1.5; }
+.kx .vnote b{ display:block; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:40px; line-height:1; color:var(--ink); }
+
+/* 8. the taxi carousel - your two slots on a turntable; tap to turn it */
+.kx.txc{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin:0 0 6px; }
+.kx .txc-stage{ perspective:1000px; width:280px; height:170px; cursor:pointer; outline:none; }
+.kx .txc-in{ position:relative; width:100%; height:100%; transform-style:preserve-3d; transform:translateZ(-140px) rotateY(calc(var(--turn,0) * -180deg));
+  transition:transform .7s cubic-bezier(.3,1.2,.4,1); }
+.kx .txc-p{ position:absolute; inset:0; border-radius:12px; border:1px solid var(--kl); background:var(--kink); padding:14px; display:flex; flex-direction:column; gap:4px;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.kx .txc-p:nth-child(1){ transform:rotateY(0) translateZ(140px); } .kx .txc-p:nth-child(2){ transform:rotateY(180deg) translateZ(140px); }
+.kx .txc-p.last{ border-color:var(--amber); }
+.kx .txc-p.empty{ border-style:dashed; }
+.kx .txc-p img{ position:absolute; right:12px; top:12px; width:52px; height:52px; border-radius:50%; object-fit:cover !important; object-position:top !important;
+  background:var(--panel2); }
+[data-testid="stMarkdownContainer"] .kx .txc-p i{ font-style:normal; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.kx .txc-p b{ font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:24px; line-height:1.05; text-transform:uppercase; padding-right:62px; }
+[data-testid="stMarkdownContainer"] .kx .txc-p span{ margin-top:auto; font-size:12px; color:var(--muted) !important; }
+.kx .txc-p.last span{ color:var(--amber) !important; }
+.kx .pips{ display:flex; gap:5px; margin-top:4px; } .kx .pips u{ width:30px; height:5px; border-radius:3px; background:var(--kl); text-decoration:none; }
+.kx .pips u.on{ background:var(--teal); } .kx .pips u.now{ background:var(--amber); }
+.kx .txc-n{ font-size:12px; color:var(--muted); max-width:300px; }
+
+/* 9. the franchise stamp - one tag, once: it presses down the Z axis */
+.frs{ position:relative; } .contract.frs{ padding-right:128px; }
+.frs .stamp{ position:absolute; right:18px; top:50%; width:96px; height:96px; margin-top:-48px; border:4px solid var(--acc); border-radius:50%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--acc); text-transform:uppercase; pointer-events:none;
+  font-family:'Big Shoulders Display',sans-serif; font-weight:900; transform:rotate(-15deg); opacity:.95; z-index:2;
+  animation:kx-press .62s .4s cubic-bezier(.3,1.5,.5,1) backwards; }
+.frs .stamp b{ font-size:21px; line-height:.95; } [data-testid="stMarkdownContainer"] .frs .stamp span{ font-size:10px; letter-spacing:.12em; color:var(--acc) !important; }
+.frs.go{ animation:kx-shake .34s .85s ease-out; }
+@keyframes kx-press{ 0%{ opacity:0; transform:perspective(600px) translateZ(300px) rotate(-38deg) scale(2.3); }
+  65%{ opacity:1; transform:perspective(600px) translateZ(0) rotate(-15deg) scale(.93); }
+  100%{ opacity:.95; transform:perspective(600px) translateZ(0) rotate(-15deg) scale(1); } }
+
+/* 10. the Chase, lit - both brackets on one tilted plane, seats dropping in
+       off the Z axis; the four playing for the pot are the ones that glow */
+.kx.brk{ display:grid; grid-template-columns:1fr 1fr; gap:22px; perspective:1100px; padding:30px 18px 18px; background:var(--kink);
+  border:1px solid var(--kl); border-radius:12px; margin:0 0 14px; }
+.kx .brk-c{ transform-style:preserve-3d; transform:rotateX(14deg) rotateY(-9deg); display:flex; flex-direction:column; gap:7px; position:relative; }
+.kx .brk-c:nth-child(2){ transform:rotateX(14deg) rotateY(9deg); }
+[data-testid="stMarkdownContainer"] .kx .brk-c > span{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--teal) !important; margin-bottom:2px; }
+[data-testid="stMarkdownContainer"] .kx .brk-c.cz > span{ color:var(--kr2) !important; }
+.kx .seat{ display:flex; align-items:center; gap:9px; height:40px; padding:0 11px; border-radius:8px; border:1px solid var(--kl); background:#151314;
+  animation:kx-seat .5s var(--dl,0s) backwards; }
+.kx .seat.pot{ border-color:rgba(54,157,134,.55); background:rgba(54,157,134,.10); }
+.kx .seat.chase{ border-color:var(--kr2); background:rgba(251,8,73,.12); box-shadow:0 0 18px rgba(251,8,73,.28); }
+.kx .seat.me{ outline:2px solid var(--kg); outline-offset:1px; }
+.kx .seat em{ font-style:normal; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:18px; color:var(--muted); width:16px; }
+.kx .seat b{ font-size:13.5px; font-weight:650; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+[data-testid="stMarkdownContainer"] .kx .seat span{ margin-left:auto; font-size:11.5px; color:var(--muted) !important; white-space:nowrap; }
+.kx .seat i.mf.mf{ width:28px; height:28px; }
+@keyframes kx-seat{ from{ opacity:0; transform:translateZ(-120px); } to{ opacity:1; transform:none; } }
+@media (max-width:760px){
+  .kx.brk{ grid-template-columns:1fr; } .kx .brk-c, .kx .brk-c:nth-child(2){ transform:rotateX(10deg); }
+  .kx.sky{ gap:4px; padding:56px 4px 26px; } .kx .sky-t b{ font-size:13px; } .kx .sky-t i.mf.mf{ width:26px; height:26px; margin-left:-13px; top:-52px; }
+  .kx .drum{ transform:scale(.82); transform-origin:top center; margin-bottom:-40px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .kx.gw.in *, .kx.xb.in *, .kx.gw.in, .kx.xb.in, .kx .fd .ft, .kx .fd .fb, .kx .fl-d,
+  .kx .drum *, .kx .coin, .kx .fillv, .kx .fillv::before, .kx .spill, .kx .seat, .kx .sky-s, .frs, .frs .stamp{ animation:none !important; }
+  [data-testid="stMarkdownContainer"] .kx .fd .ft{ display:none !important; } [data-testid="stMarkdownContainer"] .kx .fd .fb{ transform:none !important; }
+  .kx .mc-in, .kx .kf-in, .kx .txc-in, .kx.gw, .kx.xb, .kx .sup{ transition:none !important; }
+  .kx .coin{ opacity:1; } .kx .fillv{ height:var(--lvl,0%); } .kx .spill{ height:var(--sp,0px); } .kx .sky-s{ height:var(--h); }
+}
 /* the lineup as one list */
 .kx.xl-wrap{ display:block; }
 .kx .xl{ display:grid; grid-template-columns:42px 34px minmax(0,1fr) minmax(50px,140px) 64px 48px; gap:10px; align-items:center;

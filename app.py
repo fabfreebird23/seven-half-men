@@ -1100,7 +1100,33 @@ def render_taxi_league(leaf=None) -> None:
         else:
             pods.append(f'<div class="kt empty"><i>slot {i + 1}</i><b>open</b>'
                         '<span>and it stays empty — squads lock at kickoff</span></div>')
-    st.markdown('<div class="ktray txtray">%s</div>' % "".join(pods), unsafe_allow_html=True)
+    if slots == 2:
+        # Two slots on a turntable - tap to turn it. The clock is what you act
+        # on, so each face carries its pips; year two lights amber.
+        faces = []
+        for i in range(slots):
+            if i < len(mine.pods):
+                pod = mine.pods[i]
+                last = pod.year >= years
+                pips = "".join('<u class="%s"></u>' % ("now" if k + 1 == pod.year and last else
+                                                      "on" if k + 1 <= pod.year else "")
+                               for k in range(years))
+                faces.append(
+                    f'<div class="txc-p{" last" if last else ""}">{_ph_img(pod.player_id, "txc-h")}'
+                    f'<i>slot {i + 1} &middot; year {pod.year} of {years}</i><b>{esc(pod.name)}</b>'
+                    f'<div class="pips">{pips}</div>'
+                    f'<span>{esc(pod.position)} &middot; '
+                    + ("clock is up &mdash; promote or release" if last else "one more year of runway")
+                    + '</span></div>')
+            else:
+                faces.append(f'<div class="txc-p empty"><i>slot {i + 1}</i><b>Open</b>'
+                             '<span>and it stays empty &mdash; squads lock at kickoff</span></div>')
+        st.markdown('<div class="kx txc"><div class="txc-stage" tabindex="0" role="button" '
+                    'aria-label="Turn to the other taxi slot"><div class="txc-in">'
+                    + "".join(faces) + '</div></div><div class="txc-n">Tap the slot to turn the '
+                    'table to the other one.</div></div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="ktray txtray">%s</div>' % "".join(pods), unsafe_allow_html=True)
     st.markdown(
         '<div class="tiny" style="margin-top:8px">Promoting does <b>not</b> cost the '
         'rookie-keeper designation &mdash; he moves from costing nothing to costing a rookie '
@@ -1157,27 +1183,30 @@ def render_top_values() -> None:
     # meaningful once a keeper price stopped being derived FROM adp: a drafted
     # player now keeps at the round he was drafted in, so the two numbers are
     # independent and the gap is real.
-    theme.bar("Best contracts in the league", "price against market &middot; biggest gap first")
-    rows = []
+    theme.bar("Best contracts in the league", "price against market &middot; tap one for the ladder")
+    cards = []
     for r in best:
-        chips = []
         if r["kind"] == "rookie":
-            chips.append('<span class="chip mag">rookie slot</span>')
+            tag = "rookie slot"
         elif r.get("from_rookie_draft"):
-            chips.append('<span class="chip acc">R%d premium</span>'
-                         % engine.rookie_draft_premium())
-        rows.append([
-            '<div style="font-weight:650">%s</div><div class="tiny">%s &middot; %s</div>' % (
-                esc(r["name"]), esc(r["position"]), esc(team_of(r["owner_id"]))),
-            '<span class="mono">R%s</span>' % r["cost"],
-            '<span class="mono">%s</span>' % ("R%d" % r["adp"] if r["adp"] else "\u2014"),
-            '<span class="surplus %s">%s</span>' % (
-                theme.surplus_class(r["surplus"]), theme.signed(r["surplus"])),
-            " ".join(chips),
-        ])
-    ledger_table(["Player", "Keeps at", "Market", "Surplus", ""], rows,
-                 me_row=next((i for i, r in enumerate(best)
-                              if r["owner_id"] == VIEW), None))
+            tag = "R%d premium" % engine.rookie_draft_premium()
+        else:
+            tag = "drafted R%d" % r["drafted_round"] if r.get("drafted_round") else "undrafted"
+        mkt = "market R%d" % r["adp"] if r["adp"] else "no market price"
+        steps = "".join(
+            f'<div class="kf-st{" wall" if "wall" in v or "gone" in v else ""}"><span>{k or "after"}</span><b>{v}</b></div>'
+            for k, v in _ladder_steps(r))
+        cards.append(
+            f'<div class="kflip{" me" if r["owner_id"] == VIEW else ""}" tabindex="0" role="button" '
+            f'aria-label="Flip {esc(r["name"])}"><div class="kf-in">'
+            f'<div class="kf-f"><div class="kf-top">{_ph_img(r["player_id"], "kf-h")}<div><b>{esc(r["name"])}</b>'
+            f'<span>{esc(r["position"])} &middot; {tag}</span></div></div>'
+            f'<div class="kf-px"><b>R{r["cost"]}</b><em class="{theme.surplus_class(r["surplus"])}">'
+            f'{theme.signed(r["surplus"])} &middot; {mkt}</em></div>'
+            f'<div class="kf-own">{_mgr_face(r["owner_id"])}{esc(team_of(r["owner_id"]))}</div></div>'
+            f'<div class="kf-b"><span>The ladder &middot; {esc(_surname(r["name"]))}</span>{steps}</div>'
+            f'</div></div>')
+    st.markdown('<div class="kx kflips">' + "".join(cards) + '</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="tiny" style="margin-top:8px">What he costs to keep for <b>2027</b> against '
         'what the market says he is worth. A drafted player keeps at the round he was drafted '
@@ -1546,7 +1575,7 @@ def _hero_html(a: str, b: str, *, pill: str, big_a: float, big_b: float, kicker:
     lab = f"{kicker} · {pill}".replace("&middot;", "·").upper()
     vs = '<span class="xb-vs">VS</span>' if ga and gb else ""
     return (
-        f'<div class="kx xb"><div class="xb-s me{" fight" if ga else ""}">{ph_a}<div class="xb-t">'
+        f'<div class="kx xb{_intro("xb") if ga and gb else ""}"><div class="xb-s me{" fight" if ga else ""}">{ph_a}<div class="xb-t">'
         f'<span>{_team_of(a)}{" &middot; " + ra if ra else ""}</span><b>{big_a:.1f}</b><i>{sub_a}</i></div></div>'
         f'<div class="xb-m">{vs}<span class="xb-k">{lab}</span><b>{wp * 100:.0f}<sup>%</sup></b><em>win probability</em>'
         f'<div class="xb-bar"><i style="width:{wp * 100:.0f}%"></i></div></div>'
@@ -1759,6 +1788,68 @@ def get_h2h(a: str, b: str, week: int) -> dict:
         return {"a": 0, "b": 0, "games": []}
 
 
+def _intro(key: str) -> str:
+    """" in" the first time `key` renders this session, so an entrance plays
+    once per page load (every nav link is a full load) and never again on a
+    rerun or on Live's 30-second refresh."""
+    seen = st.session_state.setdefault("_intros", set())
+    if key in seen:
+        return ""
+    seen.add(key)
+    return " in"
+
+
+def _flap(new: float, old) -> str:
+    """A score as split-flap digits: the ones that changed since `old` (the
+    last value this session showed) flip over like a stadium board."""
+    ns = f"{new:.1f}"
+    os_ = f"{old:.1f}" if isinstance(old, (int, float)) else ns
+    os_ = os_.rjust(len(ns))[-len(ns):]
+    out = []
+    for c, o in zip(ns, os_):
+        cls = "fd pt" if c == "." else "fd"
+        if c == o:
+            out.append(f'<span class="{cls} s">{c}</span>')
+        else:
+            o = o.strip() or "&nbsp;"
+            out.append(f'<span class="{cls}"><span class="h t"><span>{c}</span></span><span class="h b"><span>{o}</span></span>'
+                       f'<span class="ft"><span>{o}</span></span><span class="fb"><span>{c}</span></span></span>')
+    return '<span class="fl">' + "".join(out) + '</span>'
+
+
+def _sphere(n: int):
+    """n points through a unit sphere on a golden-angle spiral: every ball in
+    a drum gets its own depth, and the cluster never collapses into a ring."""
+    import math
+    out = []
+    for i in range(n):
+        yy = 1 - (i + 0.5) * 2 / n
+        rr = math.sqrt(max(0.0, 1 - yy * yy))
+        th = i * 2.39996
+        out.append((math.cos(th) * rr, yy, math.sin(th) * rr))
+    return out
+
+
+def _drum3d(seats, colour: str, tint: str, label: str) -> str:
+    """One lottery drum as a glass globe: each seat a ball with the manager's
+    face on it, sized by his weight, so the weighting is the picture."""
+    balls = []
+    for (x, y, z), s_ in zip(_sphere(len(seats)), seats):
+        d = 24 + s_.weight * 1.3
+        reach = 84 - d / 2 + 6
+        ph = _mgr_photo(str(s_.owner_id))
+        inner = f'<img src="{ph}" alt="">' if ph else f'<em>{_initials(s_.owner_id)}</em>'
+        balls.append(
+            f'<div class="ball" style="transform:translate3d({x * reach:.1f}px,{y * reach * .82:.1f}px,{z * reach:.1f}px)">'
+            f'<div class="fc3" style="--d:{d:.0f}px"><div class="bob" style="--bt:{1.4 + (len(balls) % 3) * .35:.2f}s;'
+            f'--bd:-{len(balls) * .37:.2f}s"><div class="orb{" out" if s_.locked_out else ""}" style="--bc:{colour}" '
+            f'title="{esc(who(s_.owner_id))} - {s_.weight} balls">{inner}</div></div></div></div>')
+    return (f'<div><div class="drum" style="--tint:{tint}"><div class="floor"></div><div class="stand"></div>'
+            f'<div class="glb"><div class="back"></div><div class="spin">{"".join(balls)}</div>'
+            f'<div class="cage"><i></i><i></i><i></i><i></i></div><div class="glass"></div><div class="axle"></div></div></div>'
+            f'<span class="drum-l">{label}</span></div>')
+
+
 def _gotw(cur: int):
     """(the game, every game) for this week, or (None, []) with nothing to rank."""
     games = get_stakes(cur).get("games") or []
@@ -1786,7 +1877,7 @@ def _gotw_cover(ctx: dict, g: dict, games: list, me, cur: int) -> str:
     mid = (f'<div class="gw-m"><span class="gw-k">Game of the Week &middot; week {cur}</span>'
            f'<span class="gw-vs">VS</span><b>{g["stakes"]}</b>'
            f'<em>points of playoff odds on the line</em><span class="gw-sub">{sub}</span></div>')
-    cover = f'<div class="kx gw">{side(a, "l")}{mid}{side(b, "r")}</div>'
+    cover = f'<div class="kx gw{_intro("gw%d" % cur)}">{side(a, "l")}{mid}{side(b, "r")}</div>'
 
     # tiles: all-time, the score, the ripple, your rooting interest
     h = get_h2h(a, b, cur)
@@ -2013,6 +2104,15 @@ def _render_week_review(week: int) -> None:
     pts, bench = r["pts"], r["bench"]
     st.markdown(_ThemeShim.section_head(f'Week {week} in <span class="g">Review</span>',
                                         "the final box scores"), unsafe_allow_html=True)
+    order = sorted(pts.items(), key=lambda kv: -kv[1])
+    top_v = max(1.0, order[0][1])
+    towers = []
+    for i, (o, v) in enumerate(order):
+        c = "var(--kr2)" if o == VIEW else "var(--kg)" if i == 0 else "#57505a"
+        towers.append(f'<div class="sky-t" style="--c:{c}">{_mgr_face(o)}<b>{v:.0f}</b>'
+                      f'<div class="sky-s" style="--h:{140 * v / top_v:.0f}px;--dl:{i * .06:.2f}s"></div>'
+                      f'<span>{esc(_first(o))}</span></div>')
+    st.markdown('<div class="kx sky">' + "".join(towers) + '</div>', unsafe_allow_html=True)
     b, c, lk = r["blowout"], r["close"], r["lucky"]
     tiles = [("Blowout", f'{_first(b["w"])} by {b["margin"]:.1f}',
               f'{pts[b["w"]]:.1f} over {_first(b["l"])}', ""),
@@ -2235,9 +2335,16 @@ def render_live() -> None:
 
             def half(side, o, cls):
                 r = _rec_of(side["owner"])
-                img = _ph_img(_top_pid(ctx, side), "mm-f")
+                img = (_mgr_face(side["owner"], "mm-mf") if _mgr_photo(str(side["owner"]))
+                       else _ph_img(_top_pid(ctx, side), "mm-f"))
+                last = st.session_state.setdefault("_flaps", {})
+                old = last.get((cur, side["owner"]))
+                last[(cur, side["owner"])] = o["points"]
+                gain = (f'<em class="fl-d">+{o["points"] - old:.1f}</em>'
+                        if isinstance(old, (int, float)) and o["points"] - old >= 0.05 else "")
                 txt = (f'<div><span>{_team_of(side["owner"])}{" &middot; " + r if r else ""}</span>'
-                       f'<b>{o["points"]:.1f}</b><i>proj {o["final"]:.0f} &middot; {o["left"]} to play</i></div>')
+                       f'<b class="flb">{_flap(o["points"], old)}{gain}</b>'
+                       f'<i>proj {o["final"]:.0f} &middot; {o["left"]} to play</i></div>')
                 return f'<div class="mm-s {cls}">' + (img + txt if cls == "a" else txt + img) + '</div>'
             cards.append(
                 f'<div class="mm{" me" if mine else ""}">{half(sa, a, "a")}'
@@ -2327,6 +2434,31 @@ def render_matchup() -> None:
 # each player on your roster would cost to keep next season, how the price
 # climbs, and which you'd keep. Built off valueboard.rows, so the prices,
 # owned-pick bumps and rookie-slot assignment are exactly the keeper board's.
+def _surname(name: str) -> str:
+    parts = [w for w in name.split() if w.rstrip(".") not in ("Jr", "Sr", "II", "III", "IV", "V")]
+    return parts[-1] if parts else name
+
+
+def _ladder_steps(r: dict) -> list:
+    """[(season, price), ...] for keeping `r` every year he can be kept, then
+    the wall. Rookie keepers have no clock. Shared by the keeper outlook and
+    the contract cards on Home, so the two can never disagree."""
+    nxt = SEASON + 1
+    max_years = int(config.keeper_rules()["max_years"])
+    if r.get("kind") == "rookie":
+        return [(str(nxt), "R%d" % r["cost"]), ("then", "no clock")]
+    y = int(r.get("year") or 1)
+    anchor = r.get("drafted_round")
+    steps = [(str(nxt), "R%d" % r["cost"])]
+    for k in range(y + 1, max_years + 1):
+        opts = engine.regular_options(anchor, k, r.get("adp"),
+                                      from_rookie_draft=bool(r.get("from_rookie_draft")))
+        rec = engine.recommended(opts) if opts else None
+        steps.append((str(nxt + k - y), "ADP if it helps" if k >= 3 else ("R%d" % rec if rec else "&mdash;")))
+    steps.append(("", "the wall" if y < max_years else "franchise or gone"))
+    return steps
+
+
 def _keeper_outlook_rows(owner: str) -> list:
     nxt = SEASON + 1
     kr = config.keeper_rules()
@@ -2350,14 +2482,7 @@ def _keeper_outlook_rows(owner: str) -> list:
         else:
             y = int(r.get("year") or 1)
             anchor = r.get("drafted_round")
-            steps = [(str(nxt), "R%d" % r["cost"])]
-            for k in range(y + 1, max_years + 1):
-                opts = engine.regular_options(anchor, k, r.get("adp"),
-                                              from_rookie_draft=bool(r.get("from_rookie_draft")))
-                rec = engine.recommended(opts) if opts else None
-                steps.append((str(nxt + k - y), "ADP" if k >= 3 else ("R%d" % rec if rec else "&mdash;")))
-            steps.append(("", "wall" if y < max_years else "franchise or gone"))
-            x["ladder"] = steps
+            x["ladder"] = _ladder_steps(r)
             x["how"] = ("Year %d%s%s" % (y, " &middot; from the rookie draft" if r.get("from_rookie_draft") else "",
                                         (" &middot; drafted R%d" % anchor) if anchor else " &middot; undrafted pickup"))
             if r.get("bumped"):
@@ -2511,6 +2636,33 @@ def get_playoff_slate(me, week, slots, weeks):
     return playoffs.playoff_slate(config.league_id(), SEASON, week, me, list(slots), list(weeks))
 
 
+def _render_lit_bracket() -> None:
+    """Both brackets as they stand, on one tilted plane. The top four play for
+    the title; the bottom four are the Chase, and they are the ones that glow -
+    in this league they play for the FAAB pot and for lottery balls."""
+    try:
+        rows = season.standings()
+    except Exception:          # noqa: BLE001
+        return
+    if not rows or not any(r["results"] for r in rows):
+        return
+    cut = int(config.league()["playoff_teams"])
+
+    def seat(r, i, cls):
+        o = r["owner_id"]
+        return (f'<div class="seat {cls}{" me" if o == VIEW else ""}" style="--dl:{i * .07:.2f}s">'
+                f'<em>{r["place"]}</em>{_mgr_face(o)}<b>{esc(team_of(o))}</b>'
+                f'<span>{esc(r["record"])} &middot; {r["points_for"]:,.0f}</span></div>')
+    top = [r for r in rows if r["place"] <= cut]
+    rest = [r for r in rows if r["place"] > cut]
+    theme.bar("If it started today", "top %d for the title &middot; the rest for the pot" % cut)
+    st.markdown('<div class="kx brk"><div class="brk-c"><span>The bracket</span>'
+                + "".join(seat(r, i, "pot") for i, r in enumerate(top))
+                + '</div><div class="brk-c cz"><span>The Chase &middot; FAAB pot + lottery balls</span>'
+                + "".join(seat(r, i + len(top), "chase") for i, r in enumerate(rest))
+                + '</div></div>', unsafe_allow_html=True)
+
+
 def render_playoffs() -> None:
     """The Draft Room's Playoffs tab: the rest of the season 10,000 times on the
     real schedule — your seed spread, win % each week, the biggest game, the
@@ -2527,6 +2679,7 @@ def render_playoffs() -> None:
                                       tuple(out["settings"]["playoff_weeks"]))
         except Exception:  # noqa: BLE001 — a schedule hiccup must not take the page down
             slate = {"rows": []}
+    _render_lit_bracket()
     playoffs_view.render(out, VIEW, who, slate,
                          pick_team_hint="Pick your team from the masthead to see where you finish.")
 
@@ -3019,36 +3172,53 @@ def render_keepers(leaf=None):
             cands = []
         if cands:
             best = cands[0]
-            st.markdown("".join(
-                '<div class="contract %s"><div class="who">'
-                '<div class="nm">%s <span class="tiny">%s</span></div>'
-                '<div class="meta">%s &#183; frozen at R%d &#183; market R%d</div>'
-                '<div class="tags2">%s<span class="chip">Freeze R%d</span>'
-                '<span class="chip">ADP R%d</span></div></div>'
-                '<div class="price"><div class="rd" style="color:%s">%s</div>'
-                '<div class="sub">rds over yr %d-%d</div></div></div>' % (
-                    "fr" if c is best and c["banked"] > 0 else "",
-                    esc(c["name"]), esc(c["position"]),
-                    ("year %d \u2014 at the wall" % c["year"]) if c["at_the_wall"]
-                    else "year %d \u2014 not eligible until year %d" % (
-                        c["year"], int(kr["max_years"]) + 1),
-                    c["frozen"], c["adp"],
-                    '<span class="chip solid">Tag this one</span>'
-                    if c is best and c["banked"] > 0 and c["at_the_wall"] else "",
-                    c["frozen"], c["adp"],
-                    "var(--good)" if c["banked"] > 0 else "var(--dim)",
-                    theme.signed(c["banked"]), int(kr["max_years"]) + 1,
-                    int(kr["max_years"]) + int(config.franchise_rules()["extra_years"]))
-                for c in cands[:6]), unsafe_allow_html=True)
+
+            def contract(c):
+                tagged = c is best and c["banked"] > 0 and c["at_the_wall"]
+                # The recommended tag gets the stamp: it presses down the Z
+                # axis and the row shakes, because this is a once-ever call.
+                stamp = ('<div class="stamp"><b>R%d</b><span>Franchise</span></div>' % c["frozen"]
+                         if tagged else "")
+                return (
+                    '<div class="contract %s"><div class="who">'
+                    '<div class="nm">%s <span class="tiny">%s</span></div>'
+                    '<div class="meta">%s &#183; frozen at R%d &#183; market R%d</div>'
+                    '<div class="tags2">%s<span class="chip">Freeze R%d</span>'
+                    '<span class="chip">ADP R%d</span></div></div>'
+                    '<div class="price"><div class="rd" style="color:%s">%s</div>'
+                    '<div class="sub">rds over yr %d-%d</div></div>%s</div>' % (
+                        ("fr frs go" if tagged else "fr") if c is best and c["banked"] > 0 else "",
+                        esc(c["name"]), esc(c["position"]),
+                        ("year %d \u2014 at the wall" % c["year"]) if c["at_the_wall"]
+                        else "year %d \u2014 not eligible until year %d" % (
+                            c["year"], int(kr["max_years"]) + 1),
+                        c["frozen"], c["adp"],
+                        '<span class="chip solid">Tag this one</span>' if tagged else "",
+                        c["frozen"], c["adp"],
+                        "var(--good)" if c["banked"] > 0 else "var(--dim)",
+                        theme.signed(c["banked"]), int(kr["max_years"]) + 1,
+                        int(kr["max_years"]) + int(config.franchise_rules()["extra_years"]),
+                        stamp))
+            if not any(c["at_the_wall"] for c in cands):
+                first_tag = SEASON + int(kr["max_years"]) + 1
+                st.markdown(
+                    '<div class="frs go"><div class="stamp"><b>%d</b><span>first tag</span></div>'
+                    '<div class="banner" style="padding-right:140px;margin-bottom:10px"><b>Nobody here is '
+                    'at the wall yet.</b> The tag only works on a player who has already been kept %d '
+                    'times, so the first one anybody can use is in %d. These are the players who would '
+                    'bank the most from it, if their clocks ran that far.</div></div>'
+                    % (first_tag, int(kr["max_years"]), first_tag), unsafe_allow_html=True)
+            st.markdown("".join(contract(c) for c in cands[:6]), unsafe_allow_html=True)
         else:
             st.markdown(
-                '<div class="banner"><b>Nobody is eligible, and nobody will be until %d.</b> The tag '
+                '<div class="frs go"><div class="stamp"><b>%d</b><span>first tag</span></div>'
+                '<div class="banner" style="padding-right:140px"><b>Nobody is eligible, and nobody will be until %d.</b> The tag '
                 'only does anything for a player who has already been kept three times, so the first '
                 'real decision is four offseasons away. What it will rank then is which of your '
                 'year-four players banks the most, and the answer is counterintuitive: the freeze is '
                 'at the <em>most expensive</em> round you ever paid, so the tag is worth the most on a '
                 'late find whose market ran away from him and exactly nothing on a career '
-                'first-rounder.</div>' % (SEASON + int(kr["max_years"]) + 1),
+                'first-rounder.</div></div>' % (SEASON + int(kr["max_years"]) + 1, SEASON + int(kr["max_years"]) + 1),
                 unsafe_allow_html=True)
 
 
@@ -3133,6 +3303,32 @@ def render_pot(leaf=None):
                       ("Your bill", f"${mine.owed if mine else 0}", f"of your ${budget}"),
                       ("Teams bidding", str(_bidders), f"of {len(settlement.bills)}")]),
                 unsafe_allow_html=True)
+            # The vessel: every spender's coin drops in, biggest first; it fills
+            # against the whole pool, with the Chase cap marked on the glass.
+            spenders = sorted((b for b in settlement.bills if b.spent > 0), key=lambda b: -b.spent)
+            if spenders:
+                # Scaled to twice the cap rather than the whole pool: against
+                # $800 the first $135 is a puddle, and the cap - the line that
+                # actually decides where money goes - sits on the floor.
+                room = min(pool, max(2 * cap, int(spent_total * 1.25)))
+                lvl = min(100.0, 100.0 * spent_total / max(1, room))
+                cap_at = min(100.0, 100.0 * cap / max(1, room))
+                spill = min(70, 18 + int(140 * over / max(1, pool))) if over else 0
+                coins = "".join(
+                    f'<div class="coin" style="--dl:{.2 + i * .28:.2f}s">{_mgr_face(b.owner_id)}'
+                    f'<b>${b.spent}</b>{esc(_first(b.owner_id))}</div>'
+                    for i, b in enumerate(spenders[:8]))
+                st.markdown(
+                    f'<div class="kx vbox"><div class="coins">{coins}</div>'
+                    f'<div class="vessel"><div class="vs-in"><div class="glassv"><div class="fillv" style="--lvl:{lvl:.0f}%"></div></div>'
+                    f'<div class="capv" style="bottom:{cap_at:.0f}%"><span>${cap} Chase cap</span></div>'
+                    f'<div class="spill" style="--sp:{spill}px"></div></div></div>'
+                    f'<div class="vnote"><b>${spent_total}</b>of the ${pool} anyone could spend. '
+                    + (f'The Chase winner&rsquo;s ${cap} is full and <b style="display:inline;font-size:inherit;'
+                       f'font-family:inherit;color:var(--kg)">${over}</b> has run over into the bracket.'
+                       if over else f'Everything up to the dashed line goes to the Chase winner; past it, it '
+                                    f'spills into the bracket.')
+                    + '</div></div>', unsafe_allow_html=True)
             # (this used to say "nobody has bid yet" whatever the pot held)
             if spent_total == 0:
                 st.markdown(
@@ -3873,6 +4069,27 @@ def render_lottery(leaf=None):
     vet_seats = lottery.build_drum(demo, "final", weights=weights)
 
     if leaf in (None, "drums"):
+        # The drums as they would stand if the season ended today: real
+        # records, real places, real faces. Nobody is champion until the final
+        # is played, so the floor isn't on anyone yet.
+        try:
+            live_rows = season.standings()
+        except Exception:      # noqa: BLE001
+            live_rows = []
+        if live_rows and any(r["results"] for r in live_rows):
+            today = [{"owner_id": r["owner_id"], "wins": r["wins"], "final_rank": r["place"],
+                      "champion": False} for r in live_rows]
+            theme.bar("The drums today", "if the season ended now &middot; ball size is the weight")
+            st.markdown(
+                '<div class="kx drums">'
+                + _drum3d(lottery.build_drum(today, "record", weights=weights),
+                          "var(--kr2)", "rgba(251,8,73,.22)", "Rookie drum &middot; by record")
+                + _drum3d(lottery.build_drum(today, "final", weights=weights),
+                          "var(--kg)", "rgba(87,142,213,.22)", "Veteran drum &middot; by finish")
+                + '</div>', unsafe_allow_html=True)
+            st.markdown('<div class="tiny" style="margin:2px 0 14px;text-align:center">Biggest ball, best '
+                        'odds. Once a champion is crowned his ball drops to the floor in both drums, '
+                        'whatever his record.</div>', unsafe_allow_html=True)
         theme.bar("How the drums will work", "from %d on" % (SEASON + 1))
 
         def drum_html(seats, basis):
@@ -4048,15 +4265,43 @@ _NAV_JS = r"""
     var m = null; try { m = localStorage.getItem(KEY); } catch(_) {}
     if (m) { u.set('team', m); a.setAttribute('href', '?' + u.toString()); }
   }, true);
-  // manager cards flip on tap / Enter / Space (render_managers)
+  // manager cards and contract cards flip on tap / Enter / Space; the taxi
+  // turntable turns to the other slot
+  function act(c){
+    if (c.classList.contains('txc-stage')) {
+      var t = c.querySelector('.txc-in');
+      var n = (parseInt(t.style.getPropertyValue('--turn') || '0', 10) + 1) % 2;
+      t.style.setProperty('--turn', n);
+    } else c.classList.toggle('on');
+  }
   document.addEventListener('click', function(e){
-    var c = e.target.closest && e.target.closest('.mcard');
-    if (c) c.classList.toggle('on');
+    var c = e.target.closest && e.target.closest('.mcard, .kflip, .txc-stage');
+    if (c) act(c);
   });
   document.addEventListener('keydown', function(e){
-    var c = e.target.closest && e.target.closest('.mcard');
-    if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); c.classList.toggle('on'); }
+    var c = e.target.closest && e.target.closest('.mcard, .kflip, .txc-stage');
+    if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); act(c); }
   });
+  // tilt + shine: the covers and award cards lean toward the pointer (or a
+  // dragging finger) and a glint follows it across
+  var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var cur = null;
+  function reset(el){ if (!el) return; el.style.transform = ''; el.style.setProperty('--sx', '130%'); }
+  if (!still) {
+    document.addEventListener('pointermove', function(e){
+      var el = e.target.closest && e.target.closest('.kx.gw, .kx.xb, .kx .sup');
+      if (el !== cur) { reset(cur); cur = el; }
+      if (!el) return;
+      var r = el.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+      var k = el.classList.contains('sup') ? 2 : 1;
+      el.style.transform = 'perspective(1100px) rotateY(' + (x * 8 * k).toFixed(2) + 'deg) rotateX(' + (-y * 6 * k).toFixed(2) + 'deg)';
+      el.style.setProperty('--sx', (110 - (x + 0.5) * 90).toFixed(1) + '%');
+    }, {passive: true});
+    ['pointerleave', 'pointerup', 'pointercancel'].forEach(function(t){
+      document.addEventListener(t, function(e){ if (t !== 'pointerleave' || !e.relatedTarget) { reset(cur); cur = null; } }, true);
+    });
+  }
 })();
 """
 
