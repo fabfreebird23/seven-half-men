@@ -1,0 +1,465 @@
+<title>Bloody Sunday in Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400..800&family=Archivo:wdth,wght@75..125,400..800&family=Archivo+Narrow:wght@400..700&display=swap">
+
+<style>
+/* Bloody Sunday, straight off halfmen/theme.py. Ten motions: five proven in
+   Kreeper or the Draft Room, five that only make sense in THIS league. */
+:root{
+  --bg:#141314; --bg2:#1a1819; --card:#1d1b1c; --card2:#262324;
+  --line:#332f31; --line2:#463f42;
+  --ink:#f4f1f2; --ink2:#b4aaae; --dim:#938a8e;
+  --acc:#fb0849; --acc-ink:#1a0208; --acc-soft:rgba(251,8,73,.14);
+  --acc2:#578ed5; --acc2-soft:rgba(87,142,213,.16);
+  --good:#369d86; --warn:#d77010; --bad:#fc4475;
+  --qb:#cb6ab8; --rb:#369d86; --wr:#578ed5; --te:#d77010;
+  --f-display:'Big Shoulders Display','Archivo Narrow',system-ui,sans-serif;
+  --f-body:'Archivo',system-ui,sans-serif;
+  --f-cond:'Archivo Narrow',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);
+     font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 90px}
+.top{background:var(--acc);color:var(--acc-ink);margin:0 0 26px;padding:26px 0 22px}
+.top .in{max-width:1180px;margin:0 auto;padding:0 20px}
+.top h1{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,5vw,46px);
+        line-height:.95;margin:0;text-transform:uppercase;letter-spacing:-.01em}
+.top p{margin:8px 0 0;font-family:var(--f-cond);font-size:17px;letter-spacing:.02em;opacity:.84}
+.lede{max-width:70ch;margin:0 0 6px;color:var(--ink2);font-size:16.5px}
+.lede b{color:var(--ink);font-weight:600}
+.bar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+     border-bottom:1px solid var(--line2);padding:0 0 7px;margin:38px 0 16px}
+.bar h2{font-family:var(--f-display);font-weight:700;text-transform:uppercase;
+        letter-spacing:.02em;font-size:24px;margin:0}
+.bar span{font-family:var(--f-cond);text-transform:uppercase;letter-spacing:.09em;
+          font-size:11.5px;color:var(--dim)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.demo{background:var(--card);border:1px solid var(--line);border-radius:4px;overflow:hidden;
+      display:flex;flex-direction:column}
+.stage{padding:22px 18px;min-height:210px;display:flex;align-items:center;justify-content:center;
+       background:linear-gradient(180deg,var(--bg2),var(--card));position:relative}
+.cap{padding:13px 16px 15px;border-top:1px solid var(--line)}
+.cap .n{font-family:var(--f-display);font-weight:800;color:var(--acc);margin-right:9px;font-size:15px}
+.cap b{font-family:var(--f-display);font-weight:700;font-size:19px;text-transform:uppercase;
+       letter-spacing:.01em}
+.cap .tag{float:right;font-family:var(--f-cond);font-size:10.5px;letter-spacing:.09em;
+          text-transform:uppercase;color:var(--dim);border:1px solid var(--line2);
+          border-radius:2px;padding:1px 7px;margin-top:3px}
+.cap .tag.new{color:var(--acc);border-color:var(--acc)}
+.cap p{margin:7px 0 0;font-size:13.5px;color:var(--ink2);line-height:1.5}
+.hint{position:absolute;right:11px;top:9px;font-family:var(--f-cond);font-size:10px;
+      letter-spacing:.09em;text-transform:uppercase;color:var(--dim);opacity:.8}
+.note{border-left:2px solid var(--acc2);padding:2px 0 2px 14px;margin:26px 0 0;
+      color:var(--ink2);font-size:14.5px;max-width:74ch}
+.note b{color:var(--ink);font-weight:600}
+button.go{font:inherit;font-family:var(--f-cond);text-transform:uppercase;letter-spacing:.08em;
+          font-size:11px;background:transparent;color:var(--dim);border:1px solid var(--line2);
+          border-radius:2px;padding:3px 9px;cursor:pointer}
+button.go:hover{color:var(--ink);border-color:var(--acc)}
+button.go:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* ---- 01 fight-night entrance -------------------------------------- */
+.fc{position:relative;width:100%;height:150px;border-radius:3px;overflow:hidden;display:flex}
+.fc .h{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.fc .hL{background:linear-gradient(135deg,#2a0a14,#140406)}
+.fc .hR{background:linear-gradient(225deg,#0d1a2b,#05080f)}
+.fc .nm{font-family:var(--f-display);font-weight:700;font-size:17px;text-transform:uppercase}
+.fc .od{font-family:var(--f-cond);font-size:11.5px;letter-spacing:.08em;color:var(--ink2)}
+.fc.in .hL{animation:inL .72s cubic-bezier(.2,.9,.3,1) backwards}
+.fc.in .hR{animation:inR .72s cubic-bezier(.2,.9,.3,1) backwards}
+.fc .vs{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:3;
+        font-family:var(--f-display);font-weight:800;font-size:27px;color:var(--acc);
+        transform:skewX(-8deg);text-shadow:0 2px 14px rgba(251,8,73,.6)}
+.fc.in .vs{animation:vsIn .9s .42s cubic-bezier(.3,1.6,.4,1) backwards}
+@keyframes inL{from{transform:perspective(900px) translateX(-55%) translateZ(-260px) rotateY(32deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes inR{from{transform:perspective(900px) translateX(55%) translateZ(-260px) rotateY(-32deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes vsIn{0%{transform:perspective(400px) scale(3) rotateY(540deg) skewX(-8deg);opacity:0}
+                70%{opacity:1}100%{transform:perspective(400px) scale(1) rotateY(0) skewX(-8deg)}}
+
+/* ---- 02 tilt + shine ---------------------------------------------- */
+.tilt{position:relative;width:250px;height:142px;border-radius:4px;background:var(--card2);
+      border:1px solid var(--line2);padding:15px;transition:transform .14s ease-out;
+      transform-style:preserve-3d;overflow:hidden}
+.tilt::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(360px circle at var(--sx,50%) var(--sy,50%),rgba(255,255,255,.13),transparent 42%)}
+.tilt .k{font-family:var(--f-cond);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.tilt .v{font-family:var(--f-display);font-weight:800;font-size:41px;line-height:1;margin-top:5px}
+
+/* ---- 03 split-flap ------------------------------------------------ */
+.flaps{display:flex;gap:4px;align-items:flex-end}
+.fd{position:relative;width:38px;height:54px;perspective:4em;font-family:var(--f-display);
+    font-weight:800;font-size:38px;line-height:54px;text-align:center}
+.fd .face{position:absolute;inset:0;background:var(--card2);border:1px solid var(--line2);
+          border-radius:3px;overflow:hidden}
+.fd .ft,.fd .fb{position:absolute;inset:0;background:var(--card2);border:1px solid var(--line2);
+                border-radius:3px;overflow:hidden;backface-visibility:hidden}
+.fd .ft{z-index:2;transform-origin:bottom}
+.fd .fb{z-index:2;transform-origin:top;transform:rotateX(90deg)}
+.fd.go .ft{animation:ftOut .3s ease-in forwards}
+.fd.go .fb{animation:fbIn .3s .3s ease-out forwards}
+@keyframes ftOut{to{transform:rotateX(-90deg)}}
+@keyframes fbIn{to{transform:rotateX(0)}}
+.gain{font-family:var(--f-cond);font-size:13px;color:var(--good);margin-left:9px;opacity:0}
+.gain.go{animation:gain 1.9s ease-out}
+@keyframes gain{0%{opacity:0;transform:translateY(6px)}15%,70%{opacity:1;transform:none}100%{opacity:0}}
+
+/* ---- 04 keeper contract flip -------------------------------------- */
+.kcard{perspective:1000px;width:206px;height:160px;cursor:pointer;outline:none}
+.kc-in{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+       transition:transform .72s cubic-bezier(.3,1.3,.4,1)}
+.kcard.on .kc-in{transform:rotateY(180deg)}
+@media(hover:hover){.kcard:hover:not(.on) .kc-in{transform:rotateY(-13deg) rotateX(7deg)}}
+.kc-f,.kc-b{position:absolute;inset:0;backface-visibility:hidden;border-radius:4px;
+            border:1px solid var(--line2);padding:13px;display:flex;flex-direction:column}
+.kc-f{background:var(--card2)}
+.kc-b{transform:rotateY(180deg);background:linear-gradient(160deg,#2a0a14,#120307);gap:5px}
+.kc-f .nm{font-family:var(--f-display);font-weight:700;font-size:20px;text-transform:uppercase}
+.kc-f .pr{font-family:var(--f-display);font-weight:800;font-size:40px;color:var(--acc);margin-top:auto;line-height:1}
+.lad{display:flex;justify-content:space-between;font-family:var(--f-cond);font-size:12px;
+     padding:3px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.lad b{font-family:var(--f-display);font-size:15px}
+.lad.wall{color:var(--bad)}
+
+/* ---- 05 matchup towers -------------------------------------------- */
+.tow{display:flex;gap:30px;align-items:flex-end;perspective:800px;height:160px}
+.tw{width:62px;transform-style:preserve-3d;transform:rotateX(14deg) rotateY(-17deg);position:relative}
+.tw .stk{position:relative;width:62px;background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 55%,black));
+         border-radius:3px 3px 0 0;height:0;animation:grow 1.3s cubic-bezier(.2,.9,.3,1) forwards;
+         box-shadow:14px 0 0 -2px color-mix(in srgb,var(--c) 42%,black)}
+.tw .lbl{position:absolute;bottom:-25px;width:100%;text-align:center;font-family:var(--f-cond);
+         font-size:11px;letter-spacing:.06em;color:var(--ink2)}
+.tw .sc{position:absolute;top:-25px;width:100%;text-align:center;font-family:var(--f-display);
+        font-weight:800;font-size:19px}
+@keyframes grow{to{height:var(--h)}}
+
+/* ---- 06 the two drums --------------------------------------------- */
+.drum{width:132px;height:132px;perspective:620px}
+.dr-in{width:100%;height:100%;border-radius:50%;border:2px solid var(--line2);position:relative;
+       transform-style:preserve-3d;animation:spin 7s linear infinite;background:
+       radial-gradient(circle at 34% 28%,rgba(255,255,255,.07),transparent 55%)}
+.ball{position:absolute;width:21px;height:21px;border-radius:50%;left:50%;top:50%;
+      margin:-10.5px;font-family:var(--f-display);font-weight:800;font-size:11px;
+      display:flex;align-items:center;justify-content:center;color:#0b0405}
+@keyframes spin{from{transform:rotateX(66deg) rotateZ(0)}to{transform:rotateX(66deg) rotateZ(360deg)}}
+
+/* ---- 07 the pot vessel -------------------------------------------- */
+.vessel{width:118px;height:168px;perspective:620px;position:relative}
+.vs-in{width:100%;height:100%;position:relative;transform:rotateX(9deg);transform-style:preserve-3d}
+.glass{position:absolute;inset:0;border:2px solid var(--line2);border-radius:8px 8px 26px 26px;
+       overflow:hidden;background:linear-gradient(100deg,rgba(255,255,255,.05),transparent 42%)}
+.fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--acc),#8a0427);
+      height:0;animation:fillUp 2.4s cubic-bezier(.3,.8,.4,1) forwards}
+.fill::before{content:"";position:absolute;top:-7px;left:-50%;width:200%;height:14px;border-radius:50%;
+              background:var(--acc);opacity:.85;animation:slosh 3.1s ease-in-out infinite}
+@keyframes fillUp{to{height:var(--lvl)}}
+@keyframes slosh{0%,100%{transform:translateX(-6px) rotate(-1.2deg)}50%{transform:translateX(6px) rotate(1.2deg)}}
+.capline{position:absolute;left:-7px;right:-7px;border-top:2px dashed var(--good);z-index:3}
+.capline span{position:absolute;left:-74px;top:-9px;font-family:var(--f-cond);font-size:10px;
+              letter-spacing:.07em;color:var(--good);white-space:nowrap}
+.spill{position:absolute;top:0;right:-16px;width:13px;height:0;background:var(--acc2);
+       border-radius:0 0 5px 5px;animation:spillDown 1.3s 2.2s ease-in forwards;opacity:.9}
+@keyframes spillDown{to{height:62px}}
+
+/* ---- 08 taxi pod carousel ----------------------------------------- */
+.pods{perspective:900px;width:230px;height:150px}
+.pods-in{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+         transition:transform .7s cubic-bezier(.3,1.2,.4,1);transform:translateZ(-116px) rotateY(0)}
+.pod{position:absolute;inset:0;border:1px solid var(--line2);border-radius:4px;padding:14px;
+     background:var(--card2);display:flex;flex-direction:column;gap:5px;backface-visibility:hidden}
+.pod .yr{font-family:var(--f-cond);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.pod .nm{font-family:var(--f-display);font-weight:700;font-size:21px;text-transform:uppercase}
+.pod .st{font-size:12.5px;color:var(--ink2);margin-top:auto}
+.pips{display:flex;gap:5px;margin-top:4px}
+.pips i{width:26px;height:4px;border-radius:2px;background:var(--line2)}
+.pips i.on{background:var(--good)}
+.pips i.now{background:var(--warn)}
+
+/* ---- 09 franchise stamp ------------------------------------------- */
+.stamp-stage{position:relative;width:216px;height:150px;perspective:700px}
+.doc{position:absolute;inset:0;background:var(--card2);border:1px solid var(--line2);
+     border-radius:4px;padding:14px;display:flex;flex-direction:column}
+.doc .nm{font-family:var(--f-display);font-weight:700;font-size:19px;text-transform:uppercase}
+.doc .sub{font-size:12.5px;color:var(--ink2)}
+.stamp{position:absolute;left:66%;top:62%;translate:-50% -50%;width:104px;height:104px;
+       border:4px solid var(--acc);border-radius:50%;display:flex;align-items:center;
+       justify-content:center;flex-direction:column;color:var(--acc);
+       font-family:var(--f-display);font-weight:800;text-transform:uppercase;
+       transform:rotate(-15deg);opacity:0}
+.stamp.go{animation:press .62s cubic-bezier(.3,1.5,.5,1) forwards}
+.stamp .t{font-size:19px;line-height:.95}.stamp .s{font-size:10.5px;letter-spacing:.11em}
+@keyframes press{0%{opacity:0;transform:perspective(600px) translateZ(300px) rotate(-38deg) scale(2.3)}
+  65%{opacity:1;transform:perspective(600px) translateZ(0) rotate(-15deg) scale(.93)}
+  100%{opacity:.95;transform:perspective(600px) translateZ(0) rotate(-15deg) scale(1)}}
+.shk.go{animation:shk .34s .5s ease-out}
+@keyframes shk{0%,100%{translate:0}25%{translate:-4px 0}50%{translate:3px 0}75%{translate:-2px 0}}
+
+/* ---- 10 chase bracket --------------------------------------------- */
+.brk{perspective:860px;width:270px;height:160px}
+.brk-in{width:100%;height:100%;transform:rotateX(17deg) rotateY(-14deg);transform-style:preserve-3d;
+        position:relative}
+.seat{position:absolute;height:25px;border-radius:3px;border:1px solid var(--line2);
+      background:var(--card2);font-family:var(--f-cond);font-size:11.5px;color:var(--ink2);
+      display:flex;align-items:center;padding:0 8px;letter-spacing:.04em;
+      animation:seatIn .5s backwards}
+.seat.chase{border-color:var(--acc);background:var(--acc-soft);color:var(--ink);
+            box-shadow:0 0 16px rgba(251,8,73,.3)}
+.seat.pot{border-color:var(--good);background:rgba(54,157,134,.15);color:var(--ink)}
+@keyframes seatIn{from{opacity:0;transform:translateZ(-90px)}to{opacity:1;transform:none}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+  .fill{height:var(--lvl) !important} .tw .stk{height:var(--h) !important}
+  .stamp{opacity:.95 !important} .spill{height:62px !important}
+}
+</style>
+
+<div class="top"><div class="in">
+  <h1>Bloody Sunday in motion</h1>
+  <p>7&frac12; Men &middot; ten 3D motions &middot; five ported, five built for this league&rsquo;s rules</p>
+</div></div>
+
+<div class="wrap">
+<p class="lede">The app has <b>zero</b> 3D motion today &mdash; Kreeper and the Draft Room both got
+theirs on 25 October and this one didn&rsquo;t. The first five below are those, in the Bloody Sunday
+palette. The last five exist because 7&frac12; Men has rules the other two leagues don&rsquo;t:
+two weighted drums, a taxi clock, a franchise tag, and a pot with a cap it can overflow.
+Everything stands still under <code>prefers-reduced-motion</code>.</p>
+
+<div class="bar"><h2>Ported from Kreeper &amp; the Draft Room</h2><span>proven elsewhere</span></div>
+<div class="grid">
+
+  <div class="demo"><div class="stage"><span class="hint">replays on load</span>
+    <div class="fc in" id="fc">
+      <div class="h hL"><div class="nm">Clayton&rsquo;s Kids</div><div class="od">8&ndash;4 &middot; 61%</div></div>
+      <div class="h hR"><div class="nm">Taco Bandit</div><div class="od">7&ndash;5 &middot; 39%</div></div>
+      <div class="vs">VS</div></div></div>
+    <div class="cap"><span class="tag">port</span><span class="n">01</span><b>Fight-night entrance</b>
+      <p>Both halves fly in off the Z axis and the VS badge spins down from 3&times;. Plays once per
+      page load, never on Live&rsquo;s refresh &mdash; the thing that makes it feel like a card, not a table.</p></div></div>
+
+  <div class="demo"><div class="stage"><span class="hint">move your pointer</span>
+    <div class="tilt" id="tilt"><div class="k">In the pot</div><div class="v">$120</div>
+      <div class="k" style="margin-top:6px">every dollar owed</div></div></div>
+    <div class="cap"><span class="tag">port</span><span class="n">02</span><b>Tilt &amp; shine</b>
+      <p>The card leans toward the pointer and a specular sweep tracks it. One delegated handler for
+      every card on the page, so it costs nothing per card.</p></div></div>
+
+  <div class="demo"><div class="stage"><span class="hint">
+    <button class="go" onclick="flap()">score</button></span>
+    <div><div class="flaps" id="flaps"></div>
+      <div style="font-family:var(--f-cond);font-size:11px;letter-spacing:.08em;color:var(--dim);margin-top:9px">
+        CLAYTON&rsquo;S KIDS <span class="gain" id="gain">+6.4</span></div></div></div>
+    <div class="cap"><span class="tag">port</span><span class="n">03</span><b>Split-flap score</b>
+      <p>Only the digits that actually changed flip, with the points gained tagged beside them. On a
+      30-second refresh this is how you notice a score moved without staring at it.</p></div></div>
+
+  <div class="demo"><div class="stage"><span class="hint">click it</span>
+    <div class="kcard" id="kcard" tabindex="0" role="button" aria-label="Flip contract">
+      <div class="kc-in">
+        <div class="kc-f"><div class="nm">Bijan<br>Robinson</div>
+          <div style="font-family:var(--f-cond);font-size:11.5px;color:var(--dim);margin-top:4px">RB &middot; ATL &middot; drafted R1</div>
+          <div class="pr">R1</div></div>
+        <div class="kc-b">
+          <div style="font-family:var(--f-cond);font-size:10.5px;letter-spacing:.1em;color:var(--ink2)">THE LADDER</div>
+          <div class="lad"><span>Year 1</span><b>R1</b></div>
+          <div class="lad"><span>Year 2</span><b>R1</b></div>
+          <div class="lad"><span>Year 3</span><b>ADP</b></div>
+          <div class="lad wall"><span>Year 4</span><b>the wall</b></div>
+        </div></div></div></div>
+    <div class="cap"><span class="tag">port</span><span class="n">04</span><b>Contract flip</b>
+      <p>Price on the front, the three-year ladder on the back. The ladder is the most-asked question
+      in this league and it currently lives on a different page entirely.</p></div></div>
+
+  <div class="demo"><div class="stage">
+    <div class="tow" id="tow">
+      <div class="tw"><div class="sc">137.5</div><div class="stk" style="--c:var(--acc);--h:132px"></div><div class="lbl">YOU</div></div>
+      <div class="tw"><div class="sc">139.6</div><div class="stk" style="--c:var(--acc2);--h:140px"></div><div class="lbl">DEVIN</div></div>
+    </div></div>
+    <div class="cap"><span class="tag">port</span><span class="n">05</span><b>Matchup towers</b>
+      <p>Two scores as solids you read in one glance rather than two numbers you compare. Grows from
+      the floor on arrival; the gap is the whole story.</p></div></div>
+
+  <div class="demo"><div class="stage" style="gap:16px">
+    <div class="drum" id="drumA"></div><div class="drum" id="drumB"></div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">06</span><b>The two drums</b>
+      <p>No other league has two. Rookie drum on record, veteran drum on final standing including the
+      Chase &mdash; and the champion&rsquo;s ball is always the smallest, visibly. Ball size <i>is</i>
+      the weight, so the unfairness is the picture.</p></div></div>
+
+</div>
+
+<div class="bar"><h2>Built for 7&frac12; Men</h2><span>rules no other league has</span></div>
+<div class="grid">
+
+  <div class="demo"><div class="stage">
+    <div class="vessel"><div class="vs-in">
+      <div class="glass"><div class="fill" style="--lvl:74%"></div></div>
+      <div class="capline" style="bottom:62%"><span>$120 cap</span></div>
+      <div class="spill"></div></div></div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">07</span><b>The pot, overflowing</b>
+      <p>The bowls say how much. This says what happens next: fills to the cap, and everything past it
+      visibly runs off the side into the bracket. You are sitting exactly on the cap this week, so the
+      next dollar anyone bids starts that spill.</p></div></div>
+
+  <div class="demo"><div class="stage"><span class="hint">
+    <button class="go" onclick="podNext()">next slot</button></span>
+    <div class="pods"><div class="pods-in" id="pods"></div></div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">08</span><b>Taxi carousel</b>
+      <p>Two slots on a turntable, each showing its year on the two-year clock. Year two lights amber
+      because it is promote-or-release &mdash; a deadline that currently reads as a number in a table.</p></div></div>
+
+  <div class="demo"><div class="stage"><span class="hint">
+    <button class="go" onclick="stamp()">tag him</button></span>
+    <div class="stamp-stage" id="stage9">
+      <div class="doc"><div class="nm">Ja&rsquo;Marr Chase</div>
+        <div class="sub">Year 4 &middot; past the wall</div>
+        <div class="sub" style="margin-top:auto;color:var(--dim)">Peak price paid &middot; R3</div></div>
+      <div class="stamp" id="stamp"><div class="t">R3</div><div class="s">Franchised</div></div></div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">09</span><b>Franchise stamp</b>
+      <p>One slot, once, and it freezes his price at the most expensive round ever paid. It should land
+      like a decision, not like ticking a box &mdash; so it presses down the Z axis and the page shakes.</p></div></div>
+
+  <div class="demo"><div class="stage">
+    <div class="brk"><div class="brk-in" id="brk"></div></div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">10</span><b>The Chase, lit</b>
+      <p>Both brackets on one tilted plane, seats dropping in off the Z axis. The four who miss the
+      playoffs are the ones that glow, because in this league they are playing for real money and for
+      lottery balls &mdash; which no bracket anywhere draws.</p></div></div>
+
+</div>
+
+<p class="note"><b>What I would ship first.</b> 03 split-flap and 05 towers, because Live is the page
+people open on a Sunday and both work with the data already on it. Then 01 and 02, which are one CSS
+block plus the delegated handler Kreeper already has. 06 the drums and 07 the pot are the two worth
+building from scratch &mdash; they are the only places this league looks like nothing else.</p>
+
+<p class="note"><b>What is missing before 01 can ship properly.</b> The fight-night cover wants manager
+photos, and 7&frac12; Men has no <code>assets/managers</code>. Kreeper&rsquo;s cutouts came from macOS
+Vision subject masks saved as transparent WebP &mdash; portable code, but it needs eight actual photos.</p>
+
+<script>
+(function(){
+  var RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* 02 — one delegated handler, as in app._MOTION_JS */
+  document.addEventListener('pointermove', function(e){
+    var c = e.target.closest ? e.target.closest('.tilt') : null;
+    if(!c || RM) return;
+    var r = c.getBoundingClientRect(),
+        px = (e.clientX - r.left)/r.width, py = (e.clientY - r.top)/r.height;
+    c.style.setProperty('--sx', (px*100).toFixed(1)+'%');
+    c.style.setProperty('--sy', (py*100).toFixed(1)+'%');
+    c.style.transform = 'perspective(760px) rotateY('+((px-.5)*13).toFixed(2)+
+                        'deg) rotateX('+((.5-py)*13).toFixed(2)+'deg)';
+  });
+  document.addEventListener('pointerleave', function(e){
+    var c = e.target.closest ? e.target.closest('.tilt') : null;
+    if(c) c.style.transform = '';
+  }, true);
+
+  /* 03 — flip only the digits that changed */
+  var cur = '137.5';
+  function paint(s){
+    var el = document.getElementById('flaps'); el.innerHTML = '';
+    s.split('').forEach(function(ch){
+      var d = document.createElement('div');
+      d.className = 'fd'; if(ch === '.') d.style.width = '15px';
+      d.innerHTML = '<div class="face">'+ch+'</div>';
+      el.appendChild(d);
+    });
+  }
+  paint(cur);
+  window.flap = function(){
+    var next = (parseFloat(cur) + 6.4).toFixed(1), el = document.getElementById('flaps');
+    var olds = cur.split(''), news = next.split('');
+    paint(next);
+    if(!RM) [].forEach.call(el.children, function(d, i){
+      if(olds[i] === news[i]) return;
+      d.innerHTML = '<div class="face">'+news[i]+'</div>'+
+                    '<div class="ft">'+(olds[i]||'')+'</div><div class="fb">'+news[i]+'</div>';
+      d.classList.add('go');
+    });
+    cur = next;
+    var g = document.getElementById('gain');
+    g.classList.remove('go'); void g.offsetWidth; g.classList.add('go');
+  };
+
+  /* 04 */
+  var kc = document.getElementById('kcard');
+  function toggle(){ kc.classList.toggle('on'); }
+  kc.addEventListener('click', toggle);
+  kc.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); } });
+
+  /* 06 — ball SIZE is the weight; champion smallest */
+  function drum(id, weights, hue){
+    var el = document.getElementById(id), n = weights.length;
+    var inner = document.createElement('div'); inner.className = 'dr-in';
+    weights.forEach(function(w, i){
+      var a = (i/n)*2*Math.PI, R = 42, d = 13 + w*0.95;
+      var b = document.createElement('div');
+      b.className = 'ball'; b.textContent = i+1;
+      b.style.cssText = 'width:'+d+'px;height:'+d+'px;margin:'+(-d/2)+'px;'+
+        'background:'+hue+';transform:translate('+(Math.cos(a)*R).toFixed(1)+'px,'+
+        (Math.sin(a)*R).toFixed(1)+'px);font-size:'+(d*0.46).toFixed(1)+'px';
+      inner.appendChild(b);
+    });
+    el.appendChild(inner);
+  }
+  drum('drumA', [24,21,18,15,10,7,3,2], 'var(--acc)');
+  drum('drumB', [24,21,18,15,10,7,3,2], 'var(--acc2)');
+
+  /* 08 */
+  var POD = [
+    {yr:'Slot 1 &middot; year 1 of 2', nm:"Ja'Kobi Lane", st:'One more year of runway.', p:['now','']},
+    {yr:'Slot 2 &middot; year 2 of 2', nm:'Kenyon Sadiq', st:'Clock is up — promote or release.', p:['on','now']}
+  ];
+  var pi = 0, pods = document.getElementById('pods');
+  POD.forEach(function(p, i){
+    var d = document.createElement('div');
+    d.className = 'pod';
+    d.style.transform = 'rotateY('+(i*180)+'deg) translateZ(116px)';
+    d.innerHTML = '<div class="yr">'+p.yr+'</div><div class="nm">'+p.nm+'</div>'+
+      '<div class="pips"><i class="'+p.p[0]+'"></i><i class="'+p.p[1]+'"></i></div>'+
+      '<div class="st">'+p.st+'</div>';
+    pods.appendChild(d);
+  });
+  window.podNext = function(){
+    pi = (pi + 1) % 2;
+    pods.style.transform = 'translateZ(-116px) rotateY('+(-pi*180)+'deg)';
+  };
+
+  /* 09 */
+  window.stamp = function(){
+    var s = document.getElementById('stamp'), st = document.getElementById('stage9');
+    s.classList.remove('go'); st.classList.remove('shk');
+    void s.offsetWidth;
+    s.classList.add('go'); st.classList.add('shk');
+  };
+  setTimeout(window.stamp, 700);
+
+  /* 10 */
+  var SEATS = [
+    {t:'1  Maybe Later',      x:0,   y:0,   w:118, c:''},
+    {t:'4  The Whig Party',   x:0,   y:32,  w:118, c:''},
+    {t:'2  Clayton&rsquo;s Kids',  x:0, y:72, w:118, c:''},
+    {t:'3  Bijan with&hellip;', x:0, y:104, w:118, c:''},
+    {t:'Title',               x:150, y:16,  w:112, c:'pot'},
+    {t:'5  Beantown Hurt',    x:150, y:66,  w:112, c:'chase'},
+    {t:'6  Amon-Ra Save Us',  x:150, y:98,  w:112, c:'chase'},
+    {t:'7  Taco Bandit',      x:150, y:130, w:112, c:'chase'}
+  ];
+  var brk = document.getElementById('brk');
+  SEATS.forEach(function(s, i){
+    var d = document.createElement('div');
+    d.className = 'seat ' + s.c;
+    d.style.cssText = 'left:'+s.x+'px;top:'+s.y+'px;width:'+s.w+'px;animation-delay:'+(i*0.07)+'s';
+    d.innerHTML = s.t;
+    brk.appendChild(d);
+  });
+})();
+</script>
+</div>

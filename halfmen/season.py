@@ -22,7 +22,7 @@ import math
 from datetime import date
 from typing import Any, Dict, List, Optional
 
-from . import adp_board, config, pot, sleeper
+from . import adp_board, config, gameday, pot, sleeper
 from .names import normalize_name
 
 # Below this edge the two rosters are not distinguishable and the honest
@@ -46,6 +46,34 @@ def current_week(league_id: str = None) -> int:
     except Exception:
         return 1
     return max(1, _int((lg.get("settings") or {}).get("leg"), 1))
+
+
+def week_is_final(league_id: Optional[str] = None, week: int = 1) -> bool:
+    """True once a week can no longer change.
+
+    Sleeper posts points as games finish, so on a Monday morning the week
+    already has scores - and anything built from them shows a result Monday
+    night can still flip. Past seasons and weeks before Sleeper's current one
+    are final; the current week is final once every NFL game is over. If
+    Sleeper's clock can't be read at all, trust the posted scores rather than
+    blanking the page. Ported from the Kreeper League.
+    """
+    league_id = league_id or config.league_id()
+    state = sleeper.nfl_state() or {}
+    try:
+        cur = int(state.get("week") or 0)
+    except (TypeError, ValueError):
+        cur = 0
+    if not cur:
+        return True
+    lg_season = str((sleeper.get_league(league_id) or {}).get("season") or config.current_season())
+    if str(state.get("season") or lg_season) != lg_season or str(state.get("season_type")) == "off":
+        return True
+    if week < cur:
+        return True
+    if week > cur:
+        return False
+    return gameday.week_complete(gameday.load_week(int(lg_season), week))
 
 
 def _int(v, default: int = 0) -> int:
