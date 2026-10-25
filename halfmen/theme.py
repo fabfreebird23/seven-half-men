@@ -1144,6 +1144,30 @@ table.dt td.risk{ width:1%; white-space:nowrap; text-align:right; padding-left:4
 .kx .xb-ph{ height:190px; width:auto; max-width:none; aspect-ratio:350 / 254; object-fit:cover !important; object-position:center bottom !important;
   filter:grayscale(1) contrast(1.2); margin-bottom:-24px; flex:none; }
 .kx .xb-s.me .xb-ph{ mix-blend-mode:multiply; }
+/* manager duotones on the cover, fight-poster style (ported from Kreeper):
+   each photo is a square the full height of its band at the outer edge, sized
+   by height so a wide screen never zooms into a slice of the face; the two
+   face each other (theirs mirrored) and fade out before the score; VS sits
+   on the seam */
+.kx .xb-s.fight{ position:relative; }
+.kx .xb-s .xb-ph.xb-mg{ position:absolute; top:0; bottom:0; height:100%; width:auto; max-width:62%; aspect-ratio:1 / 1; margin:0;
+  object-fit:cover !important; object-position:center 20% !important; filter:none; mix-blend-mode:normal; opacity:1; z-index:0;
+  -webkit-mask-image:linear-gradient(to right,#000 72%,transparent 100%); mask-image:linear-gradient(to right,#000 72%,transparent 100%); }
+.kx .xb-s.me .xb-ph.xb-mg{ left:0; }
+.kx .xb-s.op .xb-ph.xb-mg{ right:0; left:auto; transform:scaleX(-1); opacity:.92;
+  -webkit-mask-image:linear-gradient(to right,#000 72%,transparent 100%); mask-image:linear-gradient(to right,#000 72%,transparent 100%); }
+.kx .xb-s.fight .xb-t{ position:relative; z-index:1; }
+.kx .xb-vs{ display:inline-block; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-style:italic; font-size:20px; line-height:1;
+  color:#06101c; background:var(--kg); padding:4px 10px; border-radius:4px; transform:skewX(-8deg); margin-bottom:8px;
+  box-shadow:0 6px 18px rgba(0,0,0,.45); }
+@media (max-width:760px){
+  /* the halves touch on a phone: VS moves onto their seam, photos dim under the score */
+  .kx.xb{ position:relative; }
+  .kx .xb-vs{ position:absolute; left:50%; top:59px; translate:-50% -50%; transform:skewX(-8deg); z-index:3; font-size:15px; margin:0; }
+  .kx .xb-s .xb-ph.xb-mg{ max-width:78%; opacity:.55; }
+  .kx .xb-s.op .xb-ph.xb-mg{ opacity:.5; }
+  .kx .xb-s.me.fight{ padding-right:24px; } .kx .xb-s.op.fight{ padding-left:24px; }
+}
 .kx .xb-s.op .xb-ph{ opacity:.6; -webkit-mask-image:radial-gradient(ellipse 56% 92% at 50% 100%,#000 62%,transparent 100%);
   mask-image:radial-gradient(ellipse 56% 92% at 50% 100%,#000 62%,transparent 100%); }
 .kx .xb-t{ min-width:0; } .kx .xb-t b{ white-space:nowrap; } .kx .xb-t i{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -1248,11 +1272,6 @@ i.mf.gw-f{ width:40px; height:40px; border-color:var(--kg); }
 .kx .wr-b b{ font-family:'Archivo',sans-serif; font-weight:600; font-size:14px; }
 .kx .wr-bar{ height:7px; background:rgba(255,255,255,.06); border-radius:4px; overflow:hidden; }
 .kx .wr-bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--kr2),var(--kg)); }
-/* a manager's own cutout on the matchup cover: transparent WebP, so it gets
-   none of the blending the rectangular player headshot needs */
-.kx .xb-ph.mgr{ aspect-ratio:1 / 1; object-position:center bottom !important; }
-.kx .xb-s.me .xb-ph.mgr{ mix-blend-mode:normal; }
-.kx .xb-s.op .xb-ph.mgr{ opacity:.78; -webkit-mask-image:none; mask-image:none; }
 /* manager faces + the Around-the-League ladder (ported with Game of the Week) */
 i.mf.mf{ width:34px; height:34px; border-radius:50%; overflow:hidden; flex:none; display:inline-flex; align-items:center;
   justify-content:center; background:var(--panel2); border:2px solid var(--kr); font-style:normal; opacity:1;

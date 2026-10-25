@@ -1517,16 +1517,6 @@ def _ph_img(pid, cls: str) -> str:
             if pid else "")
 
 
-def _face_or_player(owner, tone: str, pid):
-    """The cover's portrait: the manager's own cutout when there is one,
-    otherwise his best projected starter's headshot - which is what this app
-    has always used, and what it falls back to for anyone with no photo."""
-    src = _mgr_photo(str(owner), tone) if owner else None
-    if src:
-        return f'<img class="xb-ph mgr" src="{src}" alt="">'
-    return _ph_img(pid, "xb-ph")
-
-
 def _top_pid(ctx: dict, side: dict):
     """The side's best projected starter — the face its scoreboard half wears."""
     ps = [p for p in (side.get("starters") or []) if p and p != "0"]
@@ -1542,19 +1532,26 @@ def _rec_of(owner: str) -> str:
 
 def _hero_html(a: str, b: str, *, pill: str, big_a: float, big_b: float, kicker: str,
                wp: float, sub_a: str, sub_b: str, cells: list, photo_a=None, photo_b=None) -> str:
-    """The matchup as the Draft Room's scoreboard, in Kreeper's colours: your
-    side royal with your best player, theirs black, the win probability as the
-    gold cover number in the middle, then four tiles."""
+    """The matchup as a fight poster, the Kreeper League's cover in Bloody
+    Sunday: your side crimson, theirs black, the two managers facing off -
+    you in the blue duotone, them in crimson, each a square the full height of
+    its band at the outer edge, mirrored to face each other and fading out
+    before the score, VS on the seam. The best player stands in for anyone
+    with no photo. Then four tiles."""
     tiles = "".join(f'<div><span>{k}</span><b class="{c}">{v}</b><i>{s_}</i></div>' for k, v, s_, c in cells)
     ra, rb = _rec_of(a), _rec_of(b)
+    ga, gb = _mgr_photo(str(a), "g"), _mgr_photo(str(b), "r")
+    ph_a = f'<img class="xb-ph xb-mg" src="{ga}" alt="">' if ga else _ph_img(photo_a, "xb-ph")
+    ph_b = f'<img class="xb-ph xb-mg" src="{gb}" alt="">' if gb else _ph_img(photo_b, "xb-ph")
     lab = f"{kicker} · {pill}".replace("&middot;", "·").upper()
+    vs = '<span class="xb-vs">VS</span>' if ga and gb else ""
     return (
-        f'<div class="kx xb"><div class="xb-s me">{_face_or_player(a, "g", photo_a)}<div class="xb-t">'
+        f'<div class="kx xb"><div class="xb-s me{" fight" if ga else ""}">{ph_a}<div class="xb-t">'
         f'<span>{_team_of(a)}{" &middot; " + ra if ra else ""}</span><b>{big_a:.1f}</b><i>{sub_a}</i></div></div>'
-        f'<div class="xb-m"><span class="xb-k">{lab}</span><b>{wp * 100:.0f}<sup>%</sup></b><em>win probability</em>'
+        f'<div class="xb-m">{vs}<span class="xb-k">{lab}</span><b>{wp * 100:.0f}<sup>%</sup></b><em>win probability</em>'
         f'<div class="xb-bar"><i style="width:{wp * 100:.0f}%"></i></div></div>'
-        f'<div class="xb-s op"><div class="xb-t"><span>{_team_of(b)}{" &middot; " + rb if rb else ""}</span>'
-        f'<b>{big_b:.1f}</b><i>{sub_b}</i></div>{_face_or_player(b, "r", photo_b)}</div></div>'
+        f'<div class="xb-s op{" fight" if gb else ""}"><div class="xb-t"><span>{_team_of(b)}{" &middot; " + rb if rb else ""}</span>'
+        f'<b>{big_b:.1f}</b><i>{sub_b}</i></div>{ph_b}</div></div>'
         f'<div class="kx xb-tiles">{tiles}</div>')
 
 

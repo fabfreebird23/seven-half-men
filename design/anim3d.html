@@ -64,30 +64,51 @@ button.go:hover{color:var(--ink);border-color:var(--acc)}
 button.go:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 
 /* ---- 01 fight-night entrance -------------------------------------- */
-.fc{position:relative;width:100%;height:170px;border-radius:3px;overflow:hidden;display:grid;grid-template-columns:1fr 104px 1fr}
-.fc .h{flex:1;position:relative;display:flex;align-items:center;overflow:hidden;padding:0 14px;min-width:0}
+/* The app's matchup cover exactly (halfmen/theme.py .kx.xb + .xb-mg): you in
+   the blue duotone on the crimson band, them in crimson on black, each photo a
+   full-height square at the outer edge, mirrored to face in, fading out
+   before the score; VS on the seam. The entrance is the new part. */
+.fc{position:relative;width:100%;min-height:176px;border-radius:12px 12px 0 0;overflow:hidden;
+    display:grid;grid-template-columns:1fr 150px 1fr}
+.fc .h{position:relative;display:flex;align-items:flex-end;padding:14px 16px;overflow:hidden;min-width:0}
 .fc .hL{background:var(--kr);justify-content:flex-end;text-align:right}
 .fc .hR{background:var(--kink);box-shadow:inset 0 0 0 1px var(--line)}
-.fc .ph{position:absolute;bottom:0;height:100%;width:auto;aspect-ratio:1/1;object-fit:cover;object-position:center bottom}
-.fc .hL .ph{left:-6px} .fc .hR .ph{right:-6px;transform:scaleX(-1)}
-.fc .t{position:relative;z-index:1}
-.fc .nm{font-family:var(--f-display);font-weight:800;font-size:36px;line-height:1;text-transform:uppercase}
-.fc .od{font-family:var(--f-cond);font-size:11px;letter-spacing:.05em;color:#ffd0dc}
-.fc .hR .od{color:var(--ink2)}
+.fc .ph{position:absolute;top:0;bottom:0;height:100%;width:auto;max-width:62%;aspect-ratio:1/1;
+        object-fit:cover;object-position:center 20%;z-index:0;
+        -webkit-mask-image:linear-gradient(to right,#000 72%,transparent);mask-image:linear-gradient(to right,#000 72%,transparent)}
+.fc .hL .ph{left:0} .fc .hR .ph{right:0;transform:scaleX(-1);opacity:.92}
+.fc .t{position:relative;z-index:1;min-width:0}
+.fc .t span{display:block;font-family:var(--f-body);font-size:9.5px;font-weight:700;letter-spacing:.16em;
+            text-transform:uppercase;color:#ffd0dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .hR .t span{color:var(--acc2)}
+.fc .t b{display:block;font-family:var(--f-display);font-weight:800;font-size:56px;line-height:.98}
+.fc .hR .t b{color:#b9b9c2}
+.fc .t i{font-style:normal;font-size:11px;color:#ffd0dc} .fc .hR .t i{color:var(--ink2)}
+.fc .mid{background:#08080a;box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line);
+         display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;text-align:center}
+.fc .mid .vsb{display:inline-block;letter-spacing:0;font-family:var(--f-display);font-weight:800;font-style:italic;font-size:19px;line-height:1;
+         color:#06101c;background:var(--acc2);padding:4px 10px;border-radius:4px;transform:skewX(-8deg);
+         margin-bottom:6px;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+.fc .mid span{font-family:var(--f-body);font-size:9px;letter-spacing:.14em;color:var(--acc2);text-transform:uppercase}
+.fc .mid b{font-family:var(--f-display);font-weight:800;font-size:54px;line-height:1;color:var(--acc2)}
+.fc .mid b sup{font-size:22px}
+.fc .mid em{font-style:italic;font-size:13px;color:var(--ink2)}
 .fc.in .hL{animation:inL .72s cubic-bezier(.2,.9,.3,1) backwards}
 .fc.in .hR{animation:inR .72s cubic-bezier(.2,.9,.3,1) backwards}
-.fc .vs{position:relative;z-index:3;text-align:center;background:#08080a;
-        box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line);
-        display:flex;flex-direction:column;align-items:center;justify-content:center}
-.fc .vs b{display:block;font-family:var(--f-display);font-weight:800;font-size:38px;line-height:1;color:var(--acc2)}
-.fc .vs i{display:block;font-style:normal;font-family:var(--f-cond);font-size:9.5px;
-          letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-.fc.in .vs{animation:vsIn .9s .42s cubic-bezier(.3,1.6,.4,1) backwards}
+.fc.in .mid .vsb{animation:vsIn .9s .42s cubic-bezier(.3,1.6,.4,1) backwards}
+.fc.in .mid b{animation:numIn .6s .7s ease-out backwards}
 @keyframes inL{from{transform:perspective(900px) translateX(-55%) translateZ(-260px) rotateY(32deg);opacity:0}to{transform:none;opacity:1}}
 @keyframes inR{from{transform:perspective(900px) translateX(55%) translateZ(-260px) rotateY(-32deg);opacity:0}to{transform:none;opacity:1}}
-@keyframes vsIn{0%{transform:perspective(400px) scale(3) rotateY(540deg);opacity:0}70%{opacity:1}
-                100%{transform:perspective(400px) scale(1) rotateY(0)}}
-.fc .ph{max-width:78%}
+@keyframes vsIn{0%{transform:perspective(400px) scale(3) rotateY(540deg) skewX(-8deg);opacity:0}70%{opacity:1}
+                100%{transform:perspective(400px) scale(1) rotateY(0) skewX(-8deg)}}
+@keyframes numIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* the app does this at phone width; the card here is narrow at any width */
+.stage.poster{container-type:inline-size}
+@container (max-width:560px){
+  .fc{grid-template-columns:1fr 92px 1fr} .fc .t b{font-size:38px} .fc .mid b{font-size:34px}
+  .fc .h{padding:12px 10px}
+  .fc .ph{max-width:86%;opacity:.55} .fc .hR .ph{opacity:.5}
+}
 
 /* ---- 02 manager card flip ----------------------------------------- */
 .mcard{perspective:900px;width:198px;height:280px;cursor:pointer;outline:none}
@@ -176,16 +197,51 @@ button.go:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 @keyframes grow{to{height:var(--h)}}
 
 /* ---- 07 the two drums --------------------------------------------- */
-.drum{width:156px;height:156px;perspective:640px}
-.dr-in{width:100%;height:100%;border-radius:50%;border:2px solid var(--line2);position:relative;
-       transform-style:preserve-3d;animation:spin 9s linear infinite;
-       background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.07),transparent 55%)}
-.ball{position:absolute;border-radius:50%;left:50%;top:50%;overflow:hidden;
-      border:2px solid var(--bc);box-shadow:0 0 0 1px #0b0405}
-.ball img{width:100%;height:100%;object-fit:cover;display:block}
-@keyframes spin{from{transform:rotateX(44deg) rotateZ(0)}to{transform:rotateX(44deg) rotateZ(360deg)}}
+/* A glass globe on a stand. The balls sit at real 3D positions inside it and
+   the whole cluster turns on its axis while a wire cage turns the other way;
+   each ball counter-rotates so its face always looks out, and is shaded as a
+   sphere (top-left specular, dark limb) so it reads as a ball with a face
+   printed on it rather than a sticker. Perspective does the rest: the far
+   side of the drum is smaller and behind the glass. */
+.drum{position:relative;width:176px;height:212px}
+.drum .glb{position:absolute;left:0;top:0;width:176px;height:176px;perspective:520px}
+.drum .glass{position:absolute;inset:0;border-radius:50%;z-index:3;pointer-events:none;
+  background:
+    radial-gradient(circle at 31% 24%,rgba(255,255,255,.34),rgba(255,255,255,.06) 18%,transparent 32%),
+    radial-gradient(circle at 70% 82%,rgba(255,255,255,.08),transparent 26%),
+    radial-gradient(circle at 50% 50%,transparent 58%,rgba(0,0,0,.5) 100%);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.12),inset 0 0 26px var(--tint)}
+.drum .back{position:absolute;inset:0;border-radius:50%;z-index:0;
+  background:radial-gradient(circle at 50% 62%,var(--tint) 0,rgba(10,9,10,.92) 66%)}
+.drum .cage{position:absolute;inset:0;z-index:2;transform-style:preserve-3d;
+  animation:cageTurn 14s linear infinite reverse}
+.drum .cage i{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,255,255,.16)}
+.drum .cage i:nth-child(2){transform:rotateY(60deg)} .drum .cage i:nth-child(3){transform:rotateY(120deg)}
+.drum .cage i:nth-child(4){transform:rotateX(90deg);border-color:rgba(255,255,255,.22)}
+.drum .spin{position:absolute;left:50%;top:50%;z-index:1;transform-style:preserve-3d;
+  animation:drumTurn 9s linear infinite}
+.drum .ball{position:absolute;transform-style:preserve-3d}
+.drum .face{width:var(--d);height:var(--d);margin:calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+  animation:drumFace 9s linear infinite}
+.drum .bob{width:100%;height:100%;animation:bob var(--bt) ease-in-out var(--bd) infinite alternate}
+.drum .orb{position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;
+  box-shadow:0 0 0 2px var(--bc),0 6px 10px -4px rgba(0,0,0,.7)}
+.drum .orb img{width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block}
+.drum .orb::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.55),rgba(255,255,255,.1) 22%,transparent 40%),
+             radial-gradient(circle at 50% 50%,transparent 52%,rgba(0,0,0,.62) 100%)}
+.drum .axle{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px;border-radius:50%;z-index:4;
+  background:radial-gradient(circle at 35% 30%,#fff,#8a8486 55%,#2b2729);box-shadow:0 0 0 2px rgba(0,0,0,.4)}
+.drum .stand{position:absolute;left:50%;top:166px;width:70px;height:34px;margin-left:-35px;
+  background:linear-gradient(180deg,#3a3537,#1b1819);clip-path:polygon(32% 0,68% 0,100% 100%,0 100%);border-radius:3px}
+.drum .floor{position:absolute;left:50%;top:196px;width:132px;height:16px;margin-left:-66px;border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.65),transparent 70%)}
+@keyframes drumTurn{from{transform:rotateX(-14deg) rotateY(0)}to{transform:rotateX(-14deg) rotateY(360deg)}}
+@keyframes drumFace{from{transform:rotateY(0) rotateX(14deg)}to{transform:rotateY(-360deg) rotateX(14deg)}}
+@keyframes cageTurn{from{transform:rotateX(-14deg) rotateY(0)}to{transform:rotateX(-14deg) rotateY(360deg)}}
+@keyframes bob{from{transform:translateY(-5px)}to{transform:translateY(5px)}}
 .drum-l{font-family:var(--f-cond);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
-        color:var(--dim);text-align:center;margin-top:8px}
+        color:var(--dim);text-align:center;margin-top:4px}
 
 /* ---- 08 the pot vessel -------------------------------------------- */
 .vessel{width:118px;height:168px;perspective:620px;position:relative;margin-left:70px}
@@ -261,7 +317,7 @@ button.go:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 
 @media (max-width:520px){
   .fc .nm{font-size:26px} .fc .od{font-size:10px} .vessel{margin-left:60px}
-  .drum{width:128px;height:128px}
+  .drum{transform:scale(.86);transform-origin:top center;margin-bottom:-28px}
 }
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none !important;transition:none !important}
@@ -285,18 +341,19 @@ two don&rsquo;t. Everything stands still under <code>prefers-reduced-motion</cod
 <div class="bar"><h2>Ported from Kreeper &amp; the Draft Room</h2><span>proven elsewhere</span></div>
 <div class="grid">
 
-  <div class="demo"><div class="stage"><span class="hint"><button class="go" onclick="replay('fc')">replay</button></span>
+  <div class="demo"><div class="stage poster"><span class="hint"><button class="go" onclick="replay('fc')">replay</button></span>
     <div class="fc in" id="fc">
-      <div class="h hL"><img class="ph" src="managers/1254567796231114752_g.webp" alt="">
-        <div class="t"><div class="nm">Devin</div><div class="od">Taco Bandit &middot; 7&ndash;5<br>56% win &middot; 39% lose</div></div></div>
-      <div class="vs"><b>38</b><i>pts at<br>stake</i></div>
-      <div class="h hR"><div class="t"><div class="nm">Josh</div><div class="od">Bijan with the Wind &middot; 7&ndash;5<br>65% win &middot; 47% lose</div></div>
-        <img class="ph" src="managers/334162589502144512_r.webp" alt=""></div>
-</div></div>
+      <div class="h hL"><img class="ph" src="managers/964703051971887104_g.webp" alt="">
+        <div class="t"><span>Clayton&rsquo;s Kids &middot; 8&ndash;4</span><b>139.5</b><i>you &middot; 1 still to play</i></div></div>
+      <div class="mid"><span class="vsb">VS</span><span>live &middot; week 7</span><b>97<sup>%</sup></b><em>win probability</em></div>
+      <div class="h hR"><div class="t"><span>Amon-Ra Save Us &middot; 4&ndash;8</span><b>67.7</b><i>5 still to play</i></div>
+        <img class="ph" src="managers/979400432114102272_r.webp" alt=""></div>
+    </div></div>
     <div class="cap"><span class="tag live">cover shipped</span><span class="n">01</span><b>Fight-night entrance</b>
-      <p>The cover went live today; this is the entrance it doesn&rsquo;t have yet. Both halves fly in
-      off the Z axis, the stakes badge spins down from 3&times;. Once per page load, never on
-      Live&rsquo;s 30-second refresh.</p></div></div>
+      <p>Your real week-7 cover, built the Kreeper way: you in blue on the crimson band, Isiah in
+      crimson on black, faces turned in. The poster is live; the entrance is what it doesn&rsquo;t
+      have yet &mdash; halves fly in off the Z axis, VS spins down from 3&times;. Once per page load,
+      never on Live&rsquo;s 30-second refresh.</p></div></div>
 
   <div class="demo"><div class="stage"><span class="hint">click it</span>
     <div class="mcard" id="mcard" tabindex="0" role="button" aria-label="Flip Clayton's card">
@@ -492,26 +549,30 @@ plus a delegated handler. 07 the drums and 08 the pot are the two worth building
     g.classList.remove('go'); void g.offsetWidth; g.classList.add('go');
   };
 
-  /* 07 - the balls ARE the managers; ball size is the weight */
-  function drum(id, order, weights, colour){
-    var el = document.getElementById(id), n = order.length;
-    var inner = document.createElement('div'); inner.className = 'dr-in';
-    var R = el.clientWidth * 0.30;
+  /* 07 - the balls ARE the managers; ball size is the weight. Positions are
+     a fixed golden-angle spiral through the sphere, so every ball has its own
+     depth and the cluster never repeats the same flat ring. */
+  function drum(id, order, weights, colour, tint){
+    var el = document.getElementById(id), n = order.length, R = 74;
+    el.style.setProperty('--tint', tint);
+    var spin = '';
     order.forEach(function(k, i){
-      var a = (i/n)*2*Math.PI, d = 18 + weights[i]*1.25;
-      var b = document.createElement('div');
-      b.className = 'ball';
-      b.title = M[k].first + ' - ' + weights[i] + ' balls';
-      b.style.cssText = 'width:'+d+'px;height:'+d+'px;margin:'+(-d/2)+'px;--bc:'+colour+';'+
-        'transform:translate('+(Math.cos(a)*R).toFixed(1)+'px,'+(Math.sin(a)*R).toFixed(1)+'px)';
-      b.innerHTML = '<img src="'+face(k)+'" alt="'+M[k].first+'">';
-      inner.appendChild(b);
+      var d = 22 + weights[i] * 1.3;
+      var yy = 1 - (i + 0.5) * 2 / n, rr = Math.sqrt(1 - yy * yy), th = i * 2.39996;
+      var reach = R - d / 2 + 6;
+      var x = Math.cos(th) * rr * reach, y = yy * reach * 0.82, z = Math.sin(th) * rr * reach;
+      spin += '<div class="ball" style="transform:translate3d('+x.toFixed(1)+'px,'+y.toFixed(1)+'px,'+z.toFixed(1)+'px)">'+
+              '<div class="face" style="--d:'+d.toFixed(0)+'px"><div class="bob" style="--bt:'+(1.4 + (i % 3) * 0.35)+'s;--bd:-'+(i * 0.37).toFixed(2)+'s">'+
+              '<div class="orb" style="--bc:'+colour+'" title="'+M[k].first+' - '+weights[i]+' balls">'+
+              '<img src="'+face(k)+'" alt="'+M[k].first+'"></div></div></div></div>';
     });
-    el.appendChild(inner);
+    el.innerHTML = '<div class="floor"></div><div class="stand"></div><div class="glb">'+
+      '<div class="back"></div><div class="spin">'+spin+'</div>'+
+      '<div class="cage"><i></i><i></i><i></i><i></i></div><div class="glass"></div><div class="axle"></div></div>';
   }
   var worstFirst = ['lucas','thad','isiah','corey','devin','josh','brandon','clayton'];
-  drum('drumA', worstFirst, [24,21,18,15,10,7,3,2], 'var(--acc)');
-  drum('drumB', worstFirst, [24,21,18,15,10,7,3,2], 'var(--acc2)');
+  drum('drumA', worstFirst, [24,21,18,15,10,7,3,2], 'var(--acc)',  'rgba(251,8,73,.22)');
+  drum('drumB', worstFirst, [24,21,18,15,10,7,3,2], 'var(--acc2)', 'rgba(87,142,213,.22)');
 
   /* 08 - the spenders drop in, biggest first */
   var coins = document.getElementById('coins');
