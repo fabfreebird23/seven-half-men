@@ -1303,6 +1303,22 @@ td.two .tw{ display:flex; align-items:center; gap:10px; min-width:0; } td.two .t
 [data-testid="stMarkdownContainer"] .kx .gw-root{ font-size:12px; color:var(--muted) !important; text-align:right; } .kx .gw-root b{ color:var(--kg); }
 [data-testid="stMarkdownContainer"] .kx .gw-root.you{ color:var(--teal) !important; }
 @media (max-width:760px){
+  /* Game of the Week on a phone (ported from Kreeper): the two halves sit
+     side by side with the stakes number on its own row underneath, rather
+     than squeezing a 280px middle column between two 40px halves */
+  .kx.gw{ grid-template-columns:1fr 1fr; min-height:0; }
+  .kx .gw-m{ grid-column:1 / -1; grid-row:2; padding:10px 0 14px; } .kx .gw-m b{ font-size:56px; }
+  /* a phone half is ~170px: the old poster look (face from the outer edge),
+     but the face only fills the top of the half and fades out, and the name
+     and odds sit below it, so no text lands on a face */
+  .kx .gw-s{ min-height:196px; align-items:flex-end; padding:0 10px 10px; }
+  .kx .gw-s .gw-ph{ top:0; bottom:auto; height:118px; max-width:none; opacity:.9;
+    -webkit-mask-image:linear-gradient(to top,transparent 0,#000 35%); mask-image:linear-gradient(to top,transparent 0,#000 35%); }
+  .kx .gw-t b{ font-size:34px; } .kx .gw-t i{ font-size:11px; line-height:1.35; }
+  [data-testid="stMarkdownContainer"] .kx .gw-t span{ font-size:9px; letter-spacing:.1em; white-space:normal; }
+  .kx .gw-tp{ grid-template-columns:minmax(0,1fr) 44px 44px minmax(0,1fr); row-gap:6px; } .kx .gw-e{ grid-column:1 / -1; order:5; }
+  .kx .gw-n{ white-space:normal; } [data-testid="stMarkdownContainer"] .kx .gw-n span{ display:block; margin:0; }
+  .kx .gw-rd{ grid-template-columns:34px 1fr 80px; } .kx .gw-tr{ grid-column:1 / -1; order:5; }
   .kx .gw-lr{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); row-gap:8px; } .kx .gw-mid{ grid-column:1 / -1; grid-row:2; }
   [data-testid="stMarkdownContainer"] .kx .gw-root{ grid-column:1 / -1; text-align:center; }
 }
