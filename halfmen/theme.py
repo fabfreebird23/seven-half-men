@@ -1016,7 +1016,7 @@ a.tp{ display:block; border:1px solid var(--line); border-radius:10px; padding:1
 a.tp b{ display:block; font-size:13.5px; } a.tp em{ font-style:normal; font-size:11px; color:var(--muted); }
 a.tp:hover, a.tp.on{ background:linear-gradient(var(--panel2),var(--panel2)) padding-box, var(--hl) border-box;
   border:1px solid transparent; }
-.wk-cols{ display:grid; grid-template-columns:1fr 1.15fr; gap:20px; align-items:start; }
+.wk-cols{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:20px; align-items:start; }
 
 /* The theme forces every markdown <span> to --ink (!important) so Streamlit's
    own greys never leak in. These components colour their spans on purpose,
@@ -1067,7 +1067,7 @@ a.tp:hover, a.tp.on{ background:linear-gradient(var(--panel2),var(--panel2)) pad
 .kv.good b{ color:var(--teal); } .kv.bad b{ color:var(--red); }
 
 @media (max-width: 760px){
-  .wk-cols{ grid-template-columns:1fr; }
+  .wk-cols{ grid-template-columns:minmax(0,1fr); }
   .hero .wkpill, .mh-right .mh-meta{ display:none; }
   .wwho{ flex:1 1 0; gap:8px; } .wwho.r{ justify-content:flex-end; }
   .wwho b{ font-size:15px; } .wwho em{ font-size:8.5px; letter-spacing:.8px; }
@@ -1799,7 +1799,18 @@ td.two .tw{ display:flex; align-items:center; gap:10px; min-width:0; } td.two .t
 /* ==== offseason pages ===================================================== */
 /* What a keeper costs: the matrix as a crimson heat-map */
 .kx.hmx{ display:grid; gap:4px; max-width:760px; }
-.kx .hmx-r{ display:grid; grid-template-columns:80px repeat(5,1fr); gap:4px; align-items:center; }
+.kx .hmx-r{ display:grid; grid-template-columns:80px repeat(5,minmax(0,1fr)); gap:4px; align-items:center; }
+@media (max-width:760px){
+  /* six columns on a phone: the header words ("becomes R1") are what forced
+     the grid wider than the screen, so they shrink and wrap instead */
+  .kx .hmx-r{ grid-template-columns:54px repeat(5,minmax(0,1fr)); gap:3px; }
+  [data-testid="stMarkdownContainer"] .kx .hmx-r.hd span{ font-size:8.5px; letter-spacing:.04em; white-space:normal; line-height:1.15;
+    word-break:normal; overflow-wrap:normal; hyphens:none; }
+  [data-testid="stMarkdownContainer"] .kx .hmx-c{ font-size:14px; }
+  /* the pot's cap label sits inside the glass instead of hanging off it */
+  [data-testid="stMarkdownContainer"] .kx .capv span{ left:auto; right:4px; top:-17px; }
+  .kx.vbox{ gap:16px; } .kx .vnote{ max-width:none; }
+}
 [data-testid="stMarkdownContainer"] .kx .hmx-r.hd span{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--dim) !important; text-align:center; }
 [data-testid="stMarkdownContainer"] .kx .hmx-t{ font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:18px; color:var(--ink) !important; }
 .kx .hmx-c{ --h:0; }   /* each cell sets its own intensity inline */

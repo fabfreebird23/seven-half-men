@@ -421,7 +421,7 @@ GROUPS = {
         ("taxi", "", [("taxi", "Taxi")]),
         ("pot", "", [("pot", "The Pot")]),
         ("playoffs", "", [("playoffs", "Playoffs")]),
-        ("league", "The League", [("managers", "Managers"), ("record", "Record book"),
+        ("league", "People &amp; history", [("managers", "Managers"), ("record", "Record book"),
                                   ("trades", "Trades"), ("superlatives", "Superlatives")]),
     ],
     # Everything here is dormant between February and August. It sat FIRST and
@@ -1211,8 +1211,8 @@ def render_top_values() -> None:
         '<div class="tiny" style="margin-top:8px">What he costs to keep for <b>2027</b> against '
         'what the market says he is worth. A drafted player keeps at the round he was drafted '
         'in, so his price does not move with the market and the gap is real. The two rookie '
-        'slots and the R%d premium are the only prices that ignore his draft round entirely, '
-        'which is why they sit at both ends of this list.</div>'
+        'slots and the R%d premium are the only prices that ignore his draft round entirely. '
+        'Tap a card for what he costs in each year after that.</div>'
         % engine.rookie_draft_premium(), unsafe_allow_html=True)
 
 
@@ -1290,7 +1290,7 @@ def render_power() -> None:
             unsafe_allow_html=True)
     else:
         st.markdown(
-            '<div class="tiny" style="margin-top:8px">Results are <b>60%% win rate, 40%% points '
+            '<div class="tiny" style="margin-top:8px">Results are <b>60% win rate, 40% points '
             'for</b> &mdash; win rate alone rewards a soft schedule, points alone ignore that '
             'the league plays games. The arrow is movement against where your draft seeded you, '
             'not against last week.</div>', unsafe_allow_html=True)
@@ -1722,7 +1722,7 @@ def _render_home_my_week(me: str, cur: int) -> None:
                        ("Lineup", "&mdash;", "no game that week", ""))
         st.markdown(_hero_html(
             me, pair[1]["owner"], photo_a=_top_pid(ctx, pair[0]), photo_b=_top_pid(ctx, pair[1]),
-            pill=f"Week {cur} &middot; {'final' if done else 'live' if started else 'preview'}",
+            pill=f"Week {cur}",
             big_a=a["points"] if started else a["final"], big_b=b["points"] if started else b["final"],
             kicker="final" if done else "live" if started else "projected", wp=_wp(a, b),
             sub_a=f'you &middot; {a["left"]} still to play', sub_b=f'{b["left"]} still to play',
