@@ -421,6 +421,8 @@ GROUPS = {
         ("taxi", "", [("taxi", "Taxi")]),
         ("pot", "", [("pot", "The Pot")]),
         ("playoffs", "", [("playoffs", "Playoffs")]),
+        ("league", "The League", [("managers", "Managers"), ("record", "Record book"),
+                                  ("trades", "Trades"), ("superlatives", "Superlatives")]),
     ],
     # Everything here is dormant between February and August. It sat FIRST and
     # held eight of eleven leaves while the season it belongs to was already
@@ -4049,6 +4051,15 @@ _NAV_JS = r"""
     var m = null; try { m = localStorage.getItem(KEY); } catch(_) {}
     if (m) { u.set('team', m); a.setAttribute('href', '?' + u.toString()); }
   }, true);
+  // manager cards flip on tap / Enter / Space (render_managers)
+  document.addEventListener('click', function(e){
+    var c = e.target.closest && e.target.closest('.mcard');
+    if (c) c.classList.toggle('on');
+  });
+  document.addEventListener('keydown', function(e){
+    var c = e.target.closest && e.target.closest('.mcard');
+    if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); c.classList.toggle('on'); }
+  });
 })();
 """
 
@@ -4103,10 +4114,405 @@ def render_bottom_bar() -> None:
         "})();</script>", height=0)
 
 
+# ---------------------------------------------------------------------------
+# THE LEAGUE  - who everyone is, what they have done, and what they've traded
+# ---------------------------------------------------------------------------
+# Four pages ported from the Kreeper League. Season one means two of them are
+# thin on purpose rather than broken: the record book has no completed season
+# to look back on, and the trade log is only as long as the deals made so far.
+# Both fill themselves as the league runs - nothing here needs revisiting in
+# 2027.
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def build_record_book():
+    """(seasons newest-first, per-manager aggregate) from every Sleeper season
+    BEFORE this one, walking previous_league_id. In 2026 that is empty, and the
+    page says so rather than inventing a history."""
+    chain = sleeper.league_chain(LG)
+    seasons = []
+    agg = {o: {"w": 0, "l": 0, "pf": 0.0, "titles": 0, "runner": 0, "seasons": 0}
+           for o in config.managers()}
+    for c in chain:
+        if str(c["season"]) == str(SEASON):
+            continue
+        rosters = sleeper.get_rosters(c["league_id"]) or []
+        r2o = {int(r["roster_id"]): str(r.get("owner_id")) for r in rosters}
+        champ = runner = None
+        try:
+            for m in sleeper.get_winners_bracket(c["league_id"]) or []:
+                if m.get("p") == 1:
+                    champ, runner = r2o.get(m.get("w")), r2o.get(m.get("l"))
+        except Exception:          # noqa: BLE001 - a season with no bracket still counts
+            pass
+        standings = []
+        for r in rosters:
+            o = str(r.get("owner_id"))
+            cfg = r.get("settings", {}) or {}
+            w, l = cfg.get("wins", 0) or 0, cfg.get("losses", 0) or 0
+            pf = (cfg.get("fpts", 0) or 0) + (cfg.get("fpts_decimal", 0) or 0) / 100
+            standings.append({"owner": o, "name": who(o), "w": w, "l": l, "pf": round(pf, 1)})
+            if o in agg:
+                agg[o]["w"] += w
+                agg[o]["l"] += l
+                agg[o]["pf"] += pf
+                agg[o]["seasons"] += 1
+                if o == champ:
+                    agg[o]["titles"] += 1
+                if o == runner:
+                    agg[o]["runner"] += 1
+        standings.sort(key=lambda x: (-x["w"], -x["pf"]))
+        seasons.append({"season": c["season"], "standings": standings,
+                        "champ": who(champ) if champ else None,
+                        "runner": who(runner) if runner else None})
+    return seasons, agg
+
+
+def render_managers() -> None:
+    """The league as trading cards: the photo and this season's record on the
+    front, the record book on the back. Tap one to flip it."""
+    st.markdown(_ThemeShim.section_head('The <span class="g">Managers</span>',
+                                        "tap a card to flip it", page=True), unsafe_allow_html=True)
+    table = season.standings()
+    try:
+        _seasons, agg = build_record_book()
+    except Exception:              # noqa: BLE001 - no history is not a broken page
+        agg = {}
+    cur = season.current_week()
+    odds = {}
+    if cur:
+        try:
+            odds = {o: v for o, v in
+                    ((get_playoff_outlook(None, cur).get("sim") or {}).get("teams") or {}).items()}
+        except Exception:          # noqa: BLE001
+            odds = {}
+    by_pf = {r["owner_id"]: i + 1 for i, r in
+             enumerate(sorted(table, key=lambda r: -r["points_for"]))}
+    me = VIEW
+    cards = []
+    for r in table:
+        o = r["owner_id"]
+        a = agg.get(o) or {}
+        ph = _mgr_photo(str(o))
+        front = f'<img src="{ph}" alt="">' if ph else f'<em class="mc-ini">{_initials(o)}</em>'
+        w_all, l_all = a.get("w", 0) + r["wins"], a.get("l", 0) + r["losses"]
+        titles, runner = a.get("titles", 0), a.get("runner", 0)
+        rows = [("This season", esc(r["record"])),
+                ("Points for", f'{r["points_for"]:,.0f} &middot; #{by_pf.get(o, "-")}'),
+                ("All-time", f'{w_all}&ndash;{l_all}'),
+                ("Titles", f'{titles}' + (f' &middot; {runner}&times; runner-up' if runner else "")),
+                ("Playoff odds", f'{odds[o]["playoff_pct"]}%' if o in odds else "&mdash;"),
+                ("FAAB spent", f'${int(r["spent"])} of ${int(r["entitlement"])}')]
+        if me and o != me and cur:
+            h = get_h2h(me, o, cur)
+            if h["games"]:
+                rows.append(("vs you", f'{h["b"]}&ndash;{h["a"]}'))
+        seasons_in = a.get("seasons", 0) + 1
+        note = (f"{titles}-time champion" if titles else
+                f"{seasons_in} season{'s' if seasons_in != 1 else ''} in the league")
+        cards.append(
+            f'<div class="mcard{" me" if o == me else ""}" tabindex="0" role="button" '
+            f'aria-label="Flip {esc(team_of(o))}">'
+            f'<div class="mc-in"><div class="mc-f"><em class="mc-rk">#{r["place"]}</em>{front}'
+            f'<div class="mc-ft"><b>{esc(team_of(o))}</b>'
+            f'<small>{esc(who(o))} &middot; {esc(r["record"])}</small></div></div>'
+            f'<div class="mc-b"><b class="mc-h">{esc(team_of(o))}</b>'
+            + "".join(f'<div class="mc-row"><small>{k}</small><b>{v}</b></div>' for k, v in rows)
+            + f'<small class="mc-note">{note}</small></div></div></div>')
+    st.markdown('<div class="kx mcards">' + "".join(cards) + "</div>", unsafe_allow_html=True)
+    st.caption("All-time counts every regular season on Sleeper, this one included - which in "
+               "2026 is only this one. Playoff odds come from the same sim the Playoffs page runs.")
+
+
+def render_record_book() -> None:
+    st.markdown(_ThemeShim.section_head('League <span class="g">Record Book</span>', page=True),
+                unsafe_allow_html=True)
+    seasons, agg = build_record_book()
+    live = season.standings()
+    if not seasons:
+        st.markdown(
+            '<div class="tiny" style="margin-bottom:14px">No season has finished yet, so there is '
+            'nothing to look back on. What follows is <b>2026 as it stands</b> - the first page '
+            'of the book. It closes when the Chase does, and from then on this page carries every '
+            'season before the current one.</div>', unsafe_allow_html=True)
+    else:
+        champs = {x["champ"] for x in seasons if x["champ"]}
+        first = min(x["season"] for x in seasons)
+        st.markdown(
+            f'<div class="tiny" style="margin-bottom:10px">Since {first} &middot; '
+            f'{len(champs)} champion{"s" if len(champs) != 1 else ""} in {len(seasons)} '
+            f'season{"s" if len(seasons) != 1 else ""}.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="kx chs">' + "".join(
+            f'<div class="ch"><em>{x["season"]}</em><b>{esc(x["champ"] or "—")}</b>'
+            f'<span>{("over " + esc(x["runner"])) if x.get("runner") else ""}</span></div>'
+            for x in seasons) + '</div>', unsafe_allow_html=True)
+
+    theme.bar("All-time standings", "every regular season on record, this one included")
+    agg_rows = []
+    for r in live:
+        o = r["owner_id"]
+        a = agg.get(o) or {}
+        w, l = a.get("w", 0) + r["wins"], a.get("l", 0) + r["losses"]
+        agg_rows.append({"owner": o, "w": w, "l": l,
+                         "pf": a.get("pf", 0.0) + r["points_for"],
+                         "titles": a.get("titles", 0), "finals": a.get("titles", 0) + a.get("runner", 0),
+                         "wp": w / max(1, w + l)})
+    agg_rows.sort(key=lambda x: (-x["titles"], -x["wp"], -x["pf"]))
+    body = []
+    for i, x in enumerate(agg_rows, 1):
+        rings = ('<span class="chip acc">&times;%d</span>' % x["titles"]) if x["titles"] else ""
+        body.append([
+            '<span class="mono">%d</span>' % i,
+            '<div style="font-weight:%d">%s</div><div class="tiny">%s</div>' % (
+                700 if x["owner"] == VIEW else 550, esc(who(x["owner"])), esc(team_of(x["owner"]))),
+            '<span class="mono">%d&ndash;%d</span>' % (x["w"], x["l"]),
+            '<span class="mono">%.3f</span>' % x["wp"],
+            '<span class="mono">%s</span>' % f'{x["pf"]:,.0f}',
+            rings or '<span class="tiny">&mdash;</span>',
+        ])
+    ledger_table(["", "Manager", "All-time", "Win%", "Points", "Titles"], body,
+                 me_row=next((i for i, x in enumerate(agg_rows) if x["owner"] == VIEW), None))
+
+    if seasons:
+        theme.bar("Season by season", "")
+        for s_ in seasons:
+            with st.expander(f'{s_["season"]} — {s_["champ"] or "—"}'):
+                ledger_table(["", "Team", "Record", "Points"],
+                             [['<span class="mono">%d</span>' % i, esc(r["name"]),
+                               '<span class="mono">%d&ndash;%d</span>' % (r["w"], r["l"]),
+                               '<span class="mono">%.1f</span>' % r["pf"]]
+                              for i, r in enumerate(s_["standings"], 1)])
+
+
+def _ordinal(n: int) -> str:
+    suffix = "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_recent_trades(limit: int = 12) -> list:
+    """Completed trades, newest first, with every asset each side received.
+
+    Players, picks AND faab - Kreeper's version drops the FAAB leg, which
+    doesn't matter there. It matters here: traded FAAB moves a manager's
+    entitlement, and that is what keeps the pot honest (halfmen/pot.py).
+    """
+    r2o = {int(r["roster_id"]): str(r.get("owner_id")) for r in sleeper.get_rosters(LG) or []}
+    raw = []
+    for wk in range(0, 19):
+        try:
+            txs = sleeper.get_transactions(LG, wk)
+        except Exception:          # noqa: BLE001 - a future week simply has none
+            continue
+        raw.extend(t for t in (txs or [])
+                   if t.get("type") == "trade" and t.get("status") == "complete")
+    raw.sort(key=lambda t: t.get("status_updated") or 0, reverse=True)
+
+    out = []
+    for tx in raw[:limit]:
+        roster_ids = tx.get("roster_ids") or []
+        receives = {rid: [] for rid in roster_ids}
+        pid_of = {}
+        for pid, rid in (tx.get("adds") or {}).items():
+            if rid in receives:
+                nm = _pname(str(pid))
+                receives[rid].append(nm)
+                pid_of[nm] = str(pid)
+        for pk in (tx.get("draft_picks") or []):
+            owner = pk.get("owner_id")
+            if owner in receives:
+                orig = r2o.get(int(pk.get("roster_id") or 0))
+                whose = (who(orig).split() or [""])[0] + "'s " if orig else ""
+                receives[owner].append(
+                    f'{whose}{pk.get("season")} {_ordinal(int(pk.get("round", 0)))}')
+        for wb in (tx.get("waiver_budget") or []):
+            to = wb.get("receiver")
+            if to in receives:
+                frm = r2o.get(int(wb.get("sender") or 0))
+                whose = (who(frm).split() or [""])[0] + "'s " if frm else ""
+                receives[to].append(f'${int(wb.get("amount") or 0)} of {whose}FAAB')
+        teams = [(r2o.get(rid, ""), receives.get(rid, [])) for rid in roster_ids]
+        ts = tx.get("status_updated")
+        import datetime as _dt
+        date = _dt.datetime.fromtimestamp(ts / 1000).strftime("%b %-d, %Y") if ts else ""
+        out.append({"teams": teams, "date": date, "pid_of": pid_of})
+    return out
+
+
+def render_trades() -> None:
+    st.markdown(_ThemeShim.section_head('The <span class="g">Trades</span>', page=True),
+                unsafe_allow_html=True)
+    st.caption("Every deal carries the keeper round with it - a traded player costs his new "
+               "team the round he was drafted in, not a fresh price. Traded FAAB moves the "
+               "spender's entitlement with it, so a dollar can only be owed once.")
+    trades = get_recent_trades()
+    if not trades:
+        st.info("No completed trades on record yet.")
+        return
+
+    def chips(assets, pid_of):
+        return "".join(
+            f'<span class="ktp">{_ph_img(pid_of[a], "ktp-f")}{esc(a)}</span>' if a in pid_of
+            else f'<span class="ktp pk">{esc(a)}</span>' for a in assets
+        ) or '<span class="ktp pk">nothing</span>'
+    cards = []
+    for t in trades:
+        (oa, aa), (ob, ab) = (t["teams"] + [("", [])])[:2]
+        na, nb = who(oa) or "?", who(ob) or "?"
+        cards.append(
+            f'<div class="tc"><div class="tc-h"><b>{esc(na)}</b><span>traded with</span>'
+            f'<b>{esc(nb)}</b><em>{t["date"]}</em></div>'
+            f'<div class="tc-c"><div><span class="tl">{esc(na)} gets</span>'
+            f'{chips(aa, t.get("pid_of", {}))}</div>'
+            f'<div class="tc-x">&#8644;</div><div><span class="tl">{esc(nb)} gets</span>'
+            f'{chips(ab, t.get("pid_of", {}))}</div></div></div>')
+    st.markdown('<div class="kx">' + "".join(cards) + '</div>', unsafe_allow_html=True)
+
+    moved = pot.faab_trades(LG)
+    if moved:
+        theme.bar("FAAB that changed hands", "it moves the entitlement, not just the balance")
+        ledger_table(["From", "To", "Amount"],
+                     [[esc(who(m["from"])), esc(who(m["to"])), '<span class="mono">$%d</span>' % m["amount"]]
+                      for m in moved])
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def finished_week_points(through: int) -> dict:
+    """{week: {owner: starter points}} for every FINISHED week before `through`.
+
+    One pass, cached: the awards below ask the same question of the same weeks
+    twice over, and each uncached week is a full matchup context.
+    """
+    out = {}
+    for wk in range(1, max(1, through)):
+        try:
+            if not season.week_is_final(LG, wk):
+                continue
+            ctx = get_week_ctx(wk)
+        except Exception:          # noqa: BLE001 - one bad week shouldn't lose the page
+            continue
+        pts = {o: sum(sd["actual"].get(p, 0.0) for p in sd["starters"] if p and p != "0")
+               for o, sd in ctx["sides"].items()}
+        if len(pts) >= 2:
+            out[wk] = pts
+    return out
+
+
+def render_superlatives() -> None:
+    """The league's awards, all of them read off data already on other pages.
+
+    Written for this league rather than ported: Kreeper's version leans on its
+    own ADP-movement feed and draft-capital builders, neither of which means
+    anything here in October of season one.
+    """
+    st.markdown(_ThemeShim.section_head('<span class="g">Superlatives</span>', page=True),
+                unsafe_allow_html=True)
+    table = season.standings()
+    cur = season.current_week()
+    cards = []
+
+    def card(title, winner, sub, cls=""):
+        cards.append(f'<div class="sup{" " + cls if cls else ""}">{_mgr_face(winner) if winner else ""}'
+                     f'<div><span>{title}</span><b>{esc(who(winner)) if winner else "&mdash;"}</b>'
+                     f'<i>{sub}</i></div></div>')
+
+    try:
+        board = [r for r in value_rows()
+                 if r.get("eligible") and r.get("cost") and r.get("surplus") is not None]
+    except Exception:              # noqa: BLE001
+        board = []
+    if board:
+        top = board[0]
+        card("Biggest keeper steal", top["owner_id"],
+             f'{esc(top["name"])} at R{top["cost"]} &middot; {theme.signed(top["surplus"])}')
+
+    if cur:
+        try:
+            sim = (get_playoff_outlook(None, cur).get("sim") or {}).get("teams") or {}
+        except Exception:          # noqa: BLE001
+            sim = {}
+        if sim:
+            fav = max(sim.items(), key=lambda kv: kv[1].get("title_pct", 0))
+            card("Title favourite", fav[0],
+                 f'{fav[1].get("title_pct", 0):.1f}% to win it &middot; '
+                 f'{fav[1].get("playoff_pct", 0)}% to make the bracket')
+
+    # Luck: this league plays the median every week, so "expected wins" has to
+    # count both results. A team's expected H2H wins in a week is the share of
+    # the league it outscored; the median win is simply scoring above it.
+    weeks = finished_week_points(cur or 1)
+    exp = {r["owner_id"]: 0.0 for r in table}
+    for pts in weeks.values():
+        order = sorted(pts.values())
+        mid = (order[len(order) // 2 - 1] + order[len(order) // 2]) / 2
+        for o, v in pts.items():
+            beat = sum(1 for x in pts.values() if v > x)
+            exp[o] = exp.get(o, 0.0) + beat / (len(pts) - 1) + (1.0 if v > mid else 0.0)
+    played = len(weeks)
+    if played:
+        luck = sorted(((r["owner_id"], r["wins"] - exp.get(r["owner_id"], 0.0)) for r in table),
+                      key=lambda kv: kv[1])
+        unl, lk = luck[0], luck[-1]
+        card("Unluckiest", unl[0],
+             f'{dict((r["owner_id"], r["wins"]) for r in table)[unl[0]]} wins on '
+             f'{exp[unl[0]]:.1f} expected', "bad")
+        card("Luckiest", lk[0],
+             f'{dict((r["owner_id"], r["wins"]) for r in table)[lk[0]]} wins on '
+             f'{exp[lk[0]]:.1f} expected')
+
+    best_wk = None
+    for wk, pts in weeks.items():
+        for o, v in pts.items():
+            if best_wk is None or v > best_wk[2]:
+                best_wk = (o, wk, v)
+    if best_wk:
+        card("Biggest week", best_wk[0], f'{best_wk[2]:.1f} in week {best_wk[1]}')
+
+    spenders = [r for r in table if r["spent"]]
+    if spenders:
+        big = max(spenders, key=lambda r: r["spent"])
+        card("Deepest pockets", big["owner_id"],
+             f'${int(big["spent"])} of FAAB spent &middot; that is ${int(big["spent"])} he owes the pot')
+    quiet = [r for r in table if not r["spent"]]
+    if quiet and spenders:
+        card("Tightest wallet", max(quiet, key=lambda r: r["points_for"])["owner_id"],
+             "has not spent a dollar of FAAB all season")
+
+    try:
+        pods = season.taxi() or []
+    except Exception:              # noqa: BLE001
+        pods = []
+    if pods:
+        full = max(pods, key=lambda t: t["used"])
+        if full["used"]:
+            card("Best stocked taxi", full["owner_id"],
+                 f'{full["used"]} rookie{"s" if full["used"] != 1 else ""} parked for the season')
+        wasting = [t for t in pods if t.get("wasting")]
+        if wasting:
+            card("Left a slot empty", wasting[0]["owner_id"],
+                 f'{wasting[0]["open"]} taxi slot{"s" if wasting[0]["open"] != 1 else ""} open '
+                 f'with a rookie who could have filled {"them" if wasting[0]["open"] != 1 else "it"}',
+                 "bad")
+
+    pf = max(table, key=lambda r: r["points_for"])
+    card("Most points", pf["owner_id"], f'{pf["points_for"]:,.0f} for the season')
+
+    st.markdown('<div class="kx sups">' + "".join(cards) + "</div>", unsafe_allow_html=True)
+    st.caption("Expected wins account for the median match: your share of the league you "
+               "outscored, plus the median win if you cleared it. Everything here comes off "
+               "finished weeks only - this week's games are still moving.")
+
+
+def render_league(leaf=None):
+    {"managers": render_managers, "record": render_record_book,
+     "trades": render_trades, "superlatives": render_superlatives}.get(
+        leaf or "managers", render_managers)()
+
+
 PAGES = {"home": render_home, "rules": render_rules}
 GROUP_PAGES = {"week": render_week, "keepers": render_keepers, "draft": render_draft,
                "lottery": render_lottery, "wire": render_keepers, "pot": render_pot,
-               "taxi": render_taxi_league, "playoffs": lambda leaf=None: render_playoffs()}
+               "taxi": render_taxi_league, "playoffs": lambda leaf=None: render_playoffs(),
+               "league": render_league}
 
 player_data_warning()
 

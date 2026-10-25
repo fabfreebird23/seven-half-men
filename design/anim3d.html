@@ -4,16 +4,17 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400..800&family=Archivo:wdth,wght@75..125,400..800&family=Archivo+Narrow:wght@400..700&display=swap">
 
 <style>
-/* Bloody Sunday, straight off halfmen/theme.py. Ten motions: five proven in
-   Kreeper or the Draft Room, five that only make sense in THIS league. */
+/* Bloody Sunday, straight off halfmen/theme.py, with the league's own eight
+   managers in it. Eleven motions: six proven in Kreeper or the Draft Room,
+   five that only make sense under THIS league's rules. */
 :root{
   --bg:#141314; --bg2:#1a1819; --card:#1d1b1c; --card2:#262324;
   --line:#332f31; --line2:#463f42;
   --ink:#f4f1f2; --ink2:#b4aaae; --dim:#938a8e;
   --acc:#fb0849; --acc-ink:#1a0208; --acc-soft:rgba(251,8,73,.14);
   --acc2:#578ed5; --acc2-soft:rgba(87,142,213,.16);
+  --kr:#c8063b; --kink:#101011;
   --good:#369d86; --warn:#d77010; --bad:#fc4475;
-  --qb:#cb6ab8; --rb:#369d86; --wr:#578ed5; --te:#d77010;
   --f-display:'Big Shoulders Display','Archivo Narrow',system-ui,sans-serif;
   --f-body:'Archivo',system-ui,sans-serif;
   --f-cond:'Archivo Narrow',system-ui,sans-serif;
@@ -21,9 +22,9 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);
      font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1180px;margin:0 auto;padding:0 20px 90px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 90px}
 .top{background:var(--acc);color:var(--acc-ink);margin:0 0 26px;padding:26px 0 22px}
-.top .in{max-width:1180px;margin:0 auto;padding:0 20px}
+.top .in{max-width:1180px;margin:0 auto;padding:0 16px}
 .top h1{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,5vw,46px);
         line-height:.95;margin:0;text-transform:uppercase;letter-spacing:-.01em}
 .top p{margin:8px 0 0;font-family:var(--f-cond);font-size:17px;letter-spacing:.02em;opacity:.84}
@@ -38,9 +39,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 @media(max-width:860px){.grid{grid-template-columns:1fr}}
 .demo{background:var(--card);border:1px solid var(--line);border-radius:4px;overflow:hidden;
-      display:flex;flex-direction:column}
-.stage{padding:22px 18px;min-height:210px;display:flex;align-items:center;justify-content:center;
-       background:linear-gradient(180deg,var(--bg2),var(--card));position:relative}
+      display:flex;flex-direction:column;min-width:0}
+.stage{padding:22px 18px;min-height:218px;display:flex;align-items:center;justify-content:center;
+       background:linear-gradient(180deg,var(--bg2),var(--card));position:relative;overflow:hidden}
 .cap{padding:13px 16px 15px;border-top:1px solid var(--line)}
 .cap .n{font-family:var(--f-display);font-weight:800;color:var(--acc);margin-right:9px;font-size:15px}
 .cap b{font-family:var(--f-display);font-weight:700;font-size:19px;text-transform:uppercase;
@@ -49,8 +50,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);
           text-transform:uppercase;color:var(--dim);border:1px solid var(--line2);
           border-radius:2px;padding:1px 7px;margin-top:3px}
 .cap .tag.new{color:var(--acc);border-color:var(--acc)}
+.cap .tag.live{color:var(--good);border-color:var(--good)}
 .cap p{margin:7px 0 0;font-size:13.5px;color:var(--ink2);line-height:1.5}
-.hint{position:absolute;right:11px;top:9px;font-family:var(--f-cond);font-size:10px;
+.hint{position:absolute;right:11px;top:9px;z-index:5;font-family:var(--f-cond);font-size:10px;
       letter-spacing:.09em;text-transform:uppercase;color:var(--dim);opacity:.8}
 .note{border-left:2px solid var(--acc2);padding:2px 0 2px 14px;margin:26px 0 0;
       color:var(--ink2);font-size:14.5px;max-width:74ch}
@@ -62,42 +64,77 @@ button.go:hover{color:var(--ink);border-color:var(--acc)}
 button.go:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 
 /* ---- 01 fight-night entrance -------------------------------------- */
-.fc{position:relative;width:100%;height:150px;border-radius:3px;overflow:hidden;display:flex}
-.fc .h{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.fc .hL{background:linear-gradient(135deg,#2a0a14,#140406)}
-.fc .hR{background:linear-gradient(225deg,#0d1a2b,#05080f)}
-.fc .nm{font-family:var(--f-display);font-weight:700;font-size:17px;text-transform:uppercase}
-.fc .od{font-family:var(--f-cond);font-size:11.5px;letter-spacing:.08em;color:var(--ink2)}
+.fc{position:relative;width:100%;height:170px;border-radius:3px;overflow:hidden;display:grid;grid-template-columns:1fr 104px 1fr}
+.fc .h{flex:1;position:relative;display:flex;align-items:center;overflow:hidden;padding:0 14px;min-width:0}
+.fc .hL{background:var(--kr);justify-content:flex-end;text-align:right}
+.fc .hR{background:var(--kink);box-shadow:inset 0 0 0 1px var(--line)}
+.fc .ph{position:absolute;bottom:0;height:100%;width:auto;aspect-ratio:1/1;object-fit:cover;object-position:center bottom}
+.fc .hL .ph{left:-6px} .fc .hR .ph{right:-6px;transform:scaleX(-1)}
+.fc .t{position:relative;z-index:1}
+.fc .nm{font-family:var(--f-display);font-weight:800;font-size:36px;line-height:1;text-transform:uppercase}
+.fc .od{font-family:var(--f-cond);font-size:11px;letter-spacing:.05em;color:#ffd0dc}
+.fc .hR .od{color:var(--ink2)}
 .fc.in .hL{animation:inL .72s cubic-bezier(.2,.9,.3,1) backwards}
 .fc.in .hR{animation:inR .72s cubic-bezier(.2,.9,.3,1) backwards}
-.fc .vs{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:3;
-        font-family:var(--f-display);font-weight:800;font-size:27px;color:var(--acc);
-        transform:skewX(-8deg);text-shadow:0 2px 14px rgba(251,8,73,.6)}
+.fc .vs{position:relative;z-index:3;text-align:center;background:#08080a;
+        box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line);
+        display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fc .vs b{display:block;font-family:var(--f-display);font-weight:800;font-size:38px;line-height:1;color:var(--acc2)}
+.fc .vs i{display:block;font-style:normal;font-family:var(--f-cond);font-size:9.5px;
+          letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .fc.in .vs{animation:vsIn .9s .42s cubic-bezier(.3,1.6,.4,1) backwards}
 @keyframes inL{from{transform:perspective(900px) translateX(-55%) translateZ(-260px) rotateY(32deg);opacity:0}to{transform:none;opacity:1}}
 @keyframes inR{from{transform:perspective(900px) translateX(55%) translateZ(-260px) rotateY(-32deg);opacity:0}to{transform:none;opacity:1}}
-@keyframes vsIn{0%{transform:perspective(400px) scale(3) rotateY(540deg) skewX(-8deg);opacity:0}
-                70%{opacity:1}100%{transform:perspective(400px) scale(1) rotateY(0) skewX(-8deg)}}
+@keyframes vsIn{0%{transform:perspective(400px) scale(3) rotateY(540deg);opacity:0}70%{opacity:1}
+                100%{transform:perspective(400px) scale(1) rotateY(0)}}
+.fc .ph{max-width:78%}
 
-/* ---- 02 tilt + shine ---------------------------------------------- */
-.tilt{position:relative;width:250px;height:142px;border-radius:4px;background:var(--card2);
-      border:1px solid var(--line2);padding:15px;transition:transform .14s ease-out;
-      transform-style:preserve-3d;overflow:hidden}
+/* ---- 02 manager card flip ----------------------------------------- */
+.mcard{perspective:900px;width:198px;height:280px;cursor:pointer;outline:none}
+.mc-in{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+       transition:transform .75s cubic-bezier(.3,1.3,.4,1)}
+.mcard.on .mc-in{transform:rotateY(180deg)}
+@media(hover:hover){.mcard:hover:not(.on) .mc-in{transform:rotateY(-12deg) rotateX(6deg)}}
+.mcard:focus-visible .mc-f,.mcard:focus-visible .mc-b{box-shadow:0 0 0 2px var(--acc2)}
+.mc-f,.mc-b{position:absolute;inset:0;border-radius:14px;overflow:hidden;backface-visibility:hidden;
+            -webkit-backface-visibility:hidden;background:var(--card2);border:1px solid var(--line2);
+            display:flex;flex-direction:column}
+.mc-f img{display:block;width:100%;height:72%;object-fit:cover}
+.mc-rk{position:absolute;top:8px;left:8px;z-index:2;font-style:normal;font-family:var(--f-cond);
+       font-weight:700;font-size:13px;background:var(--acc2);color:#06101c;border-radius:6px;padding:1px 7px}
+.mc-ft{padding:9px 11px;border-top:3px solid var(--acc2)}
+.mc-ft b{display:block;font-family:var(--f-display);font-weight:700;font-size:17px;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-ft small{font-size:11px;color:var(--dim)}
+.mc-b{transform:rotateY(180deg);padding:13px;gap:5px;background:linear-gradient(160deg,#2a0a14,#120307)}
+.mc-h{flex:none;font-family:var(--f-display);font-weight:700;font-size:17px;text-transform:uppercase}
+.mc-row{flex:none;display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+        border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:4px}
+.mc-row small{font-size:11.5px;color:#f0d7de}
+.mc-row b{font-family:var(--f-display);font-weight:800;font-size:16px;color:var(--acc2)}
+.mc-note{margin-top:auto;font-size:11px;color:#e0bcc6}
+
+/* ---- 03 tilt + shine ---------------------------------------------- */
+.tilt{position:relative;width:260px;max-width:100%;height:142px;border-radius:4px;background:var(--card2);
+      border:1px solid var(--line2);padding:15px;transition:transform .14s ease-out;overflow:hidden;
+      display:flex;gap:14px;align-items:center}
 .tilt::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(360px circle at var(--sx,50%) var(--sy,50%),rgba(255,255,255,.13),transparent 42%)}
+.tilt img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--acc2);flex:none}
 .tilt .k{font-family:var(--f-cond);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-.tilt .v{font-family:var(--f-display);font-weight:800;font-size:41px;line-height:1;margin-top:5px}
+.tilt .v{font-family:var(--f-display);font-weight:800;font-size:30px;line-height:1;margin:3px 0}
 
-/* ---- 03 split-flap ------------------------------------------------ */
+/* ---- 04 split-flap ------------------------------------------------ */
+.flap-wrap{display:flex;align-items:center;gap:14px}
+.flap-wrap img{width:58px;height:58px;border-radius:50%;object-fit:cover;border:2px solid var(--acc)}
 .flaps{display:flex;gap:4px;align-items:flex-end}
 .fd{position:relative;width:38px;height:54px;perspective:4em;font-family:var(--f-display);
     font-weight:800;font-size:38px;line-height:54px;text-align:center}
-.fd .face{position:absolute;inset:0;background:var(--card2);border:1px solid var(--line2);
-          border-radius:3px;overflow:hidden}
-.fd .ft,.fd .fb{position:absolute;inset:0;background:var(--card2);border:1px solid var(--line2);
-                border-radius:3px;overflow:hidden;backface-visibility:hidden}
-.fd .ft{z-index:2;transform-origin:bottom}
-.fd .fb{z-index:2;transform-origin:top;transform:rotateX(90deg)}
+.fd .face,.fd .ft,.fd .fb{position:absolute;inset:0;background:var(--card2);
+    border:1px solid var(--line2);border-radius:3px;overflow:hidden}
+.fd .ft,.fd .fb{z-index:2;backface-visibility:hidden}
+.fd .ft{transform-origin:bottom}
+.fd .fb{transform-origin:top;transform:rotateX(90deg)}
 .fd.go .ft{animation:ftOut .3s ease-in forwards}
 .fd.go .fb{animation:fbIn .3s .3s ease-out forwards}
 @keyframes ftOut{to{transform:rotateX(-90deg)}}
@@ -106,47 +143,52 @@ button.go:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .gain.go{animation:gain 1.9s ease-out}
 @keyframes gain{0%{opacity:0;transform:translateY(6px)}15%,70%{opacity:1;transform:none}100%{opacity:0}}
 
-/* ---- 04 keeper contract flip -------------------------------------- */
-.kcard{perspective:1000px;width:206px;height:160px;cursor:pointer;outline:none}
+/* ---- 05 keeper contract flip -------------------------------------- */
+.kcard{perspective:1000px;width:210px;height:164px;cursor:pointer;outline:none}
 .kc-in{position:relative;width:100%;height:100%;transform-style:preserve-3d;
        transition:transform .72s cubic-bezier(.3,1.3,.4,1)}
 .kcard.on .kc-in{transform:rotateY(180deg)}
 @media(hover:hover){.kcard:hover:not(.on) .kc-in{transform:rotateY(-13deg) rotateX(7deg)}}
-.kc-f,.kc-b{position:absolute;inset:0;backface-visibility:hidden;border-radius:4px;
-            border:1px solid var(--line2);padding:13px;display:flex;flex-direction:column}
+.kc-f,.kc-b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+            border-radius:4px;border:1px solid var(--line2);padding:13px;display:flex;flex-direction:column}
 .kc-f{background:var(--card2)}
 .kc-b{transform:rotateY(180deg);background:linear-gradient(160deg,#2a0a14,#120307);gap:5px}
-.kc-f .nm{font-family:var(--f-display);font-weight:700;font-size:20px;text-transform:uppercase}
+.kc-f .nm{font-family:var(--f-display);font-weight:700;font-size:20px;text-transform:uppercase;line-height:1.05}
 .kc-f .pr{font-family:var(--f-display);font-weight:800;font-size:40px;color:var(--acc);margin-top:auto;line-height:1}
+.kc-own{display:flex;align-items:center;gap:6px;font-family:var(--f-cond);font-size:11.5px;color:var(--dim);margin-top:5px}
+.kc-own img{width:20px;height:20px;border-radius:50%;object-fit:cover}
 .lad{display:flex;justify-content:space-between;font-family:var(--f-cond);font-size:12px;
      padding:3px 0;border-bottom:1px solid rgba(255,255,255,.08)}
 .lad b{font-family:var(--f-display);font-size:15px}
 .lad.wall{color:var(--bad)}
 
-/* ---- 05 matchup towers -------------------------------------------- */
-.tow{display:flex;gap:30px;align-items:flex-end;perspective:800px;height:160px}
-.tw{width:62px;transform-style:preserve-3d;transform:rotateX(14deg) rotateY(-17deg);position:relative}
-.tw .stk{position:relative;width:62px;background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 55%,black));
+/* ---- 06 matchup towers -------------------------------------------- */
+.tow{display:flex;gap:40px;align-items:flex-end;perspective:800px;height:186px;padding-top:44px}
+.tw{width:64px;transform-style:preserve-3d;transform:rotateX(14deg) rotateY(-17deg);position:relative}
+.tw .stk{position:relative;width:64px;background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 55%,black));
          border-radius:3px 3px 0 0;height:0;animation:grow 1.3s cubic-bezier(.2,.9,.3,1) forwards;
          box-shadow:14px 0 0 -2px color-mix(in srgb,var(--c) 42%,black)}
-.tw .lbl{position:absolute;bottom:-25px;width:100%;text-align:center;font-family:var(--f-cond);
+.tw .lbl{position:absolute;bottom:-24px;width:100%;text-align:center;font-family:var(--f-cond);
          font-size:11px;letter-spacing:.06em;color:var(--ink2)}
-.tw .sc{position:absolute;top:-25px;width:100%;text-align:center;font-family:var(--f-display);
-        font-weight:800;font-size:19px}
+.tw .sc{position:absolute;top:-24px;width:100%;text-align:center;font-family:var(--f-display);font-weight:800;font-size:19px}
+.tw .hd{position:absolute;top:-62px;left:50%;margin-left:-18px;width:36px;height:36px;border-radius:50%;
+        object-fit:cover;border:2px solid var(--c)}
 @keyframes grow{to{height:var(--h)}}
 
-/* ---- 06 the two drums --------------------------------------------- */
-.drum{width:132px;height:132px;perspective:620px}
+/* ---- 07 the two drums --------------------------------------------- */
+.drum{width:156px;height:156px;perspective:640px}
 .dr-in{width:100%;height:100%;border-radius:50%;border:2px solid var(--line2);position:relative;
-       transform-style:preserve-3d;animation:spin 7s linear infinite;background:
-       radial-gradient(circle at 34% 28%,rgba(255,255,255,.07),transparent 55%)}
-.ball{position:absolute;width:21px;height:21px;border-radius:50%;left:50%;top:50%;
-      margin:-10.5px;font-family:var(--f-display);font-weight:800;font-size:11px;
-      display:flex;align-items:center;justify-content:center;color:#0b0405}
-@keyframes spin{from{transform:rotateX(66deg) rotateZ(0)}to{transform:rotateX(66deg) rotateZ(360deg)}}
+       transform-style:preserve-3d;animation:spin 9s linear infinite;
+       background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.07),transparent 55%)}
+.ball{position:absolute;border-radius:50%;left:50%;top:50%;overflow:hidden;
+      border:2px solid var(--bc);box-shadow:0 0 0 1px #0b0405}
+.ball img{width:100%;height:100%;object-fit:cover;display:block}
+@keyframes spin{from{transform:rotateX(44deg) rotateZ(0)}to{transform:rotateX(44deg) rotateZ(360deg)}}
+.drum-l{font-family:var(--f-cond);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+        color:var(--dim);text-align:center;margin-top:8px}
 
-/* ---- 07 the pot vessel -------------------------------------------- */
-.vessel{width:118px;height:168px;perspective:620px;position:relative}
+/* ---- 08 the pot vessel -------------------------------------------- */
+.vessel{width:118px;height:168px;perspective:620px;position:relative;margin-left:70px}
 .vs-in{width:100%;height:100%;position:relative;transform:rotateX(9deg);transform-style:preserve-3d}
 .glass{position:absolute;inset:0;border:2px solid var(--line2);border-radius:8px 8px 26px 26px;
        overflow:hidden;background:linear-gradient(100deg,rgba(255,255,255,.05),transparent 42%)}
@@ -157,33 +199,42 @@ button.go:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 @keyframes fillUp{to{height:var(--lvl)}}
 @keyframes slosh{0%,100%{transform:translateX(-6px) rotate(-1.2deg)}50%{transform:translateX(6px) rotate(1.2deg)}}
 .capline{position:absolute;left:-7px;right:-7px;border-top:2px dashed var(--good);z-index:3}
-.capline span{position:absolute;left:-74px;top:-9px;font-family:var(--f-cond);font-size:10px;
+.capline span{position:absolute;right:-66px;top:-9px;font-family:var(--f-cond);font-size:10px;
               letter-spacing:.07em;color:var(--good);white-space:nowrap}
 .spill{position:absolute;top:0;right:-16px;width:13px;height:0;background:var(--acc2);
        border-radius:0 0 5px 5px;animation:spillDown 1.3s 2.2s ease-in forwards;opacity:.9}
 @keyframes spillDown{to{height:62px}}
+.coins{position:absolute;left:-70px;bottom:6px;display:flex;flex-direction:column-reverse;gap:3px}
+.coin{display:flex;align-items:center;gap:5px;font-family:var(--f-cond);font-size:10.5px;color:var(--ink2);
+      opacity:0;animation:coinIn .4s forwards}
+.coin img{width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid var(--acc)}
+@keyframes coinIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
 
-/* ---- 08 taxi pod carousel ----------------------------------------- */
-.pods{perspective:900px;width:230px;height:150px}
+/* ---- 09 taxi pod carousel ----------------------------------------- */
+.pods{perspective:900px;width:240px;height:156px}
 .pods-in{position:relative;width:100%;height:100%;transform-style:preserve-3d;
-         transition:transform .7s cubic-bezier(.3,1.2,.4,1);transform:translateZ(-116px) rotateY(0)}
+         transition:transform .7s cubic-bezier(.3,1.2,.4,1);transform:translateZ(-120px) rotateY(0)}
 .pod{position:absolute;inset:0;border:1px solid var(--line2);border-radius:4px;padding:14px;
-     background:var(--card2);display:flex;flex-direction:column;gap:5px;backface-visibility:hidden}
+     background:var(--card2);display:flex;flex-direction:column;gap:5px;
+     backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .pod .yr{font-family:var(--f-cond);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .pod .nm{font-family:var(--f-display);font-weight:700;font-size:21px;text-transform:uppercase}
 .pod .st{font-size:12.5px;color:var(--ink2);margin-top:auto}
+.pod .own{position:absolute;right:12px;top:12px;width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--acc2)}
 .pips{display:flex;gap:5px;margin-top:4px}
 .pips i{width:26px;height:4px;border-radius:2px;background:var(--line2)}
 .pips i.on{background:var(--good)}
 .pips i.now{background:var(--warn)}
 
-/* ---- 09 franchise stamp ------------------------------------------- */
-.stamp-stage{position:relative;width:216px;height:150px;perspective:700px}
+/* ---- 10 franchise stamp ------------------------------------------- */
+.stamp-stage{position:relative;width:226px;height:156px;perspective:700px}
 .doc{position:absolute;inset:0;background:var(--card2);border:1px solid var(--line2);
      border-radius:4px;padding:14px;display:flex;flex-direction:column}
 .doc .nm{font-family:var(--f-display);font-weight:700;font-size:19px;text-transform:uppercase}
 .doc .sub{font-size:12.5px;color:var(--ink2)}
-.stamp{position:absolute;left:66%;top:62%;translate:-50% -50%;width:104px;height:104px;
+.doc .own{display:flex;align-items:center;gap:6px;margin-top:auto;font-size:12px;color:var(--dim)}
+.doc .own img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.stamp{position:absolute;left:70%;top:58%;translate:-50% -50%;width:100px;height:100px;
        border:4px solid var(--acc);border-radius:50%;display:flex;align-items:center;
        justify-content:center;flex-direction:column;color:var(--acc);
        font-family:var(--f-display);font-weight:800;text-transform:uppercase;
@@ -196,155 +247,200 @@ button.go:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .shk.go{animation:shk .34s .5s ease-out}
 @keyframes shk{0%,100%{translate:0}25%{translate:-4px 0}50%{translate:3px 0}75%{translate:-2px 0}}
 
-/* ---- 10 chase bracket --------------------------------------------- */
-.brk{perspective:860px;width:270px;height:160px}
-.brk-in{width:100%;height:100%;transform:rotateX(17deg) rotateY(-14deg);transform-style:preserve-3d;
-        position:relative}
-.seat{position:absolute;height:25px;border-radius:3px;border:1px solid var(--line2);
-      background:var(--card2);font-family:var(--f-cond);font-size:11.5px;color:var(--ink2);
-      display:flex;align-items:center;padding:0 8px;letter-spacing:.04em;
-      animation:seatIn .5s backwards}
-.seat.chase{border-color:var(--acc);background:var(--acc-soft);color:var(--ink);
-            box-shadow:0 0 16px rgba(251,8,73,.3)}
+/* ---- 11 chase bracket --------------------------------------------- */
+.brk{perspective:860px;width:320px;max-width:100%;height:172px}
+.brk-in{width:100%;height:100%;transform:rotateX(17deg) rotateY(-14deg);transform-style:preserve-3d;position:relative}
+.seat{position:absolute;height:30px;border-radius:3px;border:1px solid var(--line2);
+      background:var(--card2);font-family:var(--f-cond);font-size:12px;color:var(--ink2);
+      display:flex;align-items:center;gap:7px;padding:0 8px;letter-spacing:.04em;animation:seatIn .5s backwards}
+.seat img{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none}
+.seat.chase{border-color:var(--acc);background:var(--acc-soft);color:var(--ink);box-shadow:0 0 16px rgba(251,8,73,.3)}
 .seat.pot{border-color:var(--good);background:rgba(54,157,134,.15);color:var(--ink)}
 @keyframes seatIn{from{opacity:0;transform:translateZ(-90px)}to{opacity:1;transform:none}}
+.brk-lab{position:absolute;font-family:var(--f-cond);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;top:-18px}
 
+@media (max-width:520px){
+  .fc .nm{font-size:26px} .fc .od{font-size:10px} .vessel{margin-left:60px}
+  .drum{width:128px;height:128px}
+}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none !important;transition:none !important}
   .fill{height:var(--lvl) !important} .tw .stk{height:var(--h) !important}
-  .stamp{opacity:.95 !important} .spill{height:62px !important}
+  .stamp{opacity:.95 !important} .spill{height:62px !important} .coin{opacity:1 !important}
 }
 </style>
 
 <div class="top"><div class="in">
   <h1>Bloody Sunday in motion</h1>
-  <p>7&frac12; Men &middot; ten 3D motions &middot; five ported, five built for this league&rsquo;s rules</p>
+  <p>7&frac12; Men &middot; eleven 3D motions &middot; the league&rsquo;s own eight managers, week 7, 2026</p>
 </div></div>
 
 <div class="wrap">
-<p class="lede">The app has <b>zero</b> 3D motion today &mdash; Kreeper and the Draft Room both got
-theirs on 25 October and this one didn&rsquo;t. The first five below are those, in the Bloody Sunday
-palette. The last five exist because 7&frac12; Men has rules the other two leagues don&rsquo;t:
-two weighted drums, a taxi clock, a franchise tag, and a pot with a cap it can overflow.
-Everything stands still under <code>prefers-reduced-motion</code>.</p>
+<p class="lede">Every face and every number here is real: the 25 October standings, this
+week&rsquo;s actual Game of the Week (Devin&ndash;Josh, <b>38 points</b> of playoff odds on the
+line), and the eight cutouts now sitting in <code>assets/managers</code>. The first six are motions
+Kreeper or the Draft Room already run. The last five exist because this league has rules the other
+two don&rsquo;t. Everything stands still under <code>prefers-reduced-motion</code>.</p>
 
 <div class="bar"><h2>Ported from Kreeper &amp; the Draft Room</h2><span>proven elsewhere</span></div>
 <div class="grid">
 
-  <div class="demo"><div class="stage"><span class="hint">replays on load</span>
+  <div class="demo"><div class="stage"><span class="hint"><button class="go" onclick="replay('fc')">replay</button></span>
     <div class="fc in" id="fc">
-      <div class="h hL"><div class="nm">Clayton&rsquo;s Kids</div><div class="od">8&ndash;4 &middot; 61%</div></div>
-      <div class="h hR"><div class="nm">Taco Bandit</div><div class="od">7&ndash;5 &middot; 39%</div></div>
-      <div class="vs">VS</div></div></div>
-    <div class="cap"><span class="tag">port</span><span class="n">01</span><b>Fight-night entrance</b>
-      <p>Both halves fly in off the Z axis and the VS badge spins down from 3&times;. Plays once per
-      page load, never on Live&rsquo;s refresh &mdash; the thing that makes it feel like a card, not a table.</p></div></div>
+      <div class="h hL"><img class="ph" src="managers/1254567796231114752_g.webp" alt="">
+        <div class="t"><div class="nm">Devin</div><div class="od">Taco Bandit &middot; 7&ndash;5<br>56% win &middot; 39% lose</div></div></div>
+      <div class="vs"><b>38</b><i>pts at<br>stake</i></div>
+      <div class="h hR"><div class="t"><div class="nm">Josh</div><div class="od">Bijan with the Wind &middot; 7&ndash;5<br>65% win &middot; 47% lose</div></div>
+        <img class="ph" src="managers/334162589502144512_r.webp" alt=""></div>
+</div></div>
+    <div class="cap"><span class="tag live">cover shipped</span><span class="n">01</span><b>Fight-night entrance</b>
+      <p>The cover went live today; this is the entrance it doesn&rsquo;t have yet. Both halves fly in
+      off the Z axis, the stakes badge spins down from 3&times;. Once per page load, never on
+      Live&rsquo;s 30-second refresh.</p></div></div>
+
+  <div class="demo"><div class="stage"><span class="hint">click it</span>
+    <div class="mcard" id="mcard" tabindex="0" role="button" aria-label="Flip Clayton's card">
+      <div class="mc-in">
+        <div class="mc-f"><em class="mc-rk">#1</em>
+          <img src="managers/1001531274030305280.jpg" alt="">
+          <div class="mc-ft"><b>My Nabers heard me cry</b><small>Clayton Hamilton &middot; 10&ndash;2</small></div></div>
+        <div class="mc-b"><b class="mc-h">My Nabers</b>
+          <div class="mc-row"><small>This season</small><b>10&ndash;2</b></div>
+          <div class="mc-row"><small>Points for</small><b>926 &middot; #1</b></div>
+          <div class="mc-row"><small>Playoff odds</small><b>99%</b></div>
+          <div class="mc-row"><small>FAAB spent</small><b>$3 of $100</b></div>
+          <small class="mc-note">1 season in the league</small></div></div></div></div>
+    <div class="cap"><span class="tag live">shipped today</span><span class="n">02</span><b>Manager card flip</b>
+      <p>Already on the Managers page. The hover lean is what tells you it turns at all &mdash;
+      without it nobody finds the back.</p></div></div>
 
   <div class="demo"><div class="stage"><span class="hint">move your pointer</span>
-    <div class="tilt" id="tilt"><div class="k">In the pot</div><div class="v">$120</div>
-      <div class="k" style="margin-top:6px">every dollar owed</div></div></div>
-    <div class="cap"><span class="tag">port</span><span class="n">02</span><b>Tilt &amp; shine</b>
-      <p>The card leans toward the pointer and a specular sweep tracks it. One delegated handler for
-      every card on the page, so it costs nothing per card.</p></div></div>
+    <div class="tilt" id="tilt"><img src="managers/964703051971887104.jpg" alt="">
+      <div><div class="k">Deepest pockets</div><div class="v">$63</div>
+      <div class="k">Brandon &middot; owed to the pot</div></div></div></div>
+    <div class="cap"><span class="tag">port</span><span class="n">03</span><b>Tilt &amp; shine</b>
+      <p>The card leans toward the pointer and a specular sweep tracks it &mdash; here on a real
+      Superlatives card. One delegated handler covers every card on a page.</p></div></div>
 
-  <div class="demo"><div class="stage"><span class="hint">
-    <button class="go" onclick="flap()">score</button></span>
-    <div><div class="flaps" id="flaps"></div>
+  <div class="demo"><div class="stage"><span class="hint"><button class="go" onclick="flap()">score</button></span>
+    <div class="flap-wrap"><img src="managers/964703051971887104.jpg" alt="">
+      <div><div class="flaps" id="flaps"></div>
       <div style="font-family:var(--f-cond);font-size:11px;letter-spacing:.08em;color:var(--dim);margin-top:9px">
-        CLAYTON&rsquo;S KIDS <span class="gain" id="gain">+6.4</span></div></div></div>
-    <div class="cap"><span class="tag">port</span><span class="n">03</span><b>Split-flap score</b>
-      <p>Only the digits that actually changed flip, with the points gained tagged beside them. On a
-      30-second refresh this is how you notice a score moved without staring at it.</p></div></div>
+        CLAYTON&rsquo;S KIDS &middot; WEEK 7 <span class="gain" id="gain">+6.4</span></div></div></div></div>
+    <div class="cap"><span class="tag">port</span><span class="n">04</span><b>Split-flap score</b>
+      <p>Only the digits that actually changed flip over, with the points gained tagged beside
+      them. On a 30-second refresh that&rsquo;s how you notice a score moved.</p></div></div>
 
   <div class="demo"><div class="stage"><span class="hint">click it</span>
     <div class="kcard" id="kcard" tabindex="0" role="button" aria-label="Flip contract">
       <div class="kc-in">
-        <div class="kc-f"><div class="nm">Bijan<br>Robinson</div>
-          <div style="font-family:var(--f-cond);font-size:11.5px;color:var(--dim);margin-top:4px">RB &middot; ATL &middot; drafted R1</div>
-          <div class="pr">R1</div></div>
+        <div class="kc-f"><div class="nm">Kenneth<br>Walker III</div>
+          <div class="kc-own"><img src="managers/1001531274030305280.jpg" alt="">RB &middot; Clayton</div>
+          <div class="pr">R3</div></div>
         <div class="kc-b">
-          <div style="font-family:var(--f-cond);font-size:10.5px;letter-spacing:.1em;color:var(--ink2)">THE LADDER</div>
-          <div class="lad"><span>Year 1</span><b>R1</b></div>
-          <div class="lad"><span>Year 2</span><b>R1</b></div>
-          <div class="lad"><span>Year 3</span><b>ADP</b></div>
+          <div style="font-family:var(--f-cond);font-size:10.5px;letter-spacing:.1em;color:var(--ink2)">THE LADDER &middot; +60 SURPLUS</div>
+          <div class="lad"><span>Year 1</span><b>R3</b></div>
+          <div class="lad"><span>Year 2</span><b>R2</b></div>
+          <div class="lad"><span>Year 3</span><b>ADP if it helps</b></div>
           <div class="lad wall"><span>Year 4</span><b>the wall</b></div>
         </div></div></div></div>
-    <div class="cap"><span class="tag">port</span><span class="n">04</span><b>Contract flip</b>
-      <p>Price on the front, the three-year ladder on the back. The ladder is the most-asked question
-      in this league and it currently lives on a different page entirely.</p></div></div>
+    <div class="cap"><span class="tag">port</span><span class="n">05</span><b>Contract flip</b>
+      <p>The league&rsquo;s actual biggest keeper steal. Price on the front, the three-year ladder
+      on the back &mdash; the most-asked question here, which lives on another page today.</p></div></div>
 
   <div class="demo"><div class="stage">
     <div class="tow" id="tow">
-      <div class="tw"><div class="sc">137.5</div><div class="stk" style="--c:var(--acc);--h:132px"></div><div class="lbl">YOU</div></div>
-      <div class="tw"><div class="sc">139.6</div><div class="stk" style="--c:var(--acc2);--h:140px"></div><div class="lbl">DEVIN</div></div>
+      <div class="tw"><img class="hd" src="managers/964703051971887104.jpg" alt=""><div class="sc">137.2</div>
+        <div class="stk" style="--c:var(--acc);--h:126px"></div><div class="lbl">BRANDON</div></div>
+      <div class="tw"><img class="hd" src="managers/979400432114102272.jpg" alt=""><div class="sc">67.7</div>
+        <div class="stk" style="--c:var(--acc2);--h:62px"></div><div class="lbl">ISIAH</div></div>
     </div></div>
-    <div class="cap"><span class="tag">port</span><span class="n">05</span><b>Matchup towers</b>
-      <p>Two scores as solids you read in one glance rather than two numbers you compare. Grows from
-      the floor on arrival; the gap is the whole story.</p></div></div>
-
-  <div class="demo"><div class="stage" style="gap:16px">
-    <div class="drum" id="drumA"></div><div class="drum" id="drumB"></div></div>
-    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">06</span><b>The two drums</b>
-      <p>No other league has two. Rookie drum on record, veteran drum on final standing including the
-      Chase &mdash; and the champion&rsquo;s ball is always the smallest, visibly. Ball size <i>is</i>
-      the weight, so the unfairness is the picture.</p></div></div>
+    <div class="cap"><span class="tag">port</span><span class="n">06</span><b>Matchup towers</b>
+      <p>Your actual week 7. Two scores as solids you read in one glance rather than two numbers
+      you compare &mdash; at 137 to 68 the gap is the whole story.</p></div></div>
 
 </div>
 
 <div class="bar"><h2>Built for 7&frac12; Men</h2><span>rules no other league has</span></div>
 <div class="grid">
 
+  <div class="demo"><div class="stage" style="flex-direction:column">
+    <div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:center">
+      <div><div class="drum" id="drumA"></div><div class="drum-l">rookie drum</div></div>
+      <div><div class="drum" id="drumB"></div><div class="drum-l">veteran drum</div></div>
+    </div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">07</span><b>The two drums</b>
+      <p>No other league has two. Their faces <i>are</i> the balls and ball size <i>is</i> the
+      weight &mdash; Lucas at 2&ndash;10 is the biggest, Clayton at 10&ndash;2 the smallest, and a
+      champion is floored there whatever his record. The unfairness becomes the picture.</p></div></div>
+
   <div class="demo"><div class="stage">
     <div class="vessel"><div class="vs-in">
+      <div class="coins" id="coins"></div>
       <div class="glass"><div class="fill" style="--lvl:74%"></div></div>
-      <div class="capline" style="bottom:62%"><span>$120 cap</span></div>
+      <div class="capline" style="bottom:62%"><span>the cap</span></div>
       <div class="spill"></div></div></div></div>
-    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">07</span><b>The pot, overflowing</b>
-      <p>The bowls say how much. This says what happens next: fills to the cap, and everything past it
-      visibly runs off the side into the bracket. You are sitting exactly on the cap this week, so the
-      next dollar anyone bids starts that spill.</p></div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">08</span><b>The pot, overflowing</b>
+      <p>Each manager&rsquo;s spend drops in as a coin with his face on it &mdash; Brandon&rsquo;s $63
+      first &mdash; and the vessel fills to the cap, then runs off the side into the bracket. The
+      bowls say how much; this says whose, and what happens next.</p></div></div>
 
-  <div class="demo"><div class="stage"><span class="hint">
-    <button class="go" onclick="podNext()">next slot</button></span>
+  <div class="demo"><div class="stage"><span class="hint"><button class="go" onclick="podNext()">next slot</button></span>
     <div class="pods"><div class="pods-in" id="pods"></div></div></div>
-    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">08</span><b>Taxi carousel</b>
-      <p>Two slots on a turntable, each showing its year on the two-year clock. Year two lights amber
-      because it is promote-or-release &mdash; a deadline that currently reads as a number in a table.</p></div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">09</span><b>Taxi carousel</b>
+      <p>Two slots on a turntable, each on its two-year clock. Year two lights amber because it is
+      promote-or-release &mdash; a deadline that reads as a number in a table today.</p></div></div>
 
-  <div class="demo"><div class="stage"><span class="hint">
-    <button class="go" onclick="stamp()">tag him</button></span>
+  <div class="demo"><div class="stage"><span class="hint"><button class="go" onclick="stamp()">tag him</button></span>
     <div class="stamp-stage" id="stage9">
       <div class="doc"><div class="nm">Ja&rsquo;Marr Chase</div>
         <div class="sub">Year 4 &middot; past the wall</div>
-        <div class="sub" style="margin-top:auto;color:var(--dim)">Peak price paid &middot; R3</div></div>
+        <div class="sub">Peak price paid &middot; R3</div>
+        <div class="own"><img src="managers/979382824706912256.jpg" alt="">Corey&rsquo;s one tag</div></div>
       <div class="stamp" id="stamp"><div class="t">R3</div><div class="s">Franchised</div></div></div></div>
-    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">09</span><b>Franchise stamp</b>
-      <p>One slot, once, and it freezes his price at the most expensive round ever paid. It should land
-      like a decision, not like ticking a box &mdash; so it presses down the Z axis and the page shakes.</p></div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">10</span><b>Franchise stamp</b>
+      <p>One slot, once, and it freezes his price at the most expensive round ever paid. It should
+      land like a decision, so it presses down the Z axis and the page shakes.</p></div></div>
 
-  <div class="demo"><div class="stage">
+  <div class="demo" style="grid-column:1 / -1"><div class="stage"><span class="hint"><button class="go" onclick="replay('brk')">replay</button></span>
     <div class="brk"><div class="brk-in" id="brk"></div></div></div>
-    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">10</span><b>The Chase, lit</b>
-      <p>Both brackets on one tilted plane, seats dropping in off the Z axis. The four who miss the
-      playoffs are the ones that glow, because in this league they are playing for real money and for
-      lottery balls &mdash; which no bracket anywhere draws.</p></div></div>
+    <div class="cap"><span class="tag new">7&frac12; only</span><span class="n">11</span><b>The Chase, lit</b>
+      <p>Week 7&rsquo;s real table on one tilted plane, seats dropping in off the Z axis. The four
+      who miss the bracket are the ones that glow &mdash; in this league they play for real money and
+      for lottery balls, which no bracket anywhere draws.</p></div></div>
 
 </div>
 
-<p class="note"><b>What I would ship first.</b> 03 split-flap and 05 towers, because Live is the page
-people open on a Sunday and both work with the data already on it. Then 01 and 02, which are one CSS
-block plus the delegated handler Kreeper already has. 06 the drums and 07 the pot are the two worth
-building from scratch &mdash; they are the only places this league looks like nothing else.</p>
+<p class="note"><b>What changed since the first mock.</b> The fight-poster cover and the manager
+card flip both shipped today, so 01 and 02 are now the motion those live pages are missing, not
+the pages themselves. And every drum ball, coin, bracket seat and cover half carries a real face.</p>
 
-<p class="note"><b>What is missing before 01 can ship properly.</b> The fight-night cover wants manager
-photos, and 7&frac12; Men has no <code>assets/managers</code>. Kreeper&rsquo;s cutouts came from macOS
-Vision subject masks saved as transparent WebP &mdash; portable code, but it needs eight actual photos.</p>
+<p class="note"><b>What I&rsquo;d ship next.</b> 04 split-flap and 06 towers &mdash; Live is the
+page people open on a Sunday and both run off data already on it. Then 01 and 03, one CSS block
+plus a delegated handler. 07 the drums and 08 the pot are the two worth building from scratch.</p>
 
 <script>
 (function(){
   var RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var M = {
+    clayton:{id:'1001531274030305280', first:'Clayton', rec:'10-2', spent:3},
+    brandon:{id:'964703051971887104',  first:'Brandon', rec:'8-4',  spent:63},
+    josh:   {id:'334162589502144512',  first:'Josh',    rec:'7-5',  spent:17},
+    devin:  {id:'1254567796231114752', first:'Devin',   rec:'7-5',  spent:5},
+    corey:  {id:'979382824706912256',  first:'Corey',   rec:'6-6',  spent:0},
+    isiah:  {id:'979400432114102272',  first:'Isiah',   rec:'4-8',  spent:20},
+    thad:   {id:'979455520442580992',  first:'Thad',    rec:'4-8',  spent:26},
+    lucas:  {id:'980569987930804224',  first:'Lucas',   rec:'2-10', spent:1}
+  };
+  function face(k){ return 'managers/' + M[k].id + '.jpg'; }
 
-  /* 02 — one delegated handler, as in app._MOTION_JS */
+  window.replay = function(id){
+    var el = document.getElementById(id);
+    if(id === 'fc'){ el.classList.remove('in'); void el.offsetWidth; el.classList.add('in'); }
+    if(id === 'brk'){ buildBracket(); }
+  };
+
+  /* 03 - one delegated handler, as in the app's motion JS */
   document.addEventListener('pointermove', function(e){
     var c = e.target.closest ? e.target.closest('.tilt') : null;
     if(!c || RM) return;
@@ -352,16 +448,25 @@ Vision subject masks saved as transparent WebP &mdash; portable code, but it nee
         px = (e.clientX - r.left)/r.width, py = (e.clientY - r.top)/r.height;
     c.style.setProperty('--sx', (px*100).toFixed(1)+'%');
     c.style.setProperty('--sy', (py*100).toFixed(1)+'%');
-    c.style.transform = 'perspective(760px) rotateY('+((px-.5)*13).toFixed(2)+
-                        'deg) rotateX('+((.5-py)*13).toFixed(2)+'deg)';
+    c.style.transform = 'perspective(760px) rotateY('+((px-.5)*14).toFixed(2)+
+                        'deg) rotateX('+((.5-py)*14).toFixed(2)+'deg)';
   });
-  document.addEventListener('pointerleave', function(e){
+  document.addEventListener('pointerout', function(e){
     var c = e.target.closest ? e.target.closest('.tilt') : null;
-    if(c) c.style.transform = '';
-  }, true);
+    if(c && !c.contains(e.relatedTarget)) c.style.transform = '';
+  });
 
-  /* 03 — flip only the digits that changed */
-  var cur = '137.5';
+  /* 02 + 05 - the two flips */
+  ['mcard','kcard'].forEach(function(id){
+    var el = document.getElementById(id);
+    el.addEventListener('click', function(){ el.classList.toggle('on'); });
+    el.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); el.classList.toggle('on'); }
+    });
+  });
+
+  /* 04 - flip only the digits that changed */
+  var cur = '137.2';
   function paint(s){
     var el = document.getElementById('flaps'); el.innerHTML = '';
     s.split('').forEach(function(ch){
@@ -374,12 +479,12 @@ Vision subject masks saved as transparent WebP &mdash; portable code, but it nee
   paint(cur);
   window.flap = function(){
     var next = (parseFloat(cur) + 6.4).toFixed(1), el = document.getElementById('flaps');
-    var olds = cur.split(''), news = next.split('');
+    var olds = cur.padStart(next.length).split(''), news = next.split('');
     paint(next);
     if(!RM) [].forEach.call(el.children, function(d, i){
       if(olds[i] === news[i]) return;
       d.innerHTML = '<div class="face">'+news[i]+'</div>'+
-                    '<div class="ft">'+(olds[i]||'')+'</div><div class="fb">'+news[i]+'</div>';
+                    '<div class="ft">'+(olds[i].trim()||'&nbsp;')+'</div><div class="fb">'+news[i]+'</div>';
       d.classList.add('go');
     });
     cur = next;
@@ -387,52 +492,59 @@ Vision subject masks saved as transparent WebP &mdash; portable code, but it nee
     g.classList.remove('go'); void g.offsetWidth; g.classList.add('go');
   };
 
-  /* 04 */
-  var kc = document.getElementById('kcard');
-  function toggle(){ kc.classList.toggle('on'); }
-  kc.addEventListener('click', toggle);
-  kc.addEventListener('keydown', function(e){
-    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); } });
-
-  /* 06 — ball SIZE is the weight; champion smallest */
-  function drum(id, weights, hue){
-    var el = document.getElementById(id), n = weights.length;
+  /* 07 - the balls ARE the managers; ball size is the weight */
+  function drum(id, order, weights, colour){
+    var el = document.getElementById(id), n = order.length;
     var inner = document.createElement('div'); inner.className = 'dr-in';
-    weights.forEach(function(w, i){
-      var a = (i/n)*2*Math.PI, R = 42, d = 13 + w*0.95;
+    var R = el.clientWidth * 0.30;
+    order.forEach(function(k, i){
+      var a = (i/n)*2*Math.PI, d = 18 + weights[i]*1.25;
       var b = document.createElement('div');
-      b.className = 'ball'; b.textContent = i+1;
-      b.style.cssText = 'width:'+d+'px;height:'+d+'px;margin:'+(-d/2)+'px;'+
-        'background:'+hue+';transform:translate('+(Math.cos(a)*R).toFixed(1)+'px,'+
-        (Math.sin(a)*R).toFixed(1)+'px);font-size:'+(d*0.46).toFixed(1)+'px';
+      b.className = 'ball';
+      b.title = M[k].first + ' - ' + weights[i] + ' balls';
+      b.style.cssText = 'width:'+d+'px;height:'+d+'px;margin:'+(-d/2)+'px;--bc:'+colour+';'+
+        'transform:translate('+(Math.cos(a)*R).toFixed(1)+'px,'+(Math.sin(a)*R).toFixed(1)+'px)';
+      b.innerHTML = '<img src="'+face(k)+'" alt="'+M[k].first+'">';
       inner.appendChild(b);
     });
     el.appendChild(inner);
   }
-  drum('drumA', [24,21,18,15,10,7,3,2], 'var(--acc)');
-  drum('drumB', [24,21,18,15,10,7,3,2], 'var(--acc2)');
+  var worstFirst = ['lucas','thad','isiah','corey','devin','josh','brandon','clayton'];
+  drum('drumA', worstFirst, [24,21,18,15,10,7,3,2], 'var(--acc)');
+  drum('drumB', worstFirst, [24,21,18,15,10,7,3,2], 'var(--acc2)');
 
-  /* 08 */
+  /* 08 - the spenders drop in, biggest first */
+  var coins = document.getElementById('coins');
+  Object.keys(M).filter(function(k){ return M[k].spent; })
+    .sort(function(a, b){ return M[b].spent - M[a].spent; }).slice(0, 5)
+    .forEach(function(k, i){
+      var c = document.createElement('div');
+      c.className = 'coin'; c.style.animationDelay = (0.2 + i * 0.3) + 's';
+      c.innerHTML = '<img src="'+face(k)+'" alt="">$' + M[k].spent;
+      coins.appendChild(c);
+    });
+
+  /* 09 */
   var POD = [
-    {yr:'Slot 1 &middot; year 1 of 2', nm:"Ja'Kobi Lane", st:'One more year of runway.', p:['now','']},
-    {yr:'Slot 2 &middot; year 2 of 2', nm:'Kenyon Sadiq', st:'Clock is up — promote or release.', p:['on','now']}
+    {k:'devin', yr:'Slot 1 &middot; year 1 of 2', nm:'Jadarian Price', st:'One more year of runway.', p:['now','']},
+    {k:'devin', yr:'Slot 2 &middot; year 2 of 2', nm:'Rookie #2', st:'Clock is up &mdash; promote or release.', p:['on','now']}
   ];
   var pi = 0, pods = document.getElementById('pods');
   POD.forEach(function(p, i){
     var d = document.createElement('div');
     d.className = 'pod';
-    d.style.transform = 'rotateY('+(i*180)+'deg) translateZ(116px)';
-    d.innerHTML = '<div class="yr">'+p.yr+'</div><div class="nm">'+p.nm+'</div>'+
+    d.style.transform = 'rotateY('+(i*180)+'deg) translateZ(120px)';
+    d.innerHTML = '<img class="own" src="'+face(p.k)+'" alt=""><div class="yr">'+p.yr+'</div><div class="nm">'+p.nm+'</div>'+
       '<div class="pips"><i class="'+p.p[0]+'"></i><i class="'+p.p[1]+'"></i></div>'+
       '<div class="st">'+p.st+'</div>';
     pods.appendChild(d);
   });
   window.podNext = function(){
     pi = (pi + 1) % 2;
-    pods.style.transform = 'translateZ(-116px) rotateY('+(-pi*180)+'deg)';
+    pods.style.transform = 'translateZ(-120px) rotateY('+(-pi*180)+'deg)';
   };
 
-  /* 09 */
+  /* 10 */
   window.stamp = function(){
     var s = document.getElementById('stamp'), st = document.getElementById('stage9');
     s.classList.remove('go'); st.classList.remove('shk');
@@ -441,25 +553,27 @@ Vision subject masks saved as transparent WebP &mdash; portable code, but it nee
   };
   setTimeout(window.stamp, 700);
 
-  /* 10 */
-  var SEATS = [
-    {t:'1  Maybe Later',      x:0,   y:0,   w:118, c:''},
-    {t:'4  The Whig Party',   x:0,   y:32,  w:118, c:''},
-    {t:'2  Clayton&rsquo;s Kids',  x:0, y:72, w:118, c:''},
-    {t:'3  Bijan with&hellip;', x:0, y:104, w:118, c:''},
-    {t:'Title',               x:150, y:16,  w:112, c:'pot'},
-    {t:'5  Beantown Hurt',    x:150, y:66,  w:112, c:'chase'},
-    {t:'6  Amon-Ra Save Us',  x:150, y:98,  w:112, c:'chase'},
-    {t:'7  Taco Bandit',      x:150, y:130, w:112, c:'chase'}
-  ];
-  var brk = document.getElementById('brk');
-  SEATS.forEach(function(s, i){
-    var d = document.createElement('div');
-    d.className = 'seat ' + s.c;
-    d.style.cssText = 'left:'+s.x+'px;top:'+s.y+'px;width:'+s.w+'px;animation-delay:'+(i*0.07)+'s';
-    d.innerHTML = s.t;
-    brk.appendChild(d);
-  });
+  /* 11 - week 7 as it actually stands */
+  function buildBracket(){
+    var SEATS = [
+      {k:'clayton', n:1, x:0,   y:0,   c:''}, {k:'brandon', n:2, x:0,   y:36,  c:''},
+      {k:'josh',    n:3, x:0,   y:72,  c:''}, {k:'devin',   n:4, x:0,   y:108, c:''},
+      {k:'corey',   n:5, x:170, y:18,  c:'chase'}, {k:'isiah', n:6, x:170, y:54,  c:'chase'},
+      {k:'thad',    n:7, x:170, y:90,  c:'chase'}, {k:'lucas', n:8, x:170, y:126, c:'chase'}
+    ];
+    var brk = document.getElementById('brk');
+    brk.innerHTML = '<span class="brk-lab" style="left:0;color:var(--good)">the bracket</span>'+
+                    '<span class="brk-lab" style="left:170px;color:var(--acc)">the chase</span>';
+    SEATS.forEach(function(s, i){
+      var d = document.createElement('div');
+      d.className = 'seat ' + s.c;
+      d.style.cssText = 'left:'+s.x+'px;top:'+s.y+'px;width:150px;animation-delay:'+(i*0.07)+'s';
+      d.innerHTML = '<img src="'+face(s.k)+'" alt="">' + s.n + '&nbsp; ' + M[s.k].first +
+                    '<span style="margin-left:auto;opacity:.65">'+M[s.k].rec+'</span>';
+      brk.appendChild(d);
+    });
+  }
+  buildBracket();
 })();
 </script>
 </div>

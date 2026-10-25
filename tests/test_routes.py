@@ -41,7 +41,7 @@ def test_every_leaf_in_the_nav_is_covered_here():
     """The count is deliberately hard-coded: adding a leaf without adding it to
     the walk below would leave a route untested, and most of them are dark in
     year one so nothing else would notice."""
-    assert len(ALL) == 16   # 14 leaves + home + rules
+    assert len(ALL) == 20   # 18 leaves + home + rules
 
 
 @pytest.mark.parametrize("qp", ALL, ids=lambda q: "/".join(q.values()))
