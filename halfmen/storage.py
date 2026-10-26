@@ -221,6 +221,21 @@ def save_single_draw(seed: int, order: List[str], season: int = None) -> Dict[st
     return data["draw"]
 
 
+def load_covers(season: int = None) -> Dict[str, Any]:
+    """{week: issue} - every weekly cover that has run, as it ran."""
+    return (load(season) or {}).get("covers") or {}
+
+
+def save_cover(week: int, issue: Dict[str, Any], season: int = None) -> Dict[str, Any]:
+    """Keep a week's cover the first time it runs, and never overwrite it: an
+    issue that changed after it was printed would not be an archive."""
+    def put(data):
+        covers = data.setdefault("covers", {})
+        covers.setdefault(str(int(week)), issue)
+        return data
+    return (mutate(put, season).get("covers") or {}).get(str(int(week)), issue)
+
+
 def load_draw(season: int = None) -> Dict[str, Any]:
     return (load(season) or {}).get("draw") or {}
 

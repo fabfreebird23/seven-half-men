@@ -427,7 +427,8 @@ GROUPS = {
         # is folded into Managers and the leaf stays out of the bar.
         ("league", "People &amp; history", [("managers", "Managers")]
          + ([] if FIRST else [("record", "Record book")])
-         + [("trades", "Trades"), ("analyzer", "Trade analyzer"), ("superlatives", "Superlatives")]),
+         + [("covers", "The covers"), ("trades", "Trades"), ("analyzer", "Trade analyzer"),
+            ("superlatives", "Superlatives")]),
     ],
     # Everything here is dormant between February and August. It sat FIRST and
     # held eight of eleven leaves while the season it belongs to was already
@@ -2132,37 +2133,65 @@ def _cover_stories(cur: int, with_gotw: bool = True) -> list:
     return sorted(out, key=lambda x: -x["heat"])
 
 
-@st.cache_data(ttl=1800, show_spinner=False)
-def _cover_pick(cur: int) -> dict:
-    """This week's cover story: the hottest, unless last week led with the
-    same kind. Last week is judged without its Game of the Week, which would
-    mean running a second playoff sim just to rule a story out."""
-    stories = _cover_stories(cur)
+def _issue_month(week: int) -> str:
+    """The month a week was played in, for the cover's barcode."""
+    import datetime as _dt
+    k = season.kickoff()
+    d = (k + _dt.timedelta(days=7 * (week - 1))) if k else _dt.date.today()
+    return d.strftime("%b %Y").upper()
+
+
+def _cover_issue(week: int, live: bool = False, _depth: int = 0) -> dict:
+    """The cover for `week`: the archived one if it has run, otherwise picked
+    now and archived. A week's story is the hottest one that is not the same
+    kind as the week before. Only the live week weighs its Game of the Week -
+    deciding a past week's would mean a second playoff sim per week."""
+    try:
+        saved = storage.load_covers(SEASON).get(str(week))
+    except Exception:          # noqa: BLE001
+        saved = None
+    if saved:
+        return saved
+    stories = _cover_stories(week, with_gotw=live)
     if not stories:
         return {}
-    prev = _cover_stories(cur - 1, with_gotw=False) if cur > 2 else []
-    prev_kind = prev[0]["kind"] if prev else None
-    pick = next((x for x in stories if x["kind"] != prev_kind), stories[0])
+    prev = _cover_issue(week - 1, False, _depth + 1) if week > 1 and _depth < 8 else {}
+    pick = next((x for x in stories if x["kind"] != prev.get("kind")), stories[0])
     others = [x for x in stories if x is not pick]
-    pick = dict(pick)
-    pick["lines"] = [x["short"] for x in others[:3]]
-    pick["others"] = others[:4]
-    return pick
+    issue = {k: v for k, v in pick.items() if k != "photos"}
+    if pick["kind"] == "gotw":
+        third = next((r["owner_id"] for r in season.standings()
+                      if r["owner_id"] not in (pick["a"], pick["b"])), None)
+        issue["photo_owners"] = [o for o in (pick["a"], pick["b"], third) if o]
+    issue.update(week=week, month=_issue_month(week),
+                 lines=[x["short"] for x in others[:3]],
+                 others=[{k: x[k] for k in ("headline", "sub", "link", "short")} for x in others[:4]])
+    # A finished week's cover is final the moment it is picked; the live week
+    # is printed on its first showing, Tuesday or whenever someone opens Home.
+    try:
+        issue = storage.save_cover(week, issue, SEASON)
+    except Exception:          # noqa: BLE001 - an unwritable archive still shows this week's cover
+        pass
+    return issue
+
+
+def _cover_html(issue: dict) -> str:
+    story = dict(issue, label="Week %d cover: %s" % (issue["week"], issue["headline"]))
+    if story.get("photo_owners"):
+        story["photos"] = [_mgr_photo(str(o)) for o in story["photo_owners"]]
+    return cover.render(story, _mgr_body)
 
 
 def render_cover(cur: int) -> str:
     """Home's weekly cover, beside the issue's other stories. Returns the
     story kind, so Home can leave out whatever the cover already says."""
     try:
-        story = _cover_pick(cur)
+        story = _cover_issue(cur, live=True)
     except Exception:          # noqa: BLE001 - a missing photo or number must not cost Home
         story = {}
     if not story:
         return ""
-    import datetime as _dt
-    story = dict(story, week=cur, month=_dt.date.today().strftime("%b %Y").upper(),
-                 label="Week %d cover: %s" % (cur, story["headline"]))
-    html_ = cover.render(story, _mgr_body)
+    html_ = _cover_html(story)
     if not html_:
         return ""
     inside = "".join(
@@ -2171,9 +2200,10 @@ def render_cover(cur: int) -> str:
     theme.bar("This week's cover", "issue %d &middot; the week's biggest story" % cur)
     st.markdown(cover.CSS, unsafe_allow_html=True)
     st.markdown(
-        f'<div class="wc-row">{html_}<div class="wc-in"><span class="k">Week {cur} &middot; the cover story</span>'
+        f'<div class="wc-row">{html_}<div class="wc-in"><span class="wc-k">Week {cur} &middot; the cover story</span>'
         f'<h3>{esc(story["headline"])}</h3><p>{esc(story["sub"]).capitalize()}.</p>'
-        + (f'<span class="k" style="margin-top:10px">Also in this issue</span><ol>{inside}</ol>' if inside else "")
+        + (f'<span class="wc-k" style="margin-top:10px">Also in this issue</span><ol>{inside}</ol>' if inside else "")
+        + f'<a class="wc-all" href="?p=inseason&g=league&t=covers{_keep()}" target="_self">Every issue this season &rarr;</a>'
         + '</div></div>', unsafe_allow_html=True)
     return story["kind"]
 
@@ -5288,10 +5318,35 @@ def render_superlatives() -> None:
                "finished weeks only - this week's games are still moving.")
 
 
+def render_covers() -> None:
+    """Every weekly cover this season, newest first, as a rack of issues."""
+    st.markdown(_ThemeShim.section_head('The <span class="g">covers</span>',
+                                        "every issue this season, newest first", page=True),
+                unsafe_allow_html=True)
+    cur = season.current_week() or 1
+    issues = []
+    for w in range(cur, 0, -1):
+        try:
+            iss = _cover_issue(w, live=(w == cur))
+        except Exception:      # noqa: BLE001 - one bad week must not empty the rack
+            iss = {}
+        if iss:
+            issues.append(iss)
+    if not issues:
+        st.info("The first cover runs once there is a week of results to put on it.")
+        return
+    st.markdown(cover.CSS, unsafe_allow_html=True)
+    st.markdown('<div class="wc-rack">' + "".join(
+        f'<figure>{_cover_html(i)}<figcaption><b>Week {i["week"]} &middot; {esc(i["headline"])}</b>'
+        f'{esc(i["sub"]).capitalize()}</figcaption></figure>' for i in issues) + '</div>',
+        unsafe_allow_html=True)
+    st.caption("Each cover is kept as it ran: the week's hottest story, never the same kind two weeks running.")
+
+
 def render_league(leaf=None):
     {"managers": render_managers, "record": render_record_book,
      "trades": render_trades, "analyzer": render_trade_analyzer,
-     "superlatives": render_superlatives}.get(
+     "superlatives": render_superlatives, "covers": render_covers}.get(
         leaf or "managers", render_managers)()
 
 

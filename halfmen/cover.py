@@ -40,7 +40,7 @@ CSS = """<style>
 .wc .bg.xerox{ background:#efe59a; }
 .wc .bg.xerox::after{ content:""; position:absolute; inset:0; opacity:.35; mix-blend-mode:multiply;
   background:repeating-linear-gradient(45deg,#1d1a3a 0 .3cqw,transparent .3cqw 5cqw),repeating-linear-gradient(-45deg,#1d1a3a 0 .3cqw,transparent .3cqw 5cqw); }
-.wc .mast{ position:absolute; left:50%; z-index:2; overflow:visible; width:94%; }
+.wc .wc-mast{ position:absolute; left:50%; z-index:2; overflow:visible; width:94%; }
 .wc img.cut{ position:absolute; z-index:3; bottom:0; max-width:none; width:auto; filter:drop-shadow(0 6px 10px rgba(0,0,0,.25)); }
 .wc .topbar{ position:absolute; left:0; right:0; top:0; z-index:4; background:#000; color:#fff; font-family:'Anton',sans-serif;
   font-size:7.2cqw; line-height:1.15; text-align:center; padding:1cqw 2cqw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -78,13 +78,23 @@ CSS = """<style>
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
 /* the issue's other stories, beside the cover */
 .wc-in{ display:grid; gap:10px; min-width:0; }
-.wc-in .k{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--acc); }
+.wc-in .wc-k{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--acc); }
 .wc-in h3{ margin:0; font-family:var(--f-display); font-weight:800; font-size:34px; line-height:.95; text-transform:uppercase; text-wrap:balance; }
 .wc-in p{ margin:0; color:var(--ink2); font-size:14px; max-width:52ch; }
 .wc-in ol{ margin:6px 0 0; padding:0; list-style:none; display:grid; gap:8px; }
 .wc-in li{ display:grid; grid-template-columns:auto minmax(0,1fr); gap:10px; align-items:baseline; border-top:1px solid var(--line); padding-top:8px; }
 .wc-in li b{ font-family:'Anton',sans-serif; font-weight:400; font-size:15px; letter-spacing:.02em; text-transform:uppercase; color:var(--ink); }
 .wc-in li em{ font-style:normal; font-size:13px; color:var(--ink2); }
+[data-testid="stMarkdownContainer"] a.wc-all{ display:inline-block; margin-top:6px; color:var(--acc2) !important;
+  text-decoration:none; font-weight:600; font-size:13px; }
+/* the archive: every issue on a rack */
+.wc-rack{ display:grid; gap:26px; grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr)); }
+.wc-rack figure{ margin:0; min-width:0; }
+.wc-rack .kx.wc{ max-width:none; }
+.wc-rack figcaption{ margin-top:10px; font-size:12px; color:var(--ink2); }
+.wc-rack figcaption b{ display:block; font-family:'Anton',sans-serif; font-weight:400; font-size:15px; letter-spacing:.02em;
+  text-transform:uppercase; color:var(--ink); }
+@media (max-width:760px){ .wc-rack{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; } }
 [data-testid="stMarkdownContainer"] .wc-in a{ color:var(--acc2) !important; text-decoration:none; font-weight:600; font-size:13px; }
 </style>"""
 
@@ -100,7 +110,7 @@ def _mast(word: str, font: str, size: int, fill: str, *, top: str, tilt: float =
     """The wordmark as SVG text, stretched to the cover's width whatever the
     face - which is what keeps a wide font from running off the edge."""
     f = fill_attr or fill
-    return (f'<svg class="mast" style="top:{top};transform:translateX(-50%) rotate({tilt}deg)" viewBox="0 0 300 84" aria-hidden="true">'
+    return (f'<svg class="wc-mast" style="top:{top};transform:translateX(-50%) rotate({tilt}deg)" viewBox="0 0 300 84" aria-hidden="true">'
             f'<text x="154" y="67" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" '
             f'font-family="{font}" font-size="{size}" fill="{shadow}" stroke="{shadow}" stroke-width="{sw}">{_e(word)}</text>'
             f'<text x="150" y="62" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" '
@@ -185,7 +195,7 @@ def render(story: Dict, img: Img, wordmark: str = "7½ MEN") -> str:
             f'<image href="{src}" x="{i * 100}" y="-8" width="100" height="100" preserveAspectRatio="xMidYMid slice"/>'
             for i, src in enumerate(story.get("photos") or []) if src)
         pid = f"wcp{wk}"
-        mast = (f'<svg class="mast" style="top:7%;transform:translateX(-50%) rotate(-2deg)" viewBox="0 0 300 84" aria-hidden="true">'
+        mast = (f'<svg class="wc-mast" style="top:7%;transform:translateX(-50%) rotate(-2deg)" viewBox="0 0 300 84" aria-hidden="true">'
                 f'<defs><pattern id="{pid}" patternUnits="userSpaceOnUse" width="300" height="84">{pics}</pattern></defs>'
                 f'<text x="154" y="67" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" font-family="Bungee" '
                 f'font-size="64" fill="#000" stroke="#000" stroke-width="3">{_e(wordmark)}</text>'
