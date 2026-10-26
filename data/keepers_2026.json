@@ -24,6 +24,50 @@
       "short": "CLAYTON UP 7",
       "sub": "the biggest climb on his draft seed",
       "week": 1
+    },
+    "2": {
+      "first": "Clayton",
+      "headline": "Clayton's bench, 46.2",
+      "heat": 73.91999999999999,
+      "kind": "bench",
+      "lines": [
+        "LUCKY BRANDON",
+        "THAD 168",
+        "CLAYTON UP 7"
+      ],
+      "link": "?p=inseason&g=week&t=live",
+      "month": "SEP 2026",
+      "others": [
+        {
+          "headline": "Brandon's lucky 127.9",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCKY BRANDON",
+          "sub": "6 teams scored more and he still won"
+        },
+        {
+          "headline": "Thad 168.3",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "THAD 168",
+          "sub": "the week's top score"
+        },
+        {
+          "headline": "Clayton, up 7",
+          "link": "?p=home",
+          "short": "CLAYTON UP 7",
+          "sub": "the biggest climb on his draft seed"
+        },
+        {
+          "headline": "The Chase is real",
+          "link": "?p=inseason&g=playoffs&t=chase",
+          "short": "THE CHASE",
+          "sub": "Lucas at 2\u201310, and a $120 pot to play for"
+        }
+      ],
+      "owner": "1001531274030305280",
+      "pts": 46.19999999999999,
+      "short": "CLAYTON'S BENCH",
+      "sub": "points his best lineup would have added",
+      "week": 2
     }
   },
   "draw": {
