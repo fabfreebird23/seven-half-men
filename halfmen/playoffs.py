@@ -213,6 +213,24 @@ def simulate(teams: dict, schedule: Dict[int, List[Tuple[str, str]]], playoff_te
     return out
 
 
+def locks(rows: List[dict], playoff_teams: int, total_results: int) -> Dict[str, str]:
+    """{owner: "in" | "out"} for whoever the table has already decided, on
+    wins alone. `rows` are standings rows (owner_id, wins, results); a team
+    has `total_results - results` results left (two a week with the median
+    game). Conservative on purpose: a tie on wins goes to points, which
+    nobody can call yet, so a tie still counts as a door left open."""
+    left = {r["owner_id"]: max(0, total_results - r["results"]) for r in rows}
+    out: Dict[str, str] = {}
+    for r in rows:
+        o = r["owner_id"]
+        best = r["wins"] + left[o]
+        if sum(1 for x in rows if x is not r and x["wins"] > best) >= playoff_teams:
+            out[o] = "out"
+        elif sum(1 for x in rows if x is not r and x["wins"] + left[x["owner_id"]] >= r["wins"]) < playoff_teams:
+            out[o] = "in"
+    return out
+
+
 # ------------------------------------------------- playoff-week matchups
 def _week_stats(season: int, week: int) -> list:
     """[{o: opponent, p: pid, s: {pts_*}}] for one played week, disk-cached."""

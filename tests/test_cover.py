@@ -56,3 +56,96 @@ def test_the_bench_numerals_move_off_a_manager_pinned_right():
 def test_cover_text_is_escaped():
     s = dict(STORIES[1], team="<script>x</script>")
     assert "<script>x" not in cover.render(s, _img())
+
+
+MORE = [
+    dict(BASE, kind="hitlist", owners=["1", "2"], rows=[["Clayton", "10–2", False], ["Lucas", "2–10", True]]),
+    dict(BASE, kind="issue", owner="1", first="Corey", lines=["A", "B", "C", "D", "E"]),
+    dict(BASE, kind="fights", owners=[str(i) for i in range(8)], pairs=[["DEVIN", "JOSH"], ["COREY", "ISIAH"]], count_word="TWO"),
+    dict(BASE, kind="streak", owner="1", first="Clayton", n=5, rec="10–2", pf="925"),
+    dict(BASE, kind="rip", owner="1", first="Lucas", through=12),
+    dict(BASE, kind="field", through=14, rows=[[str(i), "M%d" % i, i + 1] for i in range(8)]),
+    dict(BASE, kind="champion", owner="1", first="Josh", team="Bijan with the Wind", year=2026),
+    dict(BASE, kind="blowout", owner="1", first="Isiah", loser="Thad", margin="61", pts_w="162.4", pts_l="101.0"),
+    dict(BASE, kind="clinch", owner="1", first="Brandon"),
+]
+
+
+@pytest.mark.parametrize("story", MORE, ids=lambda s: s["kind"])
+def test_every_new_layout_renders_with_a_photo(story):
+    out = cover.render(story, _img())
+    assert out.startswith('<div class="kx wc"') and "<img" in out and "7½ MEN" in out
+
+
+def test_the_hit_list_crosses_out_only_the_dead():
+    out = cover.render(MORE[0], _img())
+    assert "<s>Lucas 2–10</s>" in out and "<s>Clayton" not in out
+
+
+def test_the_field_puts_its_title_in_the_middle_of_the_grid():
+    out = cover.render(MORE[5], _img())
+    cells = out.split('<div class="grid9">')[1].split('<svg class="wc-mast"')[0]
+    assert cells.count("<i>") == 8 and cells.index('class="mid"') > cells.index("4 · M3")
+
+
+def test_two_covers_on_one_page_never_share_an_svg_id():
+    a = cover.render(dict(MORE[3], week=8), _img())
+    b = cover.render(dict(MORE[6], week=9), _img())
+    import re
+    ids = lambda h: set(re.findall(r'id="([^"]+)"', h))
+    assert not ids(a) & ids(b)
+
+
+def test_every_look_the_covers_ask_for_is_printed_for_every_manager():
+    """A look missing from assets/managers silently drops the manager from
+    his cover, so the renderer and the photo script must agree."""
+    import re
+    from pathlib import Path
+    from halfmen import config
+    src = Path(cover.__file__).read_text()
+    looks = set(re.findall(r'_cut\(img, [^,]+, "(\w+)"', src))
+    faces = set(re.findall(r'_face\(img, [^,]+, "(\w+)"', src))
+    assert looks and faces
+    d = Path(cover.__file__).parent.parent / "assets" / "managers"
+    for oid in config.managers():
+        for k in looks:
+            assert (d / f"{oid}_body-{k}.webp").exists(), (oid, k)
+        for k in faces:
+            assert (d / f"{oid}_face-{k}.webp").exists(), (oid, k)
+
+
+ONE_PERSON = [x for x in STORIES + MORE if x["kind"] in cover.ROTATING] + [
+    dict(BASE, kind="streak", owner="1", first="Clayton", n=5, rec="10–2", pf="925"),
+    dict(BASE, kind="blowout", owner="1", first="Isiah", loser="Thad", margin="61", pts_w="162.4", pts_l="101.0"),
+]
+
+
+@pytest.mark.parametrize("skin", cover.SKINS)
+@pytest.mark.parametrize("story", ONE_PERSON, ids=lambda s: s["kind"])
+def test_every_one_person_story_runs_in_every_skin(story, skin):
+    out = cover.render(story, _img(), skin=skin)
+    assert out.startswith('<div class="kx wc"') and 'class="cut"' in out
+    assert "&lt;br&gt;" not in out and "{" not in out.replace("{body}", "")
+
+
+def test_an_unknown_skin_falls_back_to_the_story_s_own():
+    assert cover.render(STORIES[0], _img(), skin="nope") == cover.render(STORIES[0], _img())
+
+
+def test_the_deal_never_repeats_a_skin_within_two_weeks():
+    kinds = {w: ("biggest" if w % 3 else "bench") for w in range(1, 18)}
+    skins = cover.deal(kinds, "2026")
+    seq = [skins[w] for w in sorted(skins)]
+    assert all(seq[i] not in seq[max(0, i - 2):i] for i in range(len(seq)))
+    assert len(set(seq)) >= 6
+
+
+def test_the_deal_is_the_same_every_time_and_keeps_pinned_weeks():
+    kinds = {w: "biggest" for w in range(1, 8)}
+    assert cover.deal(kinds, "2026") == cover.deal(kinds, "2026")
+    assert cover.deal(kinds, "2026", {3: "slate"})[3] == "slate"
+
+
+def test_fixed_layouts_keep_their_own_look_and_block_their_lookalike():
+    skins = cover.deal({1: "issue", 2: "biggest", 3: "biggest"}, "x")
+    assert skins[1] == "issue" and "cyan" not in (skins[2], skins[3])

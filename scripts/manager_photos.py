@@ -16,6 +16,10 @@ Writes into assets/managers/:
     .venv/bin/python scripts/manager_photos.py --retone     # rebuild every
                                                             # duotone from _cut.png
 
+The body cut-out is printed in every cover look (LOOKS: posterized inks,
+halftone, sticker edge) as <id>_body-<look>.webp, and the circle cut-out as
+square framed portraits, <id>_face-<look>.webp.
+
 The cutout is cut by macOS's own Vision subject mask (same thing Preview's
 "remove background" uses), run through a tiny Swift program compiled on the
 fly. It needs macOS 14 or newer and the Xcode command line tools. Without
@@ -189,7 +193,32 @@ def square_rgba(im: Image.Image, size: int) -> Image.Image:
 # sticker edge, and the cover pins them flush to its own edge, where a
 # straight line is just the edge of the cover.
 BODY_MAX_H = 820
-XEROX = [(29, 26, 58), (241, 232, 150)]          # deep blue into newsprint yellow
+
+# Every cover look is a posterized gradient map: the subject's luminance,
+# stretched across the subject only, pushed harder (slope/intercept), then
+# snapped to a handful of inks from dark to light - which is what makes a
+# phone photo read as a printed cover rather than a tinted photo. Some looks
+# add a halftone dot screen; most get a sticker edge in their lightest ink.
+#   name: (inks dark -> light, halftone, sticker rgb or None, slope, intercept)
+LOOKS = {
+    "blue":   (["#0b0d2a", "#24308f", "#fb0849", "#ffd9c2", "#fff6ea"], True, (46, 155, 255), 1.3, -.12),   # biggest
+    "bw":     (["#000000", "#2a2a2a", "#7a7a7a", "#c8c8c8", "#ffffff"], True, (255, 255, 255), 1.3, -.08),  # chase, clinch
+    "sky":    (["#061634", "#1450c8", "#5fb0ff", "#ffd400", "#fffbe6"], False, (255, 255, 255), 1.3, -.12),  # mover
+    "riso":   (["#0a0a0a", "#0a0a0a", "#d8141c", "#f4efe6", "#f4efe6"], False, (244, 239, 230), 1.4, -.2),  # gotw, fights
+    "xerox":  (["#1d1a3a", "#1d1a3a", "#4c4775", "#c9bf7a", "#f1e896"], True, None, 1.35, -.15),           # bench
+    "holo":   (["#1a0730", "#6a3bff", "#ff4fb0", "#ffd0ec", "#fff4fb"], True, (255, 255, 255), 1.3, -.12),  # lucky
+    "orange": (["#181512", "#c43a0a", "#ff8a1f", "#ffc46b", "#f3ead6"], True, (243, 234, 214), 1.5, -.22),  # hit list
+    "gold":   (["#140400", "#5a1d00", "#b8540a", "#f0a422", "#ffe8a0"], True, (255, 232, 160), 1.35, -.17), # champion
+    "fire":   (["#1a0000", "#7a0a00", "#e02a00", "#ff8a00", "#fff2a8"], True, (255, 242, 168), 1.15, -.12), # streak
+    "cyan":   (["#04141c", "#0e5d78", "#1fb6dd", "#e9fbff"], False, None, 1.35, -.17),                       # the issue
+    "pop":    (["#1a1440", "#6a3bff", "#ff2d6f", "#ffd400", "#ffffff"], True, (255, 255, 255), 1.3, -.12),  # blowout
+}
+# Head-and-shoulders looks for the framed portraits (In memoriam, The field),
+# from the circle cut-out rather than the body.
+FACE_LOOKS = {
+    "ink": (["#000000", "#3a3a3a", "#9a9a9a", "#f4f4f4"], True, None, 1.5, -.25),
+    "bw":  (["#000000", "#2a2a2a", "#7a7a7a", "#c8c8c8", "#ffffff"], False, None, 1.3, -.08),
+}
 
 
 def _hard_sides(cut: Image.Image) -> list:
@@ -242,6 +271,75 @@ def _sticker(cut: Image.Image, colour, px: int) -> Image.Image:
     return base
 
 
+def _hex(c: str):
+    return tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def _norm_lum(cut: Image.Image) -> Image.Image:
+    """Luminance stretched across the subject only (1% clip each end)."""
+    mask = cut.getchannel("A").point(lambda a: 255 if a > 128 else 0)
+    lum = cut.convert("L")
+    hist = lum.histogram(mask=mask)
+    total = sum(hist) or 1
+    acc, lo = 0, 0
+    for i, n in enumerate(hist):
+        acc += n
+        if acc >= total * 0.01:
+            lo = i
+            break
+    acc, hi = 0, 255
+    for i in range(255, -1, -1):
+        acc += hist[i]
+        if acc >= total * 0.01:
+            hi = i
+            break
+    span = max(1, hi - lo)
+    return lum.point(lambda v: max(0, min(255, round((v - lo) * 255 / span))))
+
+
+def _halftone(rgb: Image.Image, lum: Image.Image, cell: int, strength: float = .45) -> Image.Image:
+    """A dot screen multiplied over the print: bigger dots where it is darker."""
+    from PIL import ImageChops, ImageDraw
+    w, h = lum.size
+    dots = Image.new("L", (w, h), 255)
+    d = ImageDraw.Draw(dots)
+    small = lum.resize((max(1, w // cell), max(1, h // cell)), Image.BOX)
+    sp = small.load()
+    for j in range(small.height):
+        for i in range(small.width):
+            r = cell * .62 * (1 - sp[i, j] / 255) ** .5
+            if r > .4:
+                cx, cy = i * cell + cell / 2, j * cell + cell / 2
+                d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=0)
+    inked = ImageChops.multiply(rgb, Image.merge("RGB", (dots, dots, dots)))
+    return Image.blend(rgb, inked, strength)
+
+
+def posterize(cut: Image.Image, inks, halftone: bool, slope: float, icpt: float, cell: int) -> Image.Image:
+    """The cut-out as a printed cover: pushed contrast, snapped to `inks`."""
+    lum = _norm_lum(cut)
+    n = len(inks)
+    pal = [_hex(c) for c in inks]
+
+    def idx(v):
+        x = max(0.0, min(1.0, v / 255 * slope + icpt))
+        return min(n - 1, int(x * n))
+    table = [pal[idx(v)] for v in range(256)]
+    rgb = Image.merge("RGB", tuple(lum.point([c[k] for c in table]) for k in range(3)))
+    if halftone:
+        rgb = _halftone(rgb, lum, cell)
+    rgb.putalpha(cut.getchannel("A"))
+    return rgb
+
+
+def write_faces(oid: str, cut: Image.Image, who: str) -> None:
+    """Square head-and-shoulders prints for the framed covers."""
+    sq = square_rgba(cut, 360)
+    for k, (inks, ht, _st, slope, icpt) in FACE_LOOKS.items():
+        posterize(sq, inks, ht, slope, icpt, 6).save(OUT / f"{oid}_face-{k}.webp", quality=86)
+    print(f"{who}: face prints {', '.join(FACE_LOOKS)}")
+
+
 def write_body(oid: str, cut: Image.Image, who: str) -> None:
     """The four cover treatments plus a small manifest from a natural-colour
     body cut-out (already cropped to the subject)."""
@@ -254,15 +352,11 @@ def write_body(oid: str, cut: Image.Image, who: str) -> None:
     canvas = Image.new("RGBA", (cut.width + l + r, cut.height + t), (0, 0, 0, 0))
     canvas.paste(cut, (l, t))
     cut = canvas
-    g = ImageOps.autocontrast(cut.convert("L"), cutoff=1)
-    bw = Image.merge("RGBA", (g, g, g, cut.getchannel("A")))
-    lut = [tuple(round(XEROX[0][k] + (XEROX[1][k] - XEROX[0][k]) * i / 255) for k in range(3)) for i in range(256)]
-    g2 = ImageOps.autocontrast(cut.convert("L"), cutoff=2)
-    xr = Image.merge("RGB", tuple(g2.point([c[k] for c in lut]) for k in range(3)))
-    xr.putalpha(cut.getchannel("A"))
-    looks = {"white": _sticker(cut, (255, 255, 255), px), "blue": _sticker(cut, (46, 155, 255), px),
-             "bw": _sticker(bw, (255, 255, 255), px), "xerox": xr}
-    for k, im in looks.items():
+    cell = max(5, cut.height // 95)
+    for k, (inks, ht, sticker, slope, icpt) in LOOKS.items():
+        im = posterize(cut, inks, ht, slope, icpt, cell)
+        if sticker:
+            im = _sticker(im, sticker, px)
         _fade(im, hard).save(OUT / f"{oid}_body-{k}.webp", quality=86)
     (OUT / f"{oid}_body.json").write_text(json.dumps(
         {"w": cut.width, "h": cut.height, "hard": hard}, indent=1))
@@ -299,6 +393,7 @@ def main() -> None:
             f = OUT / f"{oid}_cut.png"
             if f.exists():
                 write_tones(oid, Image.open(f).convert("RGBA"), config.manager_name(oid))
+                write_faces(oid, Image.open(f).convert("RGBA"), config.manager_name(oid))
             else:
                 print(f"{config.manager_name(oid)}: no _cut.png - rerun with his photo")
             b = OUT / f"{oid}_body_cut.png"
@@ -340,6 +435,7 @@ def main() -> None:
         return
     cut.save(OUT / f"{oid}_cut.png", optimize=True)
     write_tones(oid, cut, who)
+    write_faces(oid, cut, who)
 
 
 if __name__ == "__main__":

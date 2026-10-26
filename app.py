@@ -2050,7 +2050,8 @@ def _recap_png(week: int, me: str) -> bytes:
 # ---------------------------------------------------------------- the weekly cover
 # Every week's biggest story as a skate-mag cover (halfmen/cover.py), on Home.
 # The story is chosen by "heat" - how far outside normal the week's number
-# is - and never the same kind two weeks running.
+# is - and never a kind that ran in the two weeks before; the look is dealt
+# separately (cover.deal), so a run of top scores still looks different.
 
 _NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"]
 
@@ -2061,18 +2062,58 @@ def _mgr_body(owner: str, look: str):
     import base64
     d = Path(__file__).parent / "assets" / "managers"
     f, m = d / f"{owner}_body-{look}.webp", d / f"{owner}_body.json"
+    if look.startswith("face-"):          # the framed head-and-shoulders prints
+        f = d / f"{owner}_{look}.webp"
     if not f.exists():
         return None, {}
     man = json.loads(m.read_text()) if m.exists() else {}
     return "data:image/webp;base64," + base64.b64encode(f.read_bytes()).decode(), man
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def _win_streaks(through: int) -> dict:
+    """{owner: head-to-head wins in a row} after week `through` (the median
+    game is a result too, but nobody calls beating the median a win)."""
+    r2o = {int(r["roster_id"]): str(r.get("owner_id")) for r in sleeper.get_rosters(LG) or []}
+    run = {}
+    for wk in range(1, through + 1):
+        by = {}
+        for m in sleeper.get_matchups(LG, wk) or []:
+            if m.get("matchup_id") is not None:
+                by.setdefault(m["matchup_id"], []).append(m)
+        for pair in by.values():
+            if len(pair) != 2:
+                continue
+            (a, pa), (b, pb) = ((r2o.get(int(x["roster_id"])), float(x.get("points") or 0)) for x in pair)
+            if not (pa or pb) or not (a and b):
+                continue
+            if pa == pb:
+                run[a] = run[b] = 0
+                continue
+            w, l_ = (a, b) if pa > pb else (b, a)
+            run[w], run[l_] = run.get(w, 0) + 1, 0
+    return run
+
+
+def _playoff_locks(rows: list) -> dict:
+    s_ = playoffs._settings(LG)
+    return playoffs.locks(rows, int(s_["playoff_teams"]),
+                          int(s_["last_regular"]) * (2 if s_["median"] else 1))
+
+
 def _cover_stories(cur: int, with_gotw: bool = True) -> list:
     """Every story the week could lead with, hottest first. Each carries what
-    its cover needs plus a one-line headline for the "inside" list."""
+    its cover needs plus a one-line headline for the "inside" list.
+
+    `with_gotw` is also "this is the live week": the stories about where the
+    table stands now (clinched, out, the hit list, the field, the champion)
+    are only true of now, so a past week's cover never tells them."""
     out = []
     rows = season.standings()
     r = get_week_review(cur - 1) if cur > 1 else {}
+    s_ = playoffs._settings(LG)
+    last_reg = int(s_["last_regular"])
+    po = "?p=inseason&g=playoffs&t=playoffs"
     if r:
         pts = r["pts"]
         avg = sum(pts.values()) / max(1, len(pts))
@@ -2130,7 +2171,98 @@ def _cover_stories(cur: int, with_gotw: bool = True) -> list:
                         "headline": "%s, up %d" % (_first(m["owner_id"]), m["moved"]),
                         "sub": "the biggest climb on his draft seed", "short": "%s UP %d" % (
                             _first(m["owner_id"]).upper(), m["moved"]), "link": "?p=home"})
+    out += _cover_stories_more(cur, with_gotw, rows, r, last_reg, po)
     return sorted(out, key=lambda x: -x["heat"])
+
+
+def _cover_stories_more(cur: int, live: bool, rows: list, r: dict, last_reg: int, po: str) -> list:
+    """The rarer covers. The ones that only happen once - the champion, the
+    field, the last regular-season week, a team clinching or going out - run
+    the week they happen, whatever else did; the rest compete on heat."""
+    out = []
+    by = {x["owner_id"]: x for x in rows}
+    if r:
+        b = r["blowout"]
+        pw, pl = r["pts"][b["w"]], r["pts"][b["l"]]
+        if b["margin"] >= 50:
+            out.append({"kind": "blowout", "owner": b["w"], "first": _first(b["w"]), "loser": _first(b["l"]),
+                        "margin": "%.0f" % b["margin"], "pts_w": "%.1f" % pw, "pts_l": "%.1f" % pl,
+                        "heat": 1.1 * b["margin"], "headline": "%s by %.0f" % (_first(b["w"]), b["margin"]),
+                        "sub": "%.1f to %.1f over %s" % (pw, pl, _first(b["l"])),
+                        "short": "%s BY %.0f" % (_first(b["w"]).upper(), b["margin"]), "link": "?p=inseason&g=week&t=live"})
+        # the quiet week's cover: every story at once, as a table of contents
+        lead = r["top"]
+        out.append({"kind": "issue", "owner": lead, "first": _first(lead), "heat": 24,
+                    "headline": "The week in one issue", "sub": "no one story ran away with it",
+                    "short": "THE ISSUE", "link": "?p=inseason&g=week&t=live"})
+    if cur > 1:
+        try:
+            run = _win_streaks(cur - 1)
+        except Exception:      # noqa: BLE001
+            run = {}
+        if run:
+            o, n = max(run.items(), key=lambda kv: kv[1])
+            if n >= 4 and o in by:
+                out.append({"kind": "streak", "owner": o, "first": _first(o), "n": n, "rec": by[o]["record"],
+                            "pf": "%.0f" % by[o]["points_for"], "heat": 15 * n,
+                            "headline": "%s, %d straight" % (_first(o), n), "sub": "%d head-to-head wins in a row" % n,
+                            "short": "%s ON FIRE" % _first(o).upper(), "link": "?p=home"})
+    if cur == last_reg:
+        pairs = (playoffs.fixtures(LG, cur, cur) or {}).get(cur) or []
+        if pairs:
+            out.append({"kind": "fights", "owners": [x["owner_id"] for x in rows],
+                        "pairs": [[_first(a).upper(), _first(b).upper()] for a, b in pairs],
+                        "count_word": (_NUMBER_WORDS[len(pairs)] if len(pairs) < len(_NUMBER_WORDS) else str(len(pairs))).upper(),
+                        "heat": 4000, "headline": "The last week of the regular season",
+                        "sub": "every game decides something", "short": "LAST WEEK", "link": po})
+    if not live or not rows:
+        return out
+    fin = _final_places()
+    champ = next((o for o, v in fin.items() if v == 1), None)
+    if champ:
+        out.append({"kind": "champion", "owner": champ, "first": _first(champ), "team": team_of(champ), "year": SEASON,
+                    "heat": 10000, "headline": "%s, champion" % _first(champ), "sub": "%s won the %d final" % (
+                        team_of(champ), SEASON), "short": "THE CHAMPION", "link": po})
+        return out
+    if cur == last_reg + 1:
+        out.append({"kind": "field", "through": last_reg,
+                    "rows": [[x["owner_id"], _first(x["owner_id"]), x["place"]] for x in rows],
+                    "heat": 5000, "headline": "The field", "sub": "the regular season's final table",
+                    "short": "THE FIELD", "link": po})
+        return out
+    if cur > last_reg:
+        return out
+    try:
+        told = {(i.get("kind"), i.get("owner")) for i in storage.load_covers(SEASON).values()}
+    except Exception:          # noqa: BLE001
+        told = set()
+    locks = _playoff_locks(rows)
+    gone = [x for x in reversed(rows) if locks.get(x["owner_id"]) == "out" and ("rip", x["owner_id"]) not in told]
+    if gone:
+        o = gone[0]["owner_id"]
+        out.append({"kind": "rip", "owner": o, "first": _first(o), "through": cur - 1, "heat": 3000,
+                    "headline": "%s is out" % _first(o), "sub": "mathematically out of the playoffs",
+                    "short": "R.I.P. %s" % _first(o).upper(), "link": po})
+    made = [x for x in rows if locks.get(x["owner_id"]) == "in" and ("clinch", x["owner_id"]) not in told]
+    if made:
+        o = made[0]["owner_id"]
+        out.append({"kind": "clinch", "owner": o, "first": _first(o), "heat": 2500,
+                    "headline": "%s clinched" % _first(o), "sub": "locked into the playoffs",
+                    "short": "%s IS IN" % _first(o).upper(), "link": po})
+    try:
+        sim = (get_playoff_outlook(VIEW, cur) or {}).get("sim") or {}
+        pct = {o: v["playoff_pct"] for o, v in (sim.get("teams") or {}).items()}
+    except Exception:          # noqa: BLE001
+        pct = {}
+    dead = [x["owner_id"] for x in rows if x["owner_id"] in pct and pct[x["owner_id"]] < 2]
+    if dead and len(dead) < len(rows):
+        worst = sorted(dead, key=lambda o: (pct[o], by[o]["wins"]))[:2]
+        out.append({"kind": "hitlist", "owners": worst,
+                    "rows": [[_first(x["owner_id"]), x["record"], x["owner_id"] in dead] for x in rows],
+                    "heat": 22 + 14 * len(dead), "headline": "The hit list",
+                    "sub": "%d team%s under 2%% to make the playoffs" % (len(dead), "s" if len(dead) != 1 else ""),
+                    "short": "THE HIT LIST", "link": po})
+    return out
 
 
 def _issue_month(week: int) -> str:
@@ -2156,7 +2288,14 @@ def _cover_issue(week: int, live: bool = False, _depth: int = 0) -> dict:
     if not stories:
         return {}
     prev = _cover_issue(week - 1, False, _depth + 1) if week > 1 and _depth < 8 else {}
-    pick = next((x for x in stories if x["kind"] != prev.get("kind")), stories[0])
+    try:
+        before = storage.load_covers(SEASON).get(str(week - 2)) or {}
+    except Exception:          # noqa: BLE001
+        before = {}
+    recent = {prev.get("kind"), before.get("kind")}
+    # once-only stories (the champion, the field, a clinch...) run whatever ran before
+    pick = next((x for x in stories if x["heat"] >= 1000 or x["kind"] not in recent),
+                next((x for x in stories if x["kind"] != prev.get("kind")), stories[0]))
     others = [x for x in stories if x is not pick]
     issue = {k: v for k, v in pick.items() if k != "photos"}
     if pick["kind"] == "gotw":
@@ -2164,7 +2303,7 @@ def _cover_issue(week: int, live: bool = False, _depth: int = 0) -> dict:
                       if r["owner_id"] not in (pick["a"], pick["b"])), None)
         issue["photo_owners"] = [o for o in (pick["a"], pick["b"], third) if o]
     issue.update(week=week, month=_issue_month(week),
-                 lines=[x["short"] for x in others[:3]],
+                 lines=[x["short"] for x in others[:5 if pick["kind"] == "issue" else 3]],
                  others=[{k: x[k] for k in ("headline", "sub", "link", "short")} for x in others[:4]])
     # A finished week's cover is final the moment it is picked; the live week
     # is printed on its first showing, Tuesday or whenever someone opens Home.
@@ -2175,11 +2314,24 @@ def _cover_issue(week: int, live: bool = False, _depth: int = 0) -> dict:
     return issue
 
 
-def _cover_html(issue: dict) -> str:
+def _cover_skins(issues: dict) -> dict:
+    """{week: skin} for every issue this season (see cover.deal)."""
+    try:
+        saved = {int(k): v for k, v in storage.load_covers(SEASON).items()}
+    except Exception:          # noqa: BLE001
+        saved = {}
+    saved.update(issues)
+    return cover.deal({w: i.get("kind", "") for w, i in saved.items()}, str(SEASON),
+                      {w: i["skin"] for w, i in saved.items() if i.get("skin")})
+
+
+def _cover_html(issue: dict, skin: str = None) -> str:
     story = dict(issue, label="Week %d cover: %s" % (issue["week"], issue["headline"]))
     if story.get("photo_owners"):
         story["photos"] = [_mgr_photo(str(o)) for o in story["photo_owners"]]
-    return cover.render(story, _mgr_body)
+    if skin is None:
+        skin = _cover_skins({int(issue["week"]): issue}).get(int(issue["week"]))
+    return cover.render(story, _mgr_body, skin=skin)
 
 
 def render_cover(cur: int) -> str:
@@ -5335,12 +5487,14 @@ def render_covers() -> None:
     if not issues:
         st.info("The first cover runs once there is a week of results to put on it.")
         return
+    skins = _cover_skins({int(i["week"]): i for i in issues})
     st.markdown(cover.CSS, unsafe_allow_html=True)
     st.markdown('<div class="wc-rack">' + "".join(
-        f'<figure>{_cover_html(i)}<figcaption><b>Week {i["week"]} &middot; {esc(i["headline"])}</b>'
+        f'<figure>{_cover_html(i, skins.get(int(i["week"])))}<figcaption><b>Week {i["week"]} &middot; {esc(i["headline"])}</b>'
         f'{esc(i["sub"]).capitalize()}</figcaption></figure>' for i in issues) + '</div>',
         unsafe_allow_html=True)
-    st.caption("Each cover is kept as it ran: the week's hottest story, never the same kind two weeks running.")
+    st.caption("Each cover is the week's hottest story, never a story that ran in the two weeks before, "
+               "printed in a look off the skate-mag shelf that hasn't run in the two weeks before it.")
 
 
 def render_league(leaf=None):
