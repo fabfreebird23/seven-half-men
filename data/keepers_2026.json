@@ -159,6 +159,53 @@
       "short": "CLAYTON'S BENCH",
       "sub": "points his best lineup would have added",
       "week": 4
+    },
+    "5": {
+      "buried": "CLAYTON'S BENCH",
+      "first": "Isiah",
+      "headline": "Isiah 184.9",
+      "heat": 67.64131142795105,
+      "kind": "biggest",
+      "lines": [
+        "CLAYTON'S BENCH",
+        "LUCKY COREY",
+        "CLAYTON UP 7"
+      ],
+      "link": "?p=inseason&g=week&t=live",
+      "month": "OCT 2026",
+      "others": [
+        {
+          "headline": "Clayton's bench, 37.9",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "CLAYTON'S BENCH",
+          "sub": "points his best lineup would have added"
+        },
+        {
+          "headline": "Corey's lucky 130.6",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCKY COREY",
+          "sub": "4 teams scored more and he still won"
+        },
+        {
+          "headline": "Clayton, up 7",
+          "link": "?p=home",
+          "short": "CLAYTON UP 7",
+          "sub": "the biggest climb on his draft seed"
+        },
+        {
+          "headline": "The Chase is real",
+          "link": "?p=inseason&g=playoffs&t=chase",
+          "short": "THE CHASE",
+          "sub": "Lucas at 2\u201310, and a $120 pot to play for"
+        }
+      ],
+      "owner": "979400432114102272",
+      "pts": "184.9",
+      "short": "ISIAH 185",
+      "star": null,
+      "star_pts": null,
+      "sub": "the week's top score",
+      "week": 5
     }
   },
   "draw": {
