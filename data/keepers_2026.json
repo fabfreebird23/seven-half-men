@@ -68,6 +68,53 @@
       "short": "CLAYTON'S BENCH",
       "sub": "points his best lineup would have added",
       "week": 2
+    },
+    "3": {
+      "buried": "LUCAS'S BENCH",
+      "first": "Clayton",
+      "headline": "Clayton 175.1",
+      "heat": 77.62513628704531,
+      "kind": "biggest",
+      "lines": [
+        "LUCAS'S BENCH",
+        "LUCKY THAD",
+        "CLAYTON UP 7"
+      ],
+      "link": "?p=inseason&g=week&t=live",
+      "month": "SEP 2026",
+      "others": [
+        {
+          "headline": "Lucas's bench, 35.2",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCAS'S BENCH",
+          "sub": "points his best lineup would have added"
+        },
+        {
+          "headline": "Thad's lucky 104.8",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCKY THAD",
+          "sub": "4 teams scored more and he still won"
+        },
+        {
+          "headline": "Clayton, up 7",
+          "link": "?p=home",
+          "short": "CLAYTON UP 7",
+          "sub": "the biggest climb on his draft seed"
+        },
+        {
+          "headline": "The Chase is real",
+          "link": "?p=inseason&g=playoffs&t=chase",
+          "short": "THE CHASE",
+          "sub": "Lucas at 2\u201310, and a $120 pot to play for"
+        }
+      ],
+      "owner": "1001531274030305280",
+      "pts": "175.1",
+      "short": "CLAYTON 175",
+      "star": "SMITH-NJIGBA.",
+      "star_pts": "42.5. NOT BAD.",
+      "sub": "the week's top score",
+      "week": 3
     }
   },
   "draw": {
