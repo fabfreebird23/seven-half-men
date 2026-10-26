@@ -11,6 +11,8 @@ Writes into assets/managers/:
   <id>_g.webp    220x220 cutout in the ACCENT duotone (blue) - "you"
   <id>_r.webp    220x220 cutout in the BASE duotone (crimson) - "them"
 
+    .venv/bin/python scripts/manager_photos.py photo.jpg --name Josh --body L,T,R,B
+                     # the weekly cover's head-and-torso cut-out (see below)
     .venv/bin/python scripts/manager_photos.py --retone     # rebuild every
                                                             # duotone from _cut.png
 
@@ -26,12 +28,13 @@ Photos with more than one person in them: pass --box LEFT,TOP,RIGHT,BOTTOM
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFilter, ImageOps
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from halfmen import config  # noqa: E402
@@ -177,6 +180,95 @@ def square_rgba(im: Image.Image, size: int) -> Image.Image:
     return pad.resize((size, size), Image.LANCZOS)
 
 
+# ------------------------------------------------------------------ covers
+# The weekly cover wants the whole manager - head and torso, as big as the
+# cover - in four treatments: a white sticker, a blue sticker, black and
+# white, and two-ink xerox. A cut-out can only be as whole as the photo it
+# came from: when someone stands at the edge of the frame, the frame slices
+# him with a straight line. Those sides are recorded as "hard", get no
+# sticker edge, and the cover pins them flush to its own edge, where a
+# straight line is just the edge of the cover.
+BODY_MAX_H = 820
+XEROX = [(29, 26, 58), (241, 232, 150)]          # deep blue into newsprint yellow
+
+
+def _hard_sides(cut: Image.Image) -> list:
+    """Which sides of the subject's box the photo frame cut through: a side
+    is hard when the subject runs along it - judged over the outer few pixels
+    because Vision's mask is soft at the edge, and at a low share because an
+    arm crossing the frame is only a short run and still reads as a slice."""
+    a = cut.getchannel("A")
+    w, h = a.size
+    px = a.load()
+    band = 3
+
+    def share(cols=None, rows=None):
+        if cols is not None:
+            return max(sum(1 for y in range(h) if px[x, y] > 100) / h for x in cols)
+        return max(sum(1 for x in range(w) if px[x, y] > 100) / w for y in rows)
+    shares = {"left": share(cols=range(band)), "right": share(cols=range(w - band, w)),
+              "bottom": share(rows=range(h - band, h))}
+    return {k: round(v, 2) for k, v in shares.items() if v > (0.10 if k == "bottom" else 0.04)}
+
+
+def _fade(im: Image.Image, sides: dict) -> Image.Image:
+    """Dissolve each cut side over the outer fifth of the width, so a slice
+    through an arm or a shoulder fades into the cover instead of ending in a
+    straight line. Deeper slices get a longer fade."""
+    w, h = im.size
+    a = im.getchannel("A")
+    ramp = Image.new("L", (w, 1), 255)
+    rp = ramp.load()
+    for side in ("left", "right"):
+        if side not in sides:
+            continue
+        span = max(12, int(w * (0.14 + 0.16 * min(1.0, sides[side]))))
+        for i in range(span):
+            x = i if side == "left" else w - 1 - i
+            rp[x, 0] = min(rp[x, 0], int(255 * (i / span) ** 1.4))
+    a = Image.composite(a, Image.new("L", (w, h), 0), ramp.resize((w, h)))
+    out = im.copy()
+    out.putalpha(a)
+    return out
+
+
+def _sticker(cut: Image.Image, colour, px: int) -> Image.Image:
+    a = cut.getchannel("A")
+    grown = a.filter(ImageFilter.MaxFilter(px * 2 + 1)).filter(ImageFilter.GaussianBlur(1))
+    grown = grown.point(lambda v: 255 if v > 90 else 0)
+    base = Image.new("RGBA", cut.size, colour + (0,))
+    base.putalpha(grown)
+    base.alpha_composite(cut)
+    return base
+
+
+def write_body(oid: str, cut: Image.Image, who: str) -> None:
+    """The four cover treatments plus a small manifest from a natural-colour
+    body cut-out (already cropped to the subject)."""
+    hard = _hard_sides(cut)
+    if cut.height > BODY_MAX_H:
+        cut = cut.resize((round(cut.width * BODY_MAX_H / cut.height), BODY_MAX_H), Image.LANCZOS)
+    px = max(8, cut.height // 55)
+    # room for the sticker edge on every SOFT side only
+    l, r, t = (0 if "left" in hard else px), (0 if "right" in hard else px), px
+    canvas = Image.new("RGBA", (cut.width + l + r, cut.height + t), (0, 0, 0, 0))
+    canvas.paste(cut, (l, t))
+    cut = canvas
+    g = ImageOps.autocontrast(cut.convert("L"), cutoff=1)
+    bw = Image.merge("RGBA", (g, g, g, cut.getchannel("A")))
+    lut = [tuple(round(XEROX[0][k] + (XEROX[1][k] - XEROX[0][k]) * i / 255) for k in range(3)) for i in range(256)]
+    g2 = ImageOps.autocontrast(cut.convert("L"), cutoff=2)
+    xr = Image.merge("RGB", tuple(g2.point([c[k] for c in lut]) for k in range(3)))
+    xr.putalpha(cut.getchannel("A"))
+    looks = {"white": _sticker(cut, (255, 255, 255), px), "blue": _sticker(cut, (46, 155, 255), px),
+             "bw": _sticker(bw, (255, 255, 255), px), "xerox": xr}
+    for k, im in looks.items():
+        _fade(im, hard).save(OUT / f"{oid}_body-{k}.webp", quality=86)
+    (OUT / f"{oid}_body.json").write_text(json.dumps(
+        {"w": cut.width, "h": cut.height, "hard": hard}, indent=1))
+    print(f"{who}: body cut-out {cut.size}, hard sides {hard or 'none'}")
+
+
 def resolve(name: str | None, oid: str | None) -> str:
     if oid:
         if oid not in config.managers():
@@ -199,6 +291,7 @@ def main() -> None:
     ap.add_argument("--name", help="any part of the manager's name in config.yaml")
     ap.add_argument("--id", dest="oid", help="his Sleeper user id")
     ap.add_argument("--box", help="LEFT,TOP,RIGHT,BOTTOM to crop to one person first")
+    ap.add_argument("--body", help="LEFT,TOP,RIGHT,BOTTOM of head and torso, for the weekly cover")
     a = ap.parse_args()
 
     if a.retone:
@@ -208,12 +301,28 @@ def main() -> None:
                 write_tones(oid, Image.open(f).convert("RGBA"), config.manager_name(oid))
             else:
                 print(f"{config.manager_name(oid)}: no _cut.png - rerun with his photo")
+            b = OUT / f"{oid}_body_cut.png"
+            if b.exists():
+                write_body(oid, Image.open(b).convert("RGBA"), config.manager_name(oid))
         return
     if not a.photo:
         ap.error("a photo is required unless --retone")
 
     oid = resolve(a.name, a.oid)
     who = config.manager_name(oid)
+    OUT.mkdir(parents=True, exist_ok=True)
+    if a.body:
+        src = Image.open(a.photo).convert("RGB").crop(tuple(int(x) for x in a.body.split(",")))
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td) / "src.png"
+            src.save(tmp)
+            cut = cutout(tmp)
+        if cut is None:
+            return
+        cut = cut.crop(cut.getchannel("A").point(lambda v: 255 if v > 100 else 0).getbbox())
+        cut.save(OUT / f"{oid}_body_cut.png", optimize=True)
+        write_body(oid, cut, who)
+        return
     src = Image.open(a.photo).convert("RGB")
     if a.box:
         src = src.crop(tuple(int(x) for x in a.box.split(",")))

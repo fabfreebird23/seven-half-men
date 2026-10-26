@@ -57,7 +57,7 @@ def _fresh_halfmen() -> None:
 _fresh_halfmen()
 
 from halfmen import (adp_board, agenda, config, draftboard, engine, history, lottery,
-                     live, minutes, voice, phase, playoffs, playoffs_view, recap,
+                     live, minutes, voice, phase, playoffs, playoffs_view, recap, cover,
                      gameday, picks, pot, remote, rulebook, season, sleeper, stakes, storage,
                      taxi, theme, valueboard)
 
@@ -2046,6 +2046,138 @@ def _recap_png(week: int, me: str) -> bytes:
                         [(o, _first(o), v) for o, v in pts.items()], tiles, me=me, footer=footer)
 
 
+# ---------------------------------------------------------------- the weekly cover
+# Every week's biggest story as a skate-mag cover (halfmen/cover.py), on Home.
+# The story is chosen by "heat" - how far outside normal the week's number
+# is - and never the same kind two weeks running.
+
+_NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"]
+
+
+@st.cache_data(show_spinner=False)
+def _mgr_body(owner: str, look: str):
+    """(data URI, manifest) for a manager's cover cut-out, or (None, {})."""
+    import base64
+    d = Path(__file__).parent / "assets" / "managers"
+    f, m = d / f"{owner}_body-{look}.webp", d / f"{owner}_body.json"
+    if not f.exists():
+        return None, {}
+    man = json.loads(m.read_text()) if m.exists() else {}
+    return "data:image/webp;base64," + base64.b64encode(f.read_bytes()).decode(), man
+
+
+def _cover_stories(cur: int, with_gotw: bool = True) -> list:
+    """Every story the week could lead with, hottest first. Each carries what
+    its cover needs plus a one-line headline for the "inside" list."""
+    out = []
+    rows = season.standings()
+    r = get_week_review(cur - 1) if cur > 1 else {}
+    if r:
+        pts = r["pts"]
+        avg = sum(pts.values()) / max(1, len(pts))
+        top = r["top"]
+        star = r.get("star")
+        bo = r["benchiest"]
+        out.append({"kind": "biggest", "owner": top, "first": _first(top), "pts": "%.1f" % pts[top],
+                    "star": (_surname(_pname(star[0])).upper() + "." if star and star[1] == top else None),
+                    "star_pts": ("%.1f. NOT BAD." % star[2]) if star and star[1] == top else None,
+                    "buried": (_first(bo).upper() + "'S BENCH") if bo != top else None,
+                    "heat": 200 * (pts[top] - avg) / max(1, avg),
+                    "headline": "%s %.1f" % (_first(top), pts[top]), "sub": "the week's top score",
+                    "short": "%s %.0f" % (_first(top).upper(), pts[top]), "link": "?p=inseason&g=week&t=live"})
+        out.append({"kind": "bench", "owner": bo, "first": _first(bo), "pts": r["bench"][bo],
+                    "heat": 1.6 * r["bench"][bo], "headline": "%s's bench, %.1f" % (_first(bo), r["bench"][bo]),
+                    "sub": "points his best lineup would have added", "short": "%s'S BENCH" % _first(bo).upper(),
+                    "link": "?p=inseason&g=week&t=live"})
+        lk = r["lucky"]
+        if r["lucky_beaten"] >= 2:
+            out.append({"kind": "lucky", "owner": lk["w"], "first": _first(lk["w"]), "pts": "%.1f" % pts[lk["w"]],
+                        "beaten": r["lucky_beaten"], "team": team_of(lk["w"]), "heat": 12 * r["lucky_beaten"],
+                        "headline": "%s's lucky %.1f" % (_first(lk["w"]), pts[lk["w"]]),
+                        "sub": "%d teams scored more and he still won" % r["lucky_beaten"],
+                        "short": "LUCKY %s" % _first(lk["w"]).upper(), "link": "?p=inseason&g=week&t=live"})
+    if with_gotw:
+        g, _games = _gotw(cur)
+        if g:
+            third = next((x["owner_id"] for x in rows if x["owner_id"] not in (g["a"], g["b"])), None)
+            out.append({"kind": "gotw", "a": g["a"], "b": g["b"], "team_a": team_of(g["a"]), "team_b": team_of(g["b"]),
+                        "stakes": g["stakes"], "photos": [_mgr_photo(str(o)) for o in (g["a"], g["b"], third) if o],
+                        "heat": 1.4 * g["stakes"],
+                        "headline": "%s v %s" % (_first(g["a"]), _first(g["b"])),
+                        "sub": "%d points of playoff odds on the line" % g["stakes"],
+                        "short": "%s V %s" % (_first(g["a"]).upper(), _first(g["b"]).upper()),
+                        "link": "?p=inseason&g=week&t=live"})
+    if rows:
+        last = rows[-1]
+        chase_start = int(config.league()["chase_weeks"][0])
+        out.append({"kind": "chase", "owner": last["owner_id"], "first": _first(last["owner_id"]), "rec": last["record"],
+                    "team": team_of(last["owner_id"]), "cap": int(pot.cap_amount()[0]),
+                    "heat": 20 + 8 * max(0, cur - (chase_start - 5)),
+                    "headline": "The Chase is real", "sub": "%s at %s, and a $%d pot to play for" % (
+                        _first(last["owner_id"]), last["record"], int(pot.cap_amount()[0])),
+                    "short": "THE CHASE", "link": "?p=inseason&g=playoffs&t=chase"})
+    try:
+        pw = season.power()
+    except Exception:          # noqa: BLE001
+        pw = []
+    if pw:
+        m = max(pw, key=lambda x: x["moved"])
+        if m["moved"] >= 3:
+            out.append({"kind": "mover", "owner": m["owner_id"], "first": _first(m["owner_id"]), "rec": m["record"],
+                        "moved_word": _NUMBER_WORDS[m["moved"]] if m["moved"] < len(_NUMBER_WORDS) else str(m["moved"]),
+                        "heat": 5 * m["moved"] - 5,
+                        "headline": "%s, up %d" % (_first(m["owner_id"]), m["moved"]),
+                        "sub": "the biggest climb on his draft seed", "short": "%s UP %d" % (
+                            _first(m["owner_id"]).upper(), m["moved"]), "link": "?p=home"})
+    return sorted(out, key=lambda x: -x["heat"])
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def _cover_pick(cur: int) -> dict:
+    """This week's cover story: the hottest, unless last week led with the
+    same kind. Last week is judged without its Game of the Week, which would
+    mean running a second playoff sim just to rule a story out."""
+    stories = _cover_stories(cur)
+    if not stories:
+        return {}
+    prev = _cover_stories(cur - 1, with_gotw=False) if cur > 2 else []
+    prev_kind = prev[0]["kind"] if prev else None
+    pick = next((x for x in stories if x["kind"] != prev_kind), stories[0])
+    others = [x for x in stories if x is not pick]
+    pick = dict(pick)
+    pick["lines"] = [x["short"] for x in others[:3]]
+    pick["others"] = others[:4]
+    return pick
+
+
+def render_cover(cur: int) -> str:
+    """Home's weekly cover, beside the issue's other stories. Returns the
+    story kind, so Home can leave out whatever the cover already says."""
+    try:
+        story = _cover_pick(cur)
+    except Exception:          # noqa: BLE001 - a missing photo or number must not cost Home
+        story = {}
+    if not story:
+        return ""
+    import datetime as _dt
+    story = dict(story, week=cur, month=_dt.date.today().strftime("%b %Y").upper(),
+                 label="Week %d cover: %s" % (cur, story["headline"]))
+    html_ = cover.render(story, _mgr_body)
+    if not html_:
+        return ""
+    inside = "".join(
+        f'<li><b>{esc(x["headline"])}</b><em>{esc(x["sub"])} &middot; '
+        f'<a href="{x["link"]}{_keep()}" target="_self">read &rarr;</a></em></li>' for x in story["others"])
+    theme.bar("This week's cover", "issue %d &middot; the week's biggest story" % cur)
+    st.markdown(cover.CSS, unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="wc-row">{html_}<div class="wc-in"><span class="k">Week {cur} &middot; the cover story</span>'
+        f'<h3>{esc(story["headline"])}</h3><p>{esc(story["sub"]).capitalize()}.</p>'
+        + (f'<span class="k" style="margin-top:10px">Also in this issue</span><ol>{inside}</ol>' if inside else "")
+        + '</div></div>', unsafe_allow_html=True)
+    return story["kind"]
+
+
 def _render_recap_download(week: int) -> None:
     """Week in Review as one image for the group chat."""
     try:
@@ -2792,9 +2924,10 @@ def render_home(leaf=None):
         my_card(VIEW)          # before kickoff there's no matchup to lead with
     render_taxi_deadline()
     if has_game:
+        led = render_cover(cur)
         # The Game of the Week is the top row of Around the League rather than
-        # a section of its own: same four games, one list, the biggest first.
-        _render_around_league(cur, VIEW, cover=True)
+        # a section of its own - unless it is already this week's cover.
+        _render_around_league(cur, VIEW, cover=(led != "gotw"))
     else:
         render_matchups()
     render_power()
