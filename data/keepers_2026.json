@@ -206,6 +206,52 @@
       "star_pts": null,
       "sub": "the week's top score",
       "week": 5
+    },
+    "6": {
+      "beaten": 5,
+      "first": "Devin",
+      "headline": "Devin's lucky 120.5",
+      "heat": 60,
+      "kind": "lucky",
+      "lines": [
+        "CLAYTON 194",
+        "THAD'S BENCH",
+        "CLAYTON UP 7"
+      ],
+      "link": "?p=inseason&g=week&t=live",
+      "month": "OCT 2026",
+      "others": [
+        {
+          "headline": "Clayton 194.2",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "CLAYTON 194",
+          "sub": "the week's top score"
+        },
+        {
+          "headline": "Thad's bench, 28.0",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "THAD'S BENCH",
+          "sub": "points his best lineup would have added"
+        },
+        {
+          "headline": "Clayton, up 7",
+          "link": "?p=home",
+          "short": "CLAYTON UP 7",
+          "sub": "the biggest climb on his draft seed"
+        },
+        {
+          "headline": "The Chase is real",
+          "link": "?p=inseason&g=playoffs&t=chase",
+          "short": "THE CHASE",
+          "sub": "Lucas at 2\u201310, and a $120 pot to play for"
+        }
+      ],
+      "owner": "1254567796231114752",
+      "pts": "120.5",
+      "short": "LUCKY DEVIN",
+      "sub": "5 teams scored more and he still won",
+      "team": "Taco Bandit",
+      "week": 6
     }
   },
   "draw": {
