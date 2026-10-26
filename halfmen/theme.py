@@ -1611,6 +1611,63 @@ td.two .tw{ display:flex; align-items:center; gap:10px; min-width:0; } td.two .t
   .kx .mc-in, .kx .kf-in, .kx .txc-in, .kx.gw, .kx.xb, .kx .sup{ transition:none !important; }
   .kx .coin{ opacity:1; } .kx .fillv{ height:var(--lvl,0%); } .kx .spill{ height:var(--sp,0px); } .kx .sky-s{ height:var(--h); }
 }
+/* Home's money in one line (app.render_pot_strip) */
+.mstrip{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)) auto; gap:1px; background:var(--line);
+  border:1px solid var(--line); border-radius:12px; overflow:hidden; margin:0 0 14px; align-items:stretch; }
+.mstrip > div{ background:var(--card); padding:10px 14px; min-width:0; }
+.mstrip > div.me{ background:linear-gradient(180deg,rgba(251,8,73,.16),var(--card)); }
+[data-testid="stMarkdownContainer"] .mstrip span{ display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim) !important; }
+.mstrip b{ display:block; font-family:var(--f-display); font-weight:800; font-size:26px; line-height:1.1; }
+.mstrip i{ display:block; font-style:normal; font-size:11px; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-testid="stMarkdownContainer"] .mstrip a{ display:flex; align-items:center; padding:0 16px; background:var(--card); font-size:13px;
+  font-weight:600; color:var(--acc2) !important; text-decoration:none; white-space:nowrap; }
+@media (max-width:760px){ .mstrip{ grid-template-columns:repeat(3,minmax(0,1fr)); } .mstrip a{ grid-column:span 1; justify-content:center; padding:10px; } }
+/* the link from Home's what-to-do through to the full lineup */
+[data-testid="stMarkdownContainer"] a.to-matchup{ display:inline-block; margin:8px 0 4px; font-size:13px; font-weight:600;
+  color:var(--acc2) !important; text-decoration:none; }
+[data-testid="stMarkdownContainer"] a.to-matchup:hover{ text-decoration:underline; }
+/* Game of the Week tiles: three since "your rooting" moved to the ladder */
+.kx.xb-tiles.t3{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+@media (max-width:760px){ .kx.xb-tiles.t3{ grid-template-columns:1fr; } }
+/* Live: what each matchup is worth, on the card itself */
+.kx .mm-stk{ display:grid; grid-template-columns:minmax(80px,180px) minmax(0,1fr) auto; gap:12px; align-items:center;
+  margin:-4px 0 10px; padding:6px 14px 8px; background:#0c0b0c; border:1px solid #221f20; border-top:0; border-radius:0 0 12px 12px; }
+.kx .mm-stk.hot{ border-color:var(--kg); box-shadow:inset 0 -2px 0 var(--kg); }
+.kx .mm-stk .gw-meter{ margin:0; }
+[data-testid="stMarkdownContainer"] .kx .mm-stk span{ font-size:11.5px; color:var(--muted) !important; }
+.kx .mm-stk .gw-tag{ margin:0 0 0 4px; }
+@media (max-width:760px){ .kx .mm-stk{ grid-template-columns:1fr; gap:4px; } [data-testid="stMarkdownContainer"] .kx .mm-stk .gw-root{ text-align:left; } }
+/* The Chase page (app.render_chase): one card per match, two teams, the stake */
+.kx.ch-r{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; margin:0 0 14px; }
+.kx .ch-m{ background:var(--kink); border:1px solid var(--kl); border-left:4px solid var(--kr2); border-radius:12px; padding:10px 12px;
+  display:flex; flex-direction:column; gap:6px; }
+.kx .ch-t{ display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,.02); min-width:0; }
+.kx .ch-t > div{ min-width:0; flex:1; } .kx .ch-t b{ display:block; font-size:14px; font-weight:650; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-testid="stMarkdownContainer"] .kx .ch-t span{ display:block; font-size:11px; color:var(--muted) !important; }
+.kx .ch-t em{ font-style:normal; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:24px; color:var(--ink2); }
+.kx .ch-t.w{ background:rgba(54,157,134,.12); } .kx .ch-t.w em{ color:var(--teal); }
+.kx .ch-t.me{ box-shadow:inset 0 0 0 1px var(--kg); }
+.kx .ch-t.tbd b{ color:var(--muted); font-weight:500; font-style:italic; }
+.kx .ch-v{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--kr2); padding-left:8px; }
+.kx .ch-s{ font-size:12px; color:var(--muted); border-top:1px solid var(--kl); padding-top:6px; }
+/* Trade analyzer: one line per asset */
+.kx .ta-l{ display:grid; grid-template-columns:minmax(0,1fr) 48px; gap:2px 10px; padding:7px 0; border-bottom:1px solid #221f20; }
+.kx .ta-l b{ font-weight:650; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.kx .ta-l em{ font-style:normal; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:20px; text-align:right; grid-row:span 2; }
+[data-testid="stMarkdownContainer"] .kx .ta-l span{ font-size:11px; color:var(--dim) !important; }
+/* the FAAB bid helper on the Wire */
+.kx.bidh{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; background:var(--kl); border:1px solid var(--kl); border-radius:10px; overflow:hidden; }
+.kx.bidh > div{ background:var(--kink); padding:9px 12px; }
+[data-testid="stMarkdownContainer"] .kx.bidh span{ display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim) !important; }
+.kx.bidh b{ font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:22px; }
+@media (max-width:760px){ .kx.bidh{ grid-template-columns:1fr; } }
+/* lineup alerts, on every page but Home and Matchup (app.render_alerts) */
+[data-testid="stMarkdownContainer"] a.alert-strip{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 14px;
+  padding:9px 14px; border-radius:10px; text-decoration:none; color:var(--ink) !important; font-size:13px;
+  background:rgba(252,68,117,.10); border:1px solid rgba(252,68,117,.45); }
+[data-testid="stMarkdownContainer"] a.alert-strip span{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; font-weight:700;
+  color:var(--bad) !important; }
+a.alert-strip b{ color:var(--ink); } a.alert-strip em{ margin-left:auto; font-style:normal; font-weight:600; color:var(--acc2); }
 /* the lineup as one list */
 .kx.xl-wrap{ display:block; }
 .kx .xl{ display:grid; grid-template-columns:42px 34px minmax(0,1fr) minmax(50px,140px) 64px 48px; gap:10px; align-items:center;

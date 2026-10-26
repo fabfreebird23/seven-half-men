@@ -155,6 +155,42 @@ def simulate(rookie_seats: Sequence[Seat], vet_seats: Sequence[Seat], n: int = 2
             "rookie": pct(tallies["rookie"]), "veteran": pct(tallies["veteran"])}
 
 
+# --------------------------------------------------------------------------
+# one drum (2027 on)
+# --------------------------------------------------------------------------
+
+def locked_out_for(year: int, previous_first: Optional[str], previous_year: int = None) -> List[str]:
+    """Who is barred from first choice in `year`'s drum: last year's first
+    choice - unless last year was the flat, unweighted first season and the
+    league voted that it does not carry (it did not: 2026-10-25)."""
+    if not previous_first:
+        return []
+    prev = int(previous_year or year - 1)
+    if config.is_first_season(prev) and not config.lottery_rules().get("first_season_locks_out", False):
+        return []
+    return [str(previous_first)]
+
+
+def build_single(standings: Sequence[dict], *, weights: Sequence[int] = None,
+                 locked_out: Iterable[str] = ()) -> List[Seat]:
+    """The one drum: final standing, worst first. Playoff teams by where they
+    finish (champion floored at the smallest weight), Chase teams by where they
+    finish the Chase - which is exactly the old veteran drum."""
+    basis = str(config.lottery_rules().get("basis") or "final")
+    return build_drum(standings, basis, weights=weights, locked_out=locked_out)
+
+
+def simulate_one(seats: Sequence[Seat], n: int = 20000, seed: int = None) -> Dict[str, object]:
+    """Monte Carlo for the single drum: per-owner selection-slot percentages."""
+    rng = random.Random(seed)
+    size = len(seats)
+    tally = {s.owner_id: [0] * size for s in seats}
+    for _ in range(n):
+        for slot, owner in enumerate(draw(seats, rng=rng)):
+            tally[owner][slot] += 1
+    return {"n": n, "drum": {o: [c / n * 100 for c in counts] for o, counts in tally.items()}}
+
+
 def median_slot(row: Sequence[float]) -> int:
     cum = 0.0
     for i, p in enumerate(row):

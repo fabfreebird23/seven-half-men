@@ -6,6 +6,12 @@ league:
   name: "7 1/2 Men"
   season: 2026
   first_season: 2026          # no keepers exist before this
+  # When keeper slips are due. Set it and the app switches itself into
+  # "keepers open" mode: a countdown on Home, the slip one tap away. Leave it
+  # null until the league picks the date. ISO format; a time without a zone
+  # is read in keeper_timezone, e.g. "2027-08-15T20:00".
+  keeper_deadline: null
+  keeper_timezone: "America/Indiana/Indianapolis"
   teams: 8
   playoff_teams: 4
   playoff_week_start: 14
@@ -290,7 +296,21 @@ rules:
     price_survives_a_drop: true
 
   lottery:
-    # Two drums, same shape, different basis.
+    # ONE DRUM FROM 2027. The consolidated draft (passed 2026-08-30) has one
+    # board, so it has one order and one drum. That drum is the old veteran
+    # drum exactly: final standing, worst first - the four playoff teams by
+    # where they finish (champion floored), the four Chase teams by where they
+    # finish the Chase, so winning it costs you balls and pays up to the cap.
+    # The rookie drum, the no-sweep rule and the per-drum lock-out retire with
+    # the rookie draft. What is left is one guardrail: no first choice two
+    # years running.
+    single_drum_from: 2027
+    basis: final
+    # 2026's orders were drawn flat at random (there were no standings), so
+    # winning first choice that year was luck, not a weighting. It does not
+    # lock anybody out of 2027. Voted 2026-10-25.
+    first_season_locks_out: false
+    # --- 2026 only: the two-drum year. Kept so that year's draw still reads. ---
     rookie_basis: record      # regular-season record, worst first
     veteran_basis: final      # final standing incl. the Chase bracket, worst first
     weights: [24, 21, 18, 15, 10, 7, 3, 2]
@@ -301,9 +321,9 @@ rules:
     # The repeat lock-out is PER DRUM and covers first choice only. Win first
     # choice of the rookie draft and you cannot win it again next year - but you
     # are still free to win first choice of the veteran draft, and vice versa.
-    no_repeat_top: 1
-    lockout_scope: per_drum   # per_drum | both_drums
-    no_sweep: true            # nobody wins first choice in both drums the SAME year
+    no_repeat_top: 1          # no first choice two years running
+    lockout_scope: per_drum   # 2026 only: per_drum | both_drums
+    no_sweep: true            # 2026 only: nobody wins first choice in both drums
     selection_order: true     # the drum picks an order, not a slot
     randomize_first_season: true
 

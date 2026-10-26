@@ -207,6 +207,20 @@ def save_draw(seed: int, rookie: List[str], veteran: List[str],
     return data["draw"]
 
 
+def save_single_draw(seed: int, order: List[str], season: int = None) -> Dict[str, Any]:
+    """Record a one-drum draw (2027 on), keyed by the DRAFT year it orders.
+
+    Same shape as the season-one draw so the reveal works unchanged, with the
+    one order under "drum" instead of a rookie and a veteran order.
+    """
+    data = load(season)
+    data["draw"] = {"seed": int(seed), "drum": list(order),
+                    "drawn_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "reveal": 0}
+    save(data, season)
+    return data["draw"]
+
+
 def load_draw(season: int = None) -> Dict[str, Any]:
     return (load(season) or {}).get("draw") or {}
 

@@ -95,7 +95,12 @@ def drafts() -> Dict[str, Any]:
 
 
 def veteran_rounds(yr: int = None) -> int:
+    """Rounds in `yr`'s main draft. From the consolidated year on there is only
+    one draft, and it is the 16-round board."""
     d = drafts()
+    cf = consolidated_from()
+    if yr and cf and int(yr) >= cf:
+        return int(d.get("consolidated_rounds") or 16)
     if is_first_season(yr):
         return int(d.get("veteran_rounds_first_season", d["veteran_rounds"]))
     return int(d["veteran_rounds"])
@@ -200,6 +205,12 @@ def me() -> str:
 
 def palette() -> str:
     return load().get("theme", {}).get("default_palette", "bloodysunday")
+
+
+def single_drum(yr: int = None) -> bool:
+    """True from the consolidated draft on: one board, one order, one drum."""
+    yr = int(yr or season())
+    return yr >= int(lottery_rules().get("single_drum_from") or consolidated_from())
 
 
 def lottery_weights(alt: bool = False) -> List[int]:

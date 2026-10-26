@@ -157,3 +157,64 @@ def test_first_season_order_is_a_flat_shuffle():
     ids = [s.owner_id for s in rookie_drum()]
     got = lottery.first_season_order(ids, seed=4)
     assert sorted(got) == sorted(ids)
+
+
+# --------------------------------------------------------------------------
+# one drum, from the consolidated draft on
+# --------------------------------------------------------------------------
+
+def _season(champ_rank=1):
+    """Eight teams: owner i finished at final_rank ranks[i]."""
+    ranks = [1, 3, 2, 4, 5, 6, 7, 8]
+    return [{"owner_id": str(i), "wins": 12 - r, "final_rank": r, "champion": r == champ_rank}
+            for i, r in enumerate(ranks)]
+
+
+def test_one_drum_from_2027_and_two_before():
+    from halfmen import config
+    assert not config.single_drum(2026)
+    assert config.single_drum(2027) and config.single_drum(2031)
+
+
+def test_the_one_drum_is_final_standing_chase_teams_by_chase_finish():
+    seats = lottery.build_single(_season())
+    by = {s.owner_id: s.weight for s in seats}
+    w = config.lottery_weights()
+    # final_rank 8 = lost out of the Chase: most balls; 5 = won the Chase
+    assert by["7"] == w[0] and by["4"] == w[3]
+    # playoff teams by finish, champion floored
+    assert by["0"] == w[-1] and by["2"] == w[-2] and by["1"] == w[-3] and by["3"] == w[-4]
+
+
+def test_winning_the_chase_costs_balls():
+    seats = {s.owner_id: s.weight for s in lottery.build_single(_season())}
+    assert seats["4"] < seats["5"] < seats["6"] < seats["7"]
+
+
+def test_the_flat_first_season_locks_nobody_out():
+    assert lottery.locked_out_for(2027, "someone", 2026) == []
+
+
+def test_after_that_last_years_first_choice_is_barred():
+    assert lottery.locked_out_for(2028, "someone", 2027) == ["someone"]
+    assert lottery.locked_out_for(2028, None, 2027) == []
+
+
+def test_the_one_drum_simulation_tracks_weights():
+    res = lottery.simulate_one(lottery.build_single(_season()), n=6000, seed=3)
+    first = {o: row[0] for o, row in res["drum"].items()}
+    assert first["7"] > first["4"] > first["3"] > first["0"]
+    assert abs(sum(first.values()) - 100) < 0.01
+
+
+def test_the_2027_draft_has_sixteen_rounds():
+    from halfmen import config
+    assert config.veteran_rounds(2027) == int(config.drafts()["consolidated_rounds"])
+    assert config.veteran_rounds(2026) == 14
+
+
+def test_the_recap_renders_a_png():
+    from halfmen import recap
+    png = recap.render(6, "7½ Men", [("a", "A", 120.0), ("b", "B", 90.0)],
+                       [("Blowout", "A by 30.0", "120 over B")], footer="next week")
+    assert png[:8] == b"\x89PNG\r\n\x1a\n" and len(png) > 10000

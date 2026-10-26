@@ -358,7 +358,7 @@ def sections() -> List[tuple]:
 ("faab", "FAAB and the pot", "$%d for the season, and every dollar you spend is a real dollar."
  % int(ab["budget"]), [
  ("p", "The Chase bracket — the four teams that miss the playoffs, playing weeks %s — does two "
-       "things. It weights next year's veteran lottery, and it plays for a cash pot." % (
+       "things. It weights next year's lottery, and it plays for a cash pot." % (
         ", ".join(str(w) for w in lg["chase_weeks"]))),
  ("p", "The pot is funded by <b>FAAB you actually spend</b>. Win a player for $30 and you owe "
        "$30 at the end of the year. Sit on your budget all season and you owe nothing."),
@@ -419,52 +419,41 @@ def sections() -> List[tuple]:
        "is a 2nd-round keeper for whoever grabs him, and he is off your slip either way."),
 ]),
 
-("lotteries", "The two lotteries", "Both drafts are ordered by drum, and the drums are weighted "
-                                   "on different things on purpose.", [
- ("table", ["Drum", "Weighted by"], [
-   ["Rookie draft", "regular-season record, worst team gets the most balls"],
-   ["Veteran draft", "<b>final standing including the Chase bracket</b>"],
+("lotteries", "The lottery", "One drum from %d. One board means one order." % _one(), [
+ ("p", "The drum runs on <b>final standing</b>, worst first. The four playoff teams hold balls by "
+       "where they finish; the four teams that miss hold balls by where they finish the "
+       "<b>Chase</b>. The champion always holds the fewest, whatever his record."),
+ ("table", ["Finish", "Balls"], _ball_rows()),
+ ("p", "That is the trade the Chase offers. Win it and you take the pot &mdash; up to $%d &mdash; "
+       "and drop to the fewest balls of the four; lose out and you keep the most. Weeks %s stop "
+       "being a lap of honour, and nobody has a reason to lose them on purpose: the balls you give "
+       "up winning are worth less than the money." % (
+        _cap(), ", ".join(str(w) for w in lg["chase_weeks"]))),
+ ("note", "The bottom three sit three balls apart rather than eight. The worst team still has "
+          "the best odds &mdash; strictly &mdash; but an extra loss is worth about three "
+          "percentage points, which is not enough to be worth engineering. Missing the playoffs "
+          "should pay; being <em>worse</em> than that should not."),
+ ("p", "<b>The drum sets a selection order, not a draft slot.</b> Whoever wins first choice takes "
+       "any spot on the board, second choice takes any that is left, and so on. %d selections are "
+       "drawn; everyone after that falls in ball order." % int(config.lottery_rules().get("lottery_slots", 2))),
+ ("worked", "The guardrails", [
+   ("No back-to-back", "1st", "Win first choice and you cannot win first choice the next year. "
+                              "You can still win second. Acquiring a pick by trade does not burn "
+                              "your eligibility; only winning it does."),
+   ("Champion at the floor", "2nd", "Whoever wins the title holds the fewest balls."),
+   ("%d does not count" % config.league()["first_season"], "3rd",
+    "Season one's orders were drawn flat at random, so winning first choice that year was luck "
+    "rather than a weighting. It locks nobody out of %d." % _one()),
  ]),
- ("p", "That difference is deliberate. If both drums ran on regular-season record, weeks %s "
-       "would stop mattering for anything but money and the four teams playing them would have a "
-       "live reason to lose. Weighting the veteran drum on where you actually finished means a "
-       "Chase win costs you veteran balls — which is exactly the trade the bracket is supposed "
-       "to offer." % ", ".join(str(w) for w in lg["chase_weeks"])),
- ("p", "Ball weights, worst to best: <b>%s</b>." % " / ".join(
-        "%d%%" % w for w in config.lottery_weights())),
- ("note", "The bottom three sit three points apart rather than eight. The worst team still has "
-          "the best odds — strictly — but an extra loss in week 13 is worth about three "
-          "percentage points, which is not enough to be worth engineering. That is the whole "
-          "design goal: missing the playoffs should pay, being <em>worse</em> than that should not."),
- ("p", "<b>Each drum sets a selection order, not a draft slot.</b> Whoever wins first choice "
-       "takes any spot on the board they want, second choice takes any that is left, and so on. "
-       "Nobody is ever stuck picking from the 1 spot."),
- ("worked", "How the lock-out plays out over two years", [
-   ("2027 rookie drum", "you win", "first choice. You take 1.01 and land the best rookie on the board."),
-   ("2028 rookie drum", "barred", "from first choice only. You can still win <em>second</em> choice."),
-   ("2028 veteran drum", "wide open", "winning the rookie drum last year has nothing to do with "
-                                      "this one. Take first choice here if the balls fall your way."),
- ]),
- ("worked", "The guardrails, in the order they apply", [
-   ("No sweep", "1st", "The rookie drum draws first. Its winner is held out of first choice in "
-                       "the veteran drum — they can still land second. Without it one team "
-                       "takes both boards in about 4% of years, which is a bad night for the "
-                       "other seven and pure luck."),
-   ("No back-to-back", "2nd", "Win <b>first choice</b> of a drum and you cannot win first choice "
-                              "of <b>that same drum</b> next year. The two drums are tracked "
-                              "separately — take first of the rookie draft this year and you are "
-                              "still free to take first of the veteran draft next year, and you "
-                              "can still win second choice of the rookie drum. Acquiring a pick "
-                              "by trade does not burn your eligibility; only winning it does."),
-   ("Champion at the floor", "3rd", "Whoever wins the title takes the smallest ball weight in "
-                                    "both drums, whatever their record was."),
- ]),
+ ("note", "<b>2026 ran two drums</b> &mdash; a rookie drum on record and a veteran drum on final "
+          "standing, with a no-sweep rule between them &mdash; because it had two drafts. Both "
+          "retired with the rookie draft. The one drum is the old veteran drum, unchanged."),
 ]),
 
 ("calendar", "The offseason, in order", "What happens when.", [
  ("worked", "Order of operations", [
    ("Weeks %s" % "-".join(str(w) for w in (lg["chase_weeks"][0], lg["chase_weeks"][-1])),
-    "Chase bracket", "The four non-playoff teams play for the pot and for veteran lottery position."),
+    "Chase bracket", "The four non-playoff teams play for the pot and for lottery position."),
    ("Right after", "FAAB settles",
     "Every dollar you bid is totted up and billed. Chase winner takes the first $%d; anything "
     "above that splits back into the payout." % _cap()),
@@ -472,11 +461,11 @@ def sections() -> List[tuple]:
     "Everyone submits %d: %d regular, %d rookie, franchise tag included if you are using it. "
     "The franchise choice is final at submission." % (
         total, int(kr["regular"]), int(kr["rookie"]))),
-   ("Then", "The drums",
-    "Both lotteries run after slips lock, so everyone knows what picks are actually live before "
+   ("Then", "The drum",
+    "The lottery runs after slips lock, so everyone knows what picks are actually live before "
     "the balls come out."),
-   ("Then", "Rookie draft", "%d rounds, %d picks." % (rook, rook * int(lg["teams"]))),
-   ("Last", "Veteran draft", "%d rounds, snake, minus every pick a keeper ate." % vet),
+   ("Last", "The draft", "%d rounds, one board, rookies and veterans together, minus every "
+                         "pick a keeper ate." % int(config.drafts().get("consolidated_rounds") or 16)),
  ]),
 ]),
 
@@ -497,6 +486,29 @@ def sections() -> List[tuple]:
 
 def _cap() -> int:
     return pot.cap_amount()[0]
+
+
+def _one() -> int:
+    """The first one-drum year."""
+    return int(config.lottery_rules().get("single_drum_from") or config.consolidated_from())
+
+
+def _ball_rows():
+    """Finish -> balls, worst first, straight off the configured weights."""
+    w = config.lottery_weights()
+    cut = int(config.league()["playoff_teams"])
+    n = len(w)
+    names = []
+    for i in range(n):
+        place = n - i                      # weights[0] belongs to last place
+        if place > cut:
+            chase_place = place - cut      # 1 = won the Chase
+            names.append(["Chase: " + {1: "won it", 2: "runner-up", 3: "third"}.get(
+                chase_place, "lost out"), "<b>%d</b>" % w[i]])
+        else:
+            names.append([{1: "Champion", 2: "Runner-up", 3: "Third", 4: "Fourth"}.get(place, "%d" % place),
+                          "<b>%d</b>" % w[i]])
+    return names
 
 
 def _split():

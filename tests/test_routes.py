@@ -20,7 +20,8 @@ SRC = Path(APP).read_text()
 
 def _groups():
     from halfmen import config
-    ns = {"SEASON": config.season()}      # labels like "2027 Keepers" use it
+    ns = {"SEASON": config.season(),      # labels can use either
+          "FIRST": config.is_first_season()}
     exec(re.search(r"GROUPS = \{.*?\n\}\n", SRC, re.S).group(0), ns)
     return ns["GROUPS"]
 
@@ -247,9 +248,14 @@ def test_the_wrong_password_leaves_it_locked():
 def test_entering_a_paper_draft_gets_it_onto_the_board(tmp_path, monkeypatch):
     """The whole point of the entry page: picks typed in here have to reach the
     boards that were previously empty."""
-    from halfmen import config, picks, storage
+    from halfmen import config, picks, sleeper, storage
+    import streamlit as st
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(storage.config, "DATA_DIR", tmp_path)
+    # The form only shows while the draft is being held - the real 2026 rookie
+    # draft is long finished, so pretend this one is still running.
+    monkeypatch.setattr(sleeper, "get_draft", lambda _id: {"status": "drafting"})
+    st.cache_data.clear()
 
     def open_page():
         at = AppTest.from_file(APP, default_timeout=60)
@@ -324,13 +330,14 @@ def test_every_nav_link_carries_the_viewer():
     not name is dropped - which put you back on your own team the moment you
     tapped a page. The bar is injected through components.html, which AppTest
     does not surface, so this reads the two href builders directly."""
-    hrefs = re.findall(r'href="\?p=[^"]*"', SRC)
-    assert hrefs == ['href="?p=%s&g=%s&t=%s%s"', 'href="?p=%s%s"'], (
-        "a link builder changed shape - does it still carry _keep()? %s" % hrefs)
-    # each href is followed, within a couple of lines, by the args that fill it
-    for m in re.finditer(r'href="\?p=[^"]*"', SRC):
+    hrefs = list(re.finditer(r'href="\?p=[^"]*"', SRC))
+    assert hrefs, "no in-app links found - did the href shape change?"
+    # every link carries _keep(): inline in an f-string, or in the args that
+    # fill its %s within a couple of lines
+    for m in hrefs:
         tail = SRC[m.end():m.end() + 320]
-        assert "_keep()" in tail, "this link drops the viewer: %s" % tail[:120]
+        assert "_keep()" in m.group(0) or "_keep()" in tail, "this link drops the viewer: %s" % (
+            m.group(0) + tail[:120])
 
 
 def test_the_viewer_is_only_in_the_url_when_it_is_not_you():

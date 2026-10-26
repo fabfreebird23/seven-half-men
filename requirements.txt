@@ -4,3 +4,4 @@ pyyaml>=6.0
 requests>=2.31
 lxml>=5.0
 beautifulsoup4>=4.12
+pillow>=10.0           # the weekly recap image (halfmen/recap.py)
