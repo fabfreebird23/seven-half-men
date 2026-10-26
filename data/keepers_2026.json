@@ -1,4 +1,31 @@
 {
+  "covers": {
+    "1": {
+      "first": "Clayton",
+      "headline": "Clayton, up 7",
+      "heat": 30,
+      "kind": "mover",
+      "lines": [
+        "THE CHASE"
+      ],
+      "link": "?p=home",
+      "month": "SEP 2026",
+      "moved_word": "Seven",
+      "others": [
+        {
+          "headline": "The Chase is real",
+          "link": "?p=inseason&g=playoffs&t=chase",
+          "short": "THE CHASE",
+          "sub": "Lucas at 2\u201310, and a $120 pot to play for"
+        }
+      ],
+      "owner": "1001531274030305280",
+      "rec": "10\u20132",
+      "short": "CLAYTON UP 7",
+      "sub": "the biggest climb on his draft seed",
+      "week": 1
+    }
+  },
   "draw": {
     "drawn_at": "2026-08-07T00:33:26Z",
     "reveal": 16,
