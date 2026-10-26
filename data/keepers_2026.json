@@ -252,6 +252,53 @@
       "sub": "5 teams scored more and he still won",
       "team": "Taco Bandit",
       "week": 6
+    },
+    "7": {
+      "buried": "THAD'S BENCH",
+      "first": "Devin",
+      "headline": "Devin 149.9",
+      "heat": 51.71936012092203,
+      "kind": "biggest",
+      "lines": [
+        "THAD'S BENCH",
+        "DEVIN V JOSH",
+        "LUCKY BRANDON"
+      ],
+      "link": "?p=inseason&g=week&t=live",
+      "month": "OCT 2026",
+      "others": [
+        {
+          "headline": "Thad's bench, 31.2",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "THAD'S BENCH",
+          "sub": "points his best lineup would have added"
+        },
+        {
+          "headline": "Devin v Josh",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "DEVIN V JOSH",
+          "sub": "35 points of playoff odds on the line"
+        },
+        {
+          "headline": "Brandon's lucky 125.0",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCKY BRANDON",
+          "sub": "3 teams scored more and he still won"
+        },
+        {
+          "headline": "Clayton, up 7",
+          "link": "?p=home",
+          "short": "CLAYTON UP 7",
+          "sub": "the biggest climb on his draft seed"
+        }
+      ],
+      "owner": "1254567796231114752",
+      "pts": "149.9",
+      "short": "DEVIN 150",
+      "star": "MCCAFFREY.",
+      "star_pts": "29.7. NOT BAD.",
+      "sub": "the week's top score",
+      "week": 7
     }
   },
   "draw": {
