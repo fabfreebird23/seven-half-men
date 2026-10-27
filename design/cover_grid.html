@@ -12,7 +12,7 @@
 <style>
 /* Layout: the app's Home slot. One wide stage per week: the dealt skin's background built
    as a 3D set (floor, giant backdrop), the playoff-odds towers in the middle, the week's other
-   high points on billboards behind them, the week's star printed in front of the
+   high points in the ticker, the week's star printed in front of the
    backdrop, and the wordmark and the week's numbers over everything. Single dark page, the app's Bloody Sunday. */
 :root{
   color-scheme:dark;
@@ -96,8 +96,7 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
   <div class="k">7½ Men · Home · the week, built in 3D</div>
   <h1>The Week Grid</h1>
   <p>Every week the set is rebuilt from that week. The skin the week deals becomes the floor and the giant backdrop.
-  The week's other high points stand behind the playoff-odds towers on billboards, each in its own look. The week's
-  star is printed out front, with the league's wordmark and the week's numbers over the top. Seven real weeks so far; pick one.</p>
+  The playoff-odds towers stand in the middle, the week's star is printed out front, with the league's wordmark and the week's numbers over the top. Seven real weeks so far; pick one.</p>
 </header>
 
 <div class="ctl">
@@ -105,7 +104,7 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
   <div class="grp"><span>Try the week in another skin</span><div class="chips skins" id="skins" role="group" aria-label="Skin"></div></div>
 </div>
 
-<div class="stage" id="stage" aria-label="The week as a 3D scene: playoff-odds towers, the week's other high points on billboards, and the week's star printed in front of the backdrop">
+<div class="stage" id="stage" aria-label="The week as a 3D scene: playoff-odds towers, and the week's star printed in front of the backdrop">
   <div class="mag" id="mag"></div>
 </div>
 
@@ -116,7 +115,7 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
     <p id="is-p"></p>
   </div>
   <div>
-    <div class="k">On the billboards</div>
+    <div class="k">The week's other high points</div>
     <ol id="is-ol"></ol>
   </div>
 </section>
@@ -126,9 +125,9 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
   <h2>A new set every Tuesday</h2>
   <div class="rules">
     <p><b>The deal builds the set.</b> The week's skin decides the floor (checks, xerox crosshatch, concrete, paint, notebook paper…), the giant backdrop behind everything (a sun, a flame wall, the week's number in stacked xerox numerals, the odds written in marker), the inks on the towers and the wordmark's face.</p>
-    <p><b>The high points go up on billboards.</b> The week's other stories each get a billboard in their own look: a bench in xerox, a lucky win in holo, the Game of the Week in red riso, a top score in checks, the Chase in concrete, the mover in sky blue.</p>
+    <p><b>The high points run along the top.</b> The strip over the set is a ticker of the week's other numbers: the Game of the Week, the worst bench, the luckiest win.</p>
     <p><b>The towers stay honest.</b> They are the live playoff sim, labelled in the week's black boxes. In this mock every week shows today's odds; on Home it is always the current week, so the odds are always live.</p>
-    <p><b>The star is the only full-size print.</b> Everyone else is a face on a tower or a figure on a billboard.</p>
+    <p><b>The star is the only full-size print.</b> Everyone else is a face on a tower.</p>
     <p><b>Past weeks stay flat;</b> one live 3D set per page is enough for a phone. Drag turns the camera, double-tap replays the build, and reduced motion shows the finished frame.</p>
   </div>
 </section>
@@ -140,7 +139,7 @@ const ID = {Clayton:"1001531274030305280", Brandon:"964703051971887104", Devin:"
             Isiah:"979400432114102272", Corey:"979382824706912256", Thad:"979455520442580992", Lucas:"980569987930804224"};
 const TEAMS = [["Clayton",98],["Brandon",97],["Devin",69],["Josh",48],["Isiah",36],["Corey",33],["Thad",6],["Lucas",12]].map(([n, po]) => ({first:n, id:ID[n], po}));
 const PO = 4;
-// each week: the star's story, the skin cover.deal gave it, and the other high points (billboards)
+// each week: the star's story, the skin cover.deal gave it, and the other high points (the ticker)
 const WEEKS = {
   1:{kind:"mover", skin:"paper", star:"Clayton", head:"Clayton, up 7", sub:"The biggest climb on his draft seed.", big:"SEVEN", word:"MOVER",
      lines:["UP SEVEN SPOTS","CLAYTON 10–2","THE CLIMB"], hot:0,
@@ -192,7 +191,6 @@ const SKINS = {
   paper:   {name:"Paper", look:"orange", acc:"#d4240f", inC:"#181512", outC:"#c43a0a", boxbg:"#181512", boxfg:"#f3ead6", font:"Metal Mania", size:66, fill:"#181512", stroke:"#181512", hotfg:"#fff", light:true, sig:"marker"},
   cyan:    {name:"Cyan", look:"cyan", acc:"#2fd3ff", inC:"#1fb6dd", outC:"#0e5d78", boxbg:"#000", boxfg:"#fff", font:"Archivo", size:70, fill:"#2fd3ff", black:true, sig:"none"},
 };
-const POSTER_LOOK = {top:"blue", bench:"xerox", lucky:"holo", mover:"sky", chase:"bw", gotw:"riso"};
 
 let week = 7, skinOver = null;
 try { const w = +localStorage.getItem("cg-week"); if (WEEKS[w]) week = w; } catch (e) {}
@@ -270,7 +268,7 @@ function floorArt(k, g, w, h, s){
     cyan(){ g.fillStyle = "#04141c"; g.fillRect(0, 0, w, h); line("#2fd3ff", 1, 3); },
   })[k]();
 }
-// the giant backdrop, per skin, at billboard scale
+// the giant backdrop, per skin
 function backdropArt(k, g, w, h, d, s){
   ({
     checker(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#0b0d2a"); gr.addColorStop(1, "#5a0620"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
@@ -302,37 +300,6 @@ function backdropArt(k, g, w, h, d, s){
         g.fillStyle = "#fff"; g.fillText(t, w * .355 + h * .018, y); }); },
   })[k]();
 }
-// one high point's billboard, in its own story's look
-async function posterArt(hp){
-  const W = 360, H = 480, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
-  const imgs = await Promise.all(hp.who.map(n => photo(cut(n, POSTER_LOOK[hp.t]))));
-  const put = (im, x, hh, flip) => { if (!im) return; const h2 = H * hh, w2 = h2 * im.naturalWidth / im.naturalHeight; g.save();
-    if (flip){ g.translate(x + w2 / 2, 0); g.scale(-1, 1); g.translate(-(x + w2 / 2), 0); } g.drawImage(im, x - w2 / 2, H - h2, w2, h2); g.restore(); };
-  // the story's own word across the top, in that look's face
-  const mast = (font, size, fill, t) => { g.font = `${size}px "${font}"`; g.textAlign = "center"; let sz = size;
-    while (g.measureText(t).width > W - 24 && sz > 20){ sz -= 2; g.font = `${sz}px "${font}"`; }
-    g.lineWidth = 6; g.strokeStyle = "#000"; g.strokeText(t, W / 2, 62); g.fillStyle = fill; g.fillText(t, W / 2, 62); };
-  const box = (t, x, y, size, bg, fg) => { g.font = `${size}px Anton`; const tw = g.measureText(t).width; g.fillStyle = bg || "#000"; g.fillRect(x, y - size * .92, tw + 14, size * 1.12); g.fillStyle = fg || "#fff"; g.textAlign = "left"; g.fillText(t, x + 7, y); };
-  seed = 7 + hp.title.length;
-  ({
-    top(){ checks(g, W, H, "#ffd400", "#ffe866", 32); mast("Bungee", 58, "#fb0849", "TOP SCORE"); put(imgs[0], W * .6, .82); box(hp.title, 14, H * .4, 34); },
-    bench(){ g.fillStyle = "#efe59a"; g.fillRect(0, 0, W, H); hatch(g, W, H, "#1d1a3a", 24, .3); mast("Bungee", 64, "#2a5bd8", "BENCH"); put(imgs[0], W * .32, .82);
-      const [a, b] = hp.stat.split("."); g.font = "900 128px Archivo"; g.fillStyle = "#ff3030"; g.textAlign = "right"; g.fillText(a, W - 16, H * .55); g.fillText("." + b, W - 16, H * .78);
-      box(hp.title, 14, H - 24, 30); },
-    lucky(){ g.fillStyle = "#2a0f45"; g.fillRect(0, 0, W, H); const r = g.createRadialGradient(W * .3, H * .3, 0, W * .3, H * .3, H * .6); r.addColorStop(0, "#ff5cc8"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, W, H);
-      mast("Grenze Gotisch", 76, "#ff4fb0", "Lucky"); put(imgs[0], W / 2, .62); box(hp.stat + " POINTS", 16, H * .34, 36, "#ff4fb0", "#000"); box(hp.title, 16, H * .45, 30); },
-    mover(){ const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, "#1460d6"); gr.addColorStop(1, "#5fb0ff"); g.fillStyle = gr; g.fillRect(0, 0, W, H);
-      g.font = "92px Italiana"; g.fillStyle = "#fff"; g.textAlign = "center"; g.fillText("MOVER", W / 2, H * .2); put(imgs[0], W * .58, .78); box(hp.title, 14, H - 22, 30); },
-    chase(){ g.fillStyle = "#77767c"; g.fillRect(0, 0, W, H); noise(g, W, H, .5, true); mast("Shrikhand", 62, "#ff7a1a", "The Chase"); put(imgs[0], W * .45, .8);
-      g.font = "64px Yellowtail"; g.fillStyle = "#fff"; g.textAlign = "right"; g.shadowColor = "#000"; g.shadowOffsetX = g.shadowOffsetY = 3; g.fillText("Chase is Real!", W - 12, H * .66); g.shadowColor = "transparent";
-      box(hp.stat, 14, H - 22, 26); },
-    gotw(){ g.fillStyle = "#9a98a4"; g.fillRect(0, 0, W, H); noise(g, W, H, .45, true); mast("Bungee", 40, "#d8141c", "GAME OF THE WEEK"); put(imgs[0], W * .28, .7); put(imgs[1], W * .72, .74, true);
-      g.font = "34px \"Permanent Marker\""; g.fillStyle = "#e02a3a"; g.textAlign = "center"; g.fillText(hp.title, W / 2, H * .3); box(hp.stat, 14, H - 22, 26, "#d8141c"); },
-  })[hp.t]();
-  noise(g, W, H, .08, true);   // grain
-  return c;
-}
-
 /* ---------------------------------------------------------------- the set */
 const easeBack = t => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
 const ease = t => 1 - Math.pow(1 - t, 3);
@@ -369,7 +336,6 @@ async function mount(){
   if (kill) kill(); kill = null;
   if (!window.THREE) return;
   const myMount = {}; mount.cur = myMount;
-  const posters = await Promise.all(d.hi.map(posterArt));
   const starImg = await photo(cut(d.star, s.look));
   if (mount.cur !== myMount) return;   // the reader picked another week while the photos loaded
 
@@ -397,16 +363,6 @@ async function mount(){
   const gx = (X(PO - 1) + X(PO)) / 2;
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1), new THREE.MeshBasicMaterial({color:acc, transparent:true, opacity:s.light ? .35 : .22, side:THREE.DoubleSide, depthWrite:false, fog:false}));
   pl.rotation.y = Math.PI / 2; scene.add(pl);
-
-  // the billboards: the week's other high points, each on two posts
-  const spots = narrow ? [[-4.6, -13, .25], [6.4, -12, -.3], [1.2, -19, 0]] : [[-5.8, -14, .22], [9.2, -12, -.32], [14.5, -20, -.3]];
-  const boards = posters.map((cv, i) => { const tx = new THREE.CanvasTexture(cv); tx.anisotropy = 8;
-    const grp = new THREE.Group(), w = 4.3, h = 5.73;
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({map:tx, fog:false})); face.position.y = h / 2 + 1.3; grp.add(face);
-    const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(w + .18, h + .18)), new THREE.LineBasicMaterial({color:s.light ? 0x000000 : acc}));
-    frame.position.copy(face.position); grp.add(frame);
-    [-w * .32, w * .32].forEach(px => { const post = new THREE.Mesh(new THREE.BoxGeometry(.09, 1.3, .09), new THREE.MeshBasicMaterial({color:s.light ? 0x181512 : acc})); post.position.set(px, .65, 0); grp.add(post); });
-    const [x, z, ry] = spots[i] || spots[0]; grp.position.set(x, 0, z); grp.rotation.y = ry; grp.scale.setScalar(.001); scene.add(grp); return grp; });
 
   // the star: printed, with a rim in the week's ink, rising out of a slot in the floor
   let starMat = null, rimMat = null;
@@ -443,8 +399,7 @@ async function mount(){
     const a = Math.sin(t * .18) * .3 + yaw - .12;
     const R = 15.5 * Math.min(cam.aspect < 1 ? 1.74 : 1.9, Math.max(.7, 1.55 / cam.aspect));   // a portrait phone comes in close and looks up, so the set fills the frame
     cam.position.set(Math.sin(a) * R, 4.4 + R * .1 + Math.sin(t * .35) * .25, Math.cos(a) * R); cam.lookAt(cam.aspect > 1.5 ? -1.9 : .2, cam.aspect > 1.5 ? 3.7 : 5.6, -3);
-    // the build: billboards go up, the star prints, the towers rise, the playoff line goes in
-    boards.forEach((b, i) => { const k = Math.min(1, Math.max(0, (t - .1 - i * .18) / .8)); b.scale.setScalar(Math.max(.001, easeBack(k))); });
+    // the build: the star prints, the towers rise, the playoff line goes in
     if (starMat){ const k = ease(Math.min(1, Math.max(0, (t - .5) / 1.8))) * 1.02; starMat.uniforms.reveal.value = rimMat.uniforms.reveal.value = k; }
     TEAMS.forEach((d2, i) => { const k = Math.min(1, Math.max(0, (t - .9 - i * .1) / 1.1)), h = H(d2) * easeBack(k);
       T[i].scale.y = Math.max(.001, h); F[i].f.position.set(X(i), h + .72 * m, 0); F[i].l.position.set(X(i), h + 1.7 * m, 0); F[i].f.material.opacity = F[i].l.material.opacity = Math.min(1, k * 2); });
