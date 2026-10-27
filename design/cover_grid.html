@@ -401,7 +401,7 @@ async function mount(){
     const t = still ? 6 : (now - t0) / 1000;
     if (!drag) yaw *= .985;
     const a = Math.sin(t * .18) * .3 + yaw - .12;
-    const R = 15.5 * Math.min(cam.aspect < 1 ? 1.74 : 1.9, Math.max(.7, 1.55 / cam.aspect));   // a portrait phone comes in close and looks up, so the set fills the frame
+    const R = 15.5 * Math.min(cam.aspect < 1 ? 1.88 : 1.9, Math.max(.7, 1.55 / cam.aspect));   // a portrait phone comes in close and looks up, so the set fills the frame
     cam.position.set(Math.sin(a) * R, 4.4 + R * .1 + Math.sin(t * .35) * .25, Math.cos(a) * R); cam.lookAt(cam.aspect > 1.5 ? -1.9 : .2, cam.aspect > 1.5 ? 4.6 : 5.6, -3);   // desktop: aim high so the towers sit below the wordmark
     // the build: the star prints, the towers rise, the playoff line goes in
     if (starMat){ const k = ease(Math.min(1, Math.max(0, (t - .5) / 1.8))) * 1.02; starMat.uniforms.reveal.value = rimMat.uniforms.reveal.value = k; }

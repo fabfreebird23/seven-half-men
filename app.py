@@ -2410,6 +2410,79 @@ def _cover_html(issue: dict, skin: str = None) -> str:
     return cover.render(story, _mgr_body, skin=skin)
 
 
+_GRID_SKIP = ("gotw", "hitlist", "fights", "field")   # two people or the whole league: the flat cover tells these
+
+
+def _week_grid_data(story: dict) -> dict:
+    """What halfmen/static/week_grid.html needs for this week, or {} when the
+    week's story isn't a one-person story (the flat cover runs instead)."""
+    k, owner = story.get("kind"), story.get("owner")
+    if not owner or k in _GRID_SKIP:
+        return {}
+    wk = int(story["week"])
+    skin = _cover_skins({wk: story}).get(wk)
+    if skin not in cover.GRID_LOOK:
+        skin = cover.GRID_FIXED.get(k, ("cyan", ""))[0]
+    s = cover._slots(story)
+    big, word = (s["big"], s["word"]) if s else (str(SEASON) if k == "champion" else "WEEK %d" % (wk - 1),
+                                                   cover.GRID_FIXED.get(k, ("", "THE WEEK"))[1])
+    img, _man = _mgr_body(str(owner), cover.GRID_LOOK[skin])
+    if not img:
+        return {}
+    rows = season.standings()
+    try:
+        # from the week on show: Sleeper's league week lags a day, and simulating
+        # a week that is already in the table would count it twice
+        sim = ((get_playoff_outlook(VIEW, wk) or {}).get("sim") or {}).get("teams") or {}
+    except Exception:          # noqa: BLE001 - no sim, no odds: the towers fall back to the table
+        sim = {}
+    n = int(config.league()["playoff_teams"])
+    teams = [{"first": _first(r["owner_id"]), "img": _mgr_photo(str(r["owner_id"])) or "",
+              "po": int(sim[r["owner_id"]]["playoff_pct"]) if r["owner_id"] in sim else (100 if i < n else 0)}
+             for i, r in enumerate(rows)]
+    return {"week": wk, "skin": skin, "star_first": _first(owner), "star_img": img, "head": story["headline"],
+            "big": str(big), "word": str(word), "lines": cover.grid_lines(story),
+            "hi": [{"title": o["short"], "stat": ""} for o in story.get("others") or []][:4],
+            "teams": teams, "po": n}
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def _week_grid_html(data_json: str, tpl_stamp: float) -> str:
+    """`tpl_stamp` (the template's mtime) is only a cache key, so a deploy
+    that changes the template never serves the old page."""
+    tpl = (Path(__file__).parent / "halfmen" / "static" / "week_grid.html").read_text()
+    data = json.loads(data_json)
+    label = "Week %d: %s. Playoff odds as towers, with %s printed in front." % (data["week"], data["head"], data["star_first"])
+    return (tpl.replace("__DATA__", data_json.replace("</", "<\\/"))
+            .replace("__LABEL__", html.escape(label, quote=True)))
+
+
+def _render_week_grid(story: dict) -> bool:
+    """The week as a 3D set on Home. False when this week's story is one the
+    flat cover tells instead, or anything is missing."""
+    try:
+        data = _week_grid_data(story)
+        if not data:
+            return False
+        tpl = Path(__file__).parent / "halfmen" / "static" / "week_grid.html"
+        page = _week_grid_html(json.dumps(data, sort_keys=True), tpl.stat().st_mtime)
+    except Exception:          # noqa: BLE001 - the set is decoration; never take Home down
+        return False
+    theme.bar("This week", "week %d &middot; the biggest week anyone had" % story["week"])
+    components.html(page, height=560)
+    inside = "".join(
+        f'<li><b>{esc(x["headline"])}</b><em>{_cap(esc(x["sub"]))} &middot; '
+        f'<a href="{x["link"]}{_keep()}" target="_self">read &rarr;</a></em></li>' for x in story.get("others") or [])
+    st.markdown(cover.CSS, unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="wc-in wg-in"><span class="wc-k">Week {story["week"]} &middot; the star</span>'
+        f'<h3>{esc(story["headline"])}</h3><p>{_cap(esc(story["sub"]))}.</p>'
+        + (f'<span class="wc-k" style="margin-top:10px">The week\'s other high points</span><ol>{inside}</ol>' if inside else "")
+        + f'<a class="wc-all" href="?p=inseason&g=league&t=covers{_keep()}" target="_self">Every week this season &rarr;</a>'
+        + '</div>', unsafe_allow_html=True)
+    return True
+
+
 def render_cover(cur: int) -> str:
     """Home's weekly cover, beside the issue's other stories. Returns the
     story kind, so Home can leave out whatever the cover already says. The
@@ -2421,6 +2494,8 @@ def render_cover(cur: int) -> str:
         story = {}
     if not story:
         return ""
+    if _render_week_grid(story):
+        return story["kind"]
     html_ = _cover_html(story)
     if not html_:
         return ""

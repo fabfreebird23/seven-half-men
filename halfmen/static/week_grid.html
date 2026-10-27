@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wdth,wght@62..125,500..900&family=Bungee&family=Grenze+Gotisch:wght@900&family=Italiana&family=Metal+Mania&family=Orbitron:wght@600;800&family=Permanent+Marker&family=Shrikhand&family=Space+Mono:wght@400;700&family=Yellowtail&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<meta name="halfmen-week-grid" content="theme.py sizes this iframe by this marker">
+<title>The week</title>
+<style>
+/* The week on Home, inside a component iframe (app._render_week_grid): the
+   dealt skin built as a 3D set, the playoff-odds towers, the week's star
+   printed in front of the backdrop, the wordmark and the week's numbers on
+   top. Designed in design/cover_grid.html. */
+:root{ --f-head:'Archivo','Arial Black',sans-serif; --f-mono:'Space Mono',ui-monospace,Menlo,monospace; --f-box:'Anton','Archivo',sans-serif; }
+html,body{ margin:0; height:100%; background:#000; overflow:hidden; }
+*{ box-sizing:border-box; }
+.stage{position:relative;width:100%;height:100%;border-radius:3px;overflow:hidden;background:#000;container-type:inline-size;
+  box-shadow:0 22px 50px -24px rgba(0,0,0,.9),0 0 0 1px #000}
+.stage canvas{display:block;width:100%!important;height:100%!important;cursor:grab;touch-action:pan-y}
+.mag{position:absolute;inset:0;pointer-events:none;z-index:2}
+.mag .topbar{position:absolute;left:0;right:0;top:0;background:#000;color:#fff;font:400 2.2cqw/1.3 var(--f-box);text-align:center;padding:.4cqw 1cqw;
+  letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mag .topbar em{font-style:normal;color:var(--acc)}
+.mag svg.mast{position:absolute;left:2.4%;top:6.5%;width:31%;overflow:visible;transform:rotate(-2deg);transform-origin:left top}
+.mag .lines{position:absolute;left:2.6%;bottom:5%;display:flex;flex-direction:column;align-items:flex-start;gap:.9cqw;max-width:33%}
+.mag .bx{background:var(--boxbg);color:var(--boxfg);font:400 2.4cqw/1.02 var(--f-box);text-transform:uppercase;padding:.45cqw .9cqw;transform:rotate(-2deg)}
+.mag .bx.sm{font-size:1.7cqw}
+.mag .bx.lg{font-size:3.7cqw;line-height:.95}
+.mag .bx.hot{background:var(--acc);color:var(--hotfg,#000)}
+.mag .sig{position:absolute;z-index:3}
+.mag .sig.script{right:3%;top:10%;text-align:right;color:#fff;text-shadow:.35cqw .35cqw 0 #000}
+.mag .sig.script small{display:block;font:900 1.8cqw var(--f-head);letter-spacing:.2cqw}
+.mag .sig.script b{display:block;font:400 7cqw/.85 'Yellowtail',cursive}
+.mag .sig.marker{right:3%;top:10%;font:400 4.4cqw/1 'Permanent Marker',cursive;color:#d4240f;transform:rotate(-4deg)}
+.mag .sig.paint{right:2%;top:9%;font:900 8cqw/1 var(--f-head);font-stretch:120%;color:rgba(255,255,255,.88);-webkit-text-stroke:.2cqw #1d1a3a;transform:rotate(-7deg) skewX(-10deg)}
+.mag .sig.badge{right:4%;top:12%;width:12cqw;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;text-align:center;background:#ffd400;color:#000;
+  font:900 1.8cqw/1 var(--f-head);transform:rotate(-12deg);box-shadow:0 0 0 .4cqw #000,0 0 0 .8cqw #ffd400}
+.mag .sig.badge b{display:block;font-size:4.4cqw}
+.mag .sig.vert{right:1.6%;top:10%;writing-mode:vertical-rl;transform:rotate(180deg);font:900 3.2cqw var(--f-head);font-stretch:80%;color:#fb0849;-webkit-text-stroke:.12cqw #000;text-transform:uppercase}
+.mag .sig.vert b{color:#ffd400}
+.mag .sig.big{right:3%;top:7%;font:900 11cqw/1 var(--f-head);color:#fff;text-shadow:.35cqw .35cqw 0 #000}
+.mag .grain{position:absolute;inset:0;opacity:.16;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+@media (max-width:700px){
+  .mag .topbar{font-size:4.2cqw}
+  .mag svg.mast{left:50%;top:6.5%;width:84%;transform:translateX(-50%) rotate(-2deg);transform-origin:center top}
+  .mag .lines{top:auto;bottom:4%;left:3.5%;max-width:64%;gap:1.5cqw}
+  .mag .bx{font-size:4.4cqw}.mag .bx.sm{font-size:3.2cqw}.mag .bx.lg{font-size:6.6cqw}
+  .mag .sig{transform-origin:right bottom;scale:1.9}
+  .mag .sig.script,.mag .sig.marker,.mag .sig.paint,.mag .sig.big,.mag .sig.vert{top:24%}
+  .mag .sig.badge{top:22%}
+  }
+
+</style>
+</head>
+<body>
+<div class="stage" id="stage" aria-label="__LABEL__"><div class="mag" id="mag"></div></div>
+<script>
+const D = __DATA__;
+const TEAMS = D.teams, PO = D.po, week = D.week, sk = D.skin;
+const d = {star:D.star_first, head:D.head, big:D.big, word:D.word, lines:D.lines, hi:D.hi};
+const SKINS = {
+  checker: {name:"Checks", look:"blue", acc:"#ffd400", inC:"#2e9bff", outC:"#ff2d6f", boxbg:"#000", boxfg:"#fff", font:"Bungee", size:64, fill:"#fb0849", sig:"badge"},
+  concrete:{name:"Concrete", look:"bw", acc:"#ff7a1a", inC:"#f4f1f2", outC:"#77767c", boxbg:"#000", boxfg:"#fff", font:"Shrikhand", size:70, fill:"#ff7a1a", title:true, sig:"script"},
+  sky:     {name:"Sky", look:"sky", acc:"#ffd400", inC:"#ffffff", outC:"#0c2f78", boxbg:"#000", boxfg:"#fff", font:"Metal Mania", size:66, fill:"#ffd400", sig:"vert"},
+  xerox:   {name:"Xerox", look:"xerox", acc:"#e8202a", inC:"#2a5bd8", outC:"#1d1a3a", boxbg:"#1d1a3a", boxfg:"#f1e896", font:"Bungee", size:62, fill:"#2a5bd8", stroke:"#e8202a", hotfg:"#fff", light:true, sig:"paint"},
+  holo:    {name:"Holo", look:"holo", acc:"#ff4fb0", inC:"#9a7bff", outC:"#4a2a6a", boxbg:"#000", boxfg:"#fff", font:"Grenze Gotisch", size:76, fill:"#ff4fb0", title:true, sig:"none"},
+  night:   {name:"Flames", look:"fire", acc:"#ff5a00", inC:"#ffd400", outC:"#7a0a00", boxbg:"#000", boxfg:"#fff", font:"Bungee", size:64, fill:"#ffd400", sig:"badge"},
+  splat:   {name:"Splatter", look:"pop", acc:"#ff2d6f", inC:"#1fb3ff", outC:"#18c26b", boxbg:"#000", boxfg:"#fff", font:"Shrikhand", size:70, fill:"#ffffff", light:true, sig:"paint"},
+  slate:   {name:"B&W", look:"bw", acc:"#ffffff", inC:"#c8c8c8", outC:"#555555", boxbg:"#fff", boxfg:"#000", font:"Archivo", size:72, fill:"#ffffff", black:true, sig:"big"},
+  paper:   {name:"Paper", look:"orange", acc:"#d4240f", inC:"#181512", outC:"#c43a0a", boxbg:"#181512", boxfg:"#f3ead6", font:"Metal Mania", size:66, fill:"#181512", stroke:"#181512", hotfg:"#fff", light:true, sig:"marker"},
+  cyan:    {name:"Cyan", look:"cyan", acc:"#2fd3ff", inC:"#1fb6dd", outC:"#0e5d78", boxbg:"#000", boxfg:"#fff", font:"Archivo", size:70, fill:"#2fd3ff", black:true, sig:"none"},
+};
+
+function magHTML(d, s){
+  const word = s.title ? "7½ Men" : "7½ MEN", attrs = s.black ? 'font-weight="900" font-stretch="125%"' : "";
+  const stroke = s.black ? 'stroke-width="0"' : `stroke="${s.stroke || "#000"}" stroke-width="${s.stroke ? 1.5 : 3}" paint-order="stroke"`;
+  const shadow = s.black ? "" : `<text x="154" y="67" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" font-family="${s.font}" font-size="${s.size}" fill="${s.stroke || "#000"}" stroke="${s.stroke || "#000"}" stroke-width="3">${word}</text>`;
+  const [first, ...rest] = d.lines;
+  const sig = {
+    badge:`<div class="sig badge"><div><b>${d.big.length > 4 ? d.big.split(".")[0] : d.big}</b>${d.word}</div></div>`,
+    script:`<div class="sig script"><small>THE</small><b>${d.word === "SCORING" ? "Big Sunday" : d.word[0] + d.word.slice(1).toLowerCase() + "!"}</b></div>`,
+    vert:`<div class="sig vert"><b>${d.big}</b> ${d.word}</div>`,
+    paint:`<div class="sig paint">${d.word}</div>`,
+    marker:`<div class="sig marker">${d.word}!!!</div>`,
+    big:`<div class="sig big">${d.big}</div>`, none:""}[s.sig] || "";
+  const ticker = [`WEEK ${week}`, d.head.toUpperCase(), ...d.hi.map(h => h.title + (/^\d/.test(h.stat) ? " " + h.stat : ""))].join(" <em>•</em> ");
+  return `<div class="topbar">${ticker}</div>
+  <svg class="mast" viewBox="0 0 300 84" aria-hidden="true">${shadow}
+    <text x="150" y="62" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" font-family="${s.font}" font-size="${s.size}" fill="${s.fill}" ${stroke} ${attrs}>${word}</text></svg>
+  <div class="lines"><div class="bx hot lg">${first}</div>${rest.map((l, i) => `<div class="bx${i ? " sm" : ""}">${l}</div>`).join("")}</div>
+  ${sig}
+  <div class="grain"></div>`;
+}
+
+/* ---------------------------------------------------------------- canvas art: every skin's background, drawn */
+const IMG = new Map();
+function photo(src){ if (!IMG.has(src)) IMG.set(src, new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; })); return IMG.get(src); }
+let seed = 11; const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function noise(g, w, h, alpha, dark){ const n = w * h / 18; for (let i = 0; i < n; i++){ g.fillStyle = `rgba(${dark ? "0,0,0" : "255,255,255"},${rand() * alpha})`; g.fillRect(rand() * w, rand() * h, 1.5, 1.5); } }
+function checks(g, w, h, a, b, s){ for (let y = 0; y < h; y += s) for (let x = 0; x < w; x += s){ g.fillStyle = ((x + y) / s) % 2 ? a : b; g.fillRect(x, y, s, s); } }
+function hatch(g, w, h, c, step, a){ g.strokeStyle = c; g.globalAlpha = a; g.lineWidth = 2; for (let x = -h; x < w; x += step){ g.beginPath(); g.moveTo(x, 0); g.lineTo(x + h, h); g.stroke(); g.beginPath(); g.moveTo(x + h, 0); g.lineTo(x, h); g.stroke(); } g.globalAlpha = 1; }
+function blobs(g, w, h, k){ const C = ["#1fb3ff","#ffd400","#ff2d6f","#18c26b","#ff7a1a","#6a3bff"];
+  for (let i = 0; i < k; i++){ const x = rand() * w, y = rand() * h, r = 20 + rand() * (w / 6); g.fillStyle = C[i % C.length]; g.beginPath();
+    for (let a = 0; a < Math.PI * 2; a += .35){ const rr = r * (.75 + rand() * .5); g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.fill();
+    for (let j = 0; j < 6; j++){ g.beginPath(); g.arc(x + (rand() - .5) * r * 3, y + (rand() - .5) * r * 3, 2 + rand() * 7, 0, 7); g.fill(); } } }
+function flames(g, w, h, base){ const gr = g.createLinearGradient(0, h, 0, h - base * 1.6); gr.addColorStop(0, "#fff2a8"); gr.addColorStop(.25, "#ffb000"); gr.addColorStop(.55, "#ff4a00"); gr.addColorStop(1, "rgba(160,20,0,0)");
+  g.fillStyle = gr; g.beginPath(); g.moveTo(0, h); let x = 0; while (x < w){ const ww = 14 + rand() * 26, pk = h - base * (.5 + rand() * .9); g.quadraticCurveTo(x + ww * .3, pk + 40, x + ww * .5, pk); g.quadraticCurveTo(x + ww * .7, pk + 50, x + ww, h - base * .35); x += ww; } g.lineTo(w, h); g.fill(); }
+function sun(g, x, y, r, top, mid, bot){ const gr = g.createLinearGradient(0, y - r, 0, y + r); gr.addColorStop(0, top); gr.addColorStop(.55, mid); gr.addColorStop(1, bot);
+  g.save(); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.globalCompositeOperation = "destination-out"; for (let i = 0; i < 8; i++) g.fillRect(x - r, y + r * .12 + i * r * .11, r * 2, 2 + i * 1.6); g.restore(); }
+
+// the floor tile, per skin
+function floorArt(k, g, w, h, s){
+  const line = (c, a, lw) => { g.globalAlpha = a; g.strokeStyle = c; g.lineWidth = lw; g.strokeRect(lw / 2, lw / 2, w - lw, h - lw); g.globalAlpha = 1; };
+  ({
+    checker(){ checks(g, w, h, "#ffd400", "#ffe866", w / 4); line("#000", .9, 4); },
+    concrete(){ g.fillStyle = "#6e6d72"; g.fillRect(0, 0, w, h); noise(g, w, h, .5, true); noise(g, w, h, .25); line("#2a2a2c", .8, 3); },
+    sky(){ g.fillStyle = "#1460d6"; g.fillRect(0, 0, w, h); line("#ffffff", .9, 3); },
+    xerox(){ g.fillStyle = "#efe59a"; g.fillRect(0, 0, w, h); hatch(g, w, h, "#1d1a3a", 26, .28); line("#2a5bd8", .9, 4); },
+    holo(){ const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, "#2a0f45"); gr.addColorStop(1, "#4a1a6a"); g.fillStyle = gr; g.fillRect(0, 0, w, h); line("#ff4fb0", 1, 3); },
+    night(){ g.fillStyle = "#07030a"; g.fillRect(0, 0, w, h); line("#ff5a00", 1, 3); },
+    splat(){ g.fillStyle = "#f4efe6"; g.fillRect(0, 0, w, h); blobs(g, w, h, 2); line("#000", .85, 3); },
+    slate(){ g.fillStyle = "#161616"; g.fillRect(0, 0, w, h); noise(g, w, h, .15); line("#ffffff", .55, 2); },
+    paper(){ g.fillStyle = "#f3ead6"; g.fillRect(0, 0, w, h); noise(g, w, h, .2, true); g.strokeStyle = "#181512"; g.lineWidth = 2.5; g.globalAlpha = .7;
+      g.beginPath(); g.moveTo(2, rand() * 4); g.lineTo(w - rand() * 4, 3); g.moveTo(3, 0); g.lineTo(rand() * 5, h); g.stroke(); g.globalAlpha = 1; },
+    cyan(){ g.fillStyle = "#04141c"; g.fillRect(0, 0, w, h); line("#2fd3ff", 1, 3); },
+  })[k]();
+}
+// the giant backdrop, per skin
+function backdropArt(k, g, w, h, d, s){
+  ({
+    checker(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#0b0d2a"); gr.addColorStop(1, "#5a0620"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      sun(g, w * .63, h * .62, h * .34, "#fff6c8", "#ffd400", "#fb0849"); },
+    concrete(){ g.fillStyle = "#77767c"; g.fillRect(0, 0, w, h); noise(g, w, h, .6, true); noise(g, w, h, .3);
+      g.font = `${h * .5}px Shrikhand`; g.fillStyle = "rgba(255,122,26,.92)"; g.textAlign = "center"; g.save(); g.translate(w * .5, h * .7); g.rotate(-.06);
+      g.strokeStyle = "#000"; g.lineWidth = 10; g.strokeText(d.word === "SCORING" ? "Big Sunday" : d.word, 0, 0); g.fillText(d.word === "SCORING" ? "Big Sunday" : d.word, 0, 0); g.restore(); },
+    sky(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#0c3fa8"); gr.addColorStop(1, "#7cc0ff"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      g.font = `${h * .5}px Italiana`; g.fillStyle = "rgba(255,255,255,.9)"; g.textAlign = "center"; g.fillText(d.word.split("").join(" "), w * .48, h * .78); },
+    xerox(){ g.fillStyle = "#efe59a"; g.fillRect(0, 0, w, h); hatch(g, w, h, "#1d1a3a", 40, .3);
+      const [a, b] = String(d.big).split("."); g.font = `900 ${h * .62}px Archivo`; g.fillStyle = "#ff3030"; g.textAlign = "right";
+      g.font = `900 ${h * .78}px Archivo`; g.fillText(b !== undefined ? a + "." + b : d.big, w * .86, h * .96); },
+    holo(){ g.fillStyle = "#2a0f45"; g.fillRect(0, 0, w, h); const r1 = g.createRadialGradient(w * .3, h * .3, 0, w * .3, h * .3, h * .9); r1.addColorStop(0, "#ff5cc8"); r1.addColorStop(1, "rgba(255,92,200,0)");
+      g.fillStyle = r1; g.fillRect(0, 0, w, h); const r2 = g.createRadialGradient(w * .78, h * .7, 0, w * .78, h * .7, h); r2.addColorStop(0, "#6a3bff"); r2.addColorStop(1, "rgba(106,59,255,0)"); g.fillStyle = r2; g.fillRect(0, 0, w, h); },
+    night(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#05060c"); gr.addColorStop(1, "#1d2c52"); g.fillStyle = gr; g.fillRect(0, 0, w, h); flames(g, w, h, h * .55); },
+    splat(){ g.fillStyle = "#f4efe6"; g.fillRect(0, 0, w, h); seed = 3; blobs(g, w, h, 22); },
+    slate(){ g.fillStyle = "#1c1c1c"; g.fillRect(0, 0, w, h); noise(g, w, h, .12);
+      g.font = `900 ${h * .82}px Archivo`; g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 5; g.textAlign = "center"; g.strokeText(d.big, w * .56, h * .98); },
+    paper(){ g.fillStyle = "#f3ead6"; g.fillRect(0, 0, w, h); noise(g, w, h, .25, true);
+      // the standings, written in marker, the dead ones crossed out
+      g.font = `${h * .075}px "Permanent Marker"`; g.fillStyle = "#181512"; g.textAlign = "left";
+      g.fillStyle = "#d4240f"; g.fillText("THE HIT LIST", w * .37, h * .5); g.fillStyle = "#181512";
+      TEAMS.forEach((t, i) => { const y = h * (.58 + i * .052); g.font = `${h * .047}px "Permanent Marker"`; g.fillText(`${t.first} ${t.po}%`, w * .385, y);
+        if (t.po < 10){ g.strokeStyle = "#d4240f"; g.lineWidth = 6; g.beginPath(); g.moveTo(w * .38, y - h * .02); g.lineTo(w * .385 + g.measureText(`${t.first} ${t.po}%`).width + 6, y - h * .028); g.stroke(); } });
+      g.strokeStyle = "#181512"; g.lineWidth = 5; for (let i = 0; i < 9; i++){ g.beginPath(); const x = w * (.72 + rand() * .12), y = h * (.3 + rand() * .55); g.arc(x, y, 10 + rand() * 40, rand() * 3, 3 + rand() * 3); g.stroke(); } },
+    cyan(){ g.fillStyle = "#04141c"; g.fillRect(0, 0, w, h); g.strokeStyle = "#fafafa"; g.lineWidth = h * .03; g.strokeRect(w * .33, h * .5, w * .22, h * .47);
+      g.font = `${h * .062}px Anton`; g.textAlign = "left"; ["WEEK " + week + ":", ...d.hi.map(x => x.title)].forEach((t, i) => {
+        const y = h * (.58 + i * .095), tw = g.measureText(t).width; g.fillStyle = i === d.hi.length ? "#d8141c" : "#000"; g.fillRect(w * .355, y - h * .058, tw + h * .036, h * .076);
+        g.fillStyle = "#fff"; g.fillText(t, w * .355 + h * .018, y); }); },
+  })[k]();
+}
+/* ---------------------------------------------------------------- the set */
+const easeBack = t => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+const ease = t => 1 - Math.pow(1 - t, 3);
+const X = i => (i - (TEAMS.length - 1) / 2) * 1.6 + (i >= PO ? .55 : -.55);
+const H = d => Math.max(.12, d.po / 100 * 4.4);
+const col = c => new THREE.Color(c);
+function canvasTex(w, h, draw){ const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new THREE.CanvasTexture(c); t.anisotropy = 8; return t; }
+function sprite(tex, w, h){ const s = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, fog:false, depthWrite:false, depthTest:false})); s.scale.set(w, h, 1); return s; }
+function faceTex(src, ring){ const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d"); const t = new THREE.CanvasTexture(c);
+  photo(src).then(img => { if (!img) return; g.fillStyle = ring; g.beginPath(); g.arc(128,128,124,0,7); g.fill(); g.fillStyle = "#000"; g.beginPath(); g.arc(128,128,114,0,7); g.fill();
+    g.save(); g.beginPath(); g.arc(128,128,108,0,7); g.clip(); g.drawImage(img,20,20,216,216); g.restore(); t.needsUpdate = true; }); return t; }
+// the towers' labels: a black box with the odds, the name on a strip under it
+function labelTex(pct, name, s, isStar){ return canvasTex(300, 170, (g, w) => {
+  g.fillStyle = isStar ? s.acc : s.boxbg; g.fillRect(20, 6, w - 40, 104); g.font = "92px Anton"; g.textAlign = "center"; g.fillStyle = isStar ? (s.hotfg || "#000") : s.boxfg; g.fillText(pct, w / 2, 96);
+  g.fillStyle = isStar ? s.boxbg : s.acc; g.fillRect(48, 114, w - 96, 44); g.fillStyle = isStar ? s.boxfg : (s.hotfg || "#000"); g.font = "900 30px Archivo"; g.fillText(name.toUpperCase(), w / 2, 147); }); }
+function tower(color, w, light){
+  w = w || .82; const g = new THREE.BoxGeometry(w, 1, w); g.translate(0, .5, 0); const grp = new THREE.Group();
+  grp.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial(light ? {color, roughness:.6, metalness:.1} : {color:0x02050e, metalness:.9, roughness:.15, transparent:true, opacity:.82, emissive:color, emissiveIntensity:.25})));
+  grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({color:light ? 0x000000 : color})));
+  if (!light){ const o = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({color, transparent:true, opacity:.55})); o.scale.set(1.035, 1, 1.035); grp.add(o); }
+  return grp;
+}
+const STAR_FRAG = `uniform sampler2D map; uniform float reveal; uniform vec3 rim; uniform float isRim; varying vec2 vUv;
+  void main(){ vec4 c = texture2D(map, vUv); if (c.a < .04 || vUv.y > reveal) discard;
+    float edge = smoothstep(reveal - .04, reveal, vUv.y);
+    gl_FragColor = isRim > .5 ? vec4(rim, c.a) : vec4(c.rgb + edge * .7, c.a); }`;
+
+let kill = null;
+async function mount(){
+  const s = SKINS[sk];
+  const stage = document.getElementById("stage"), mag = document.getElementById("mag");
+  stage.style.setProperty("--acc", s.acc); stage.style.setProperty("--boxbg", s.boxbg); stage.style.setProperty("--boxfg", s.boxfg); stage.style.setProperty("--hotfg", s.hotfg || "#000");
+  mag.innerHTML = magHTML(d, s);
+  if (kill) kill(); kill = null;
+  if (!window.THREE) return;
+  const myMount = {}; mount.cur = myMount;
+  const starImg = await photo(D.star_img);
+
+  seed = 11 + week;
+  const el = stage, r = new THREE.WebGLRenderer({antialias:true}); const PR = Math.min(2, devicePixelRatio || 1); r.setPixelRatio(PR);
+  r.setSize(el.clientWidth, el.clientHeight); el.insertBefore(r.domElement, mag);
+  const scene = new THREE.Scene(), over = new THREE.Scene(), cam = new THREE.PerspectiveCamera(40, el.clientWidth / el.clientHeight, .1, 300);
+  const narrow = innerWidth < 700;
+  // the backdrop doubles as the sky: one big painted wall at the far end of the floor
+  const bd = canvasTex(1600, 640, (g, w, h) => backdropArt(sk, g, w, h, d, s));
+  const fogC = {checker:0x0b0d2a, concrete:0x6e6d72, sky:0x4f93ea, xerox:0xefe59a, holo:0x2a0f45, night:0x05060c, splat:0xf4efe6, slate:0x161616, paper:0xf3ead6, cyan:0x04141c}[sk];
+  scene.background = new THREE.Color(fogC); scene.fog = new THREE.Fog(fogC, 18, 62);
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(110, 44), new THREE.MeshBasicMaterial({map:bd, fog:false})); wall.position.set(narrow ? 1 : -2, 16, -46); scene.add(wall);   // the camera sees roughly x 14-86%, the lower 60% of this art
+  const ft = canvasTex(256, 256, (g, w, h) => floorArt(sk, g, w, h, s)); ft.wrapS = ft.wrapT = THREE.RepeatWrapping; ft.repeat.set(44, 44);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(180, 180), new THREE.MeshBasicMaterial({map:ft})); floor.rotation.x = -Math.PI / 2; scene.add(floor);
+  scene.add(new THREE.AmbientLight(0xffffff, s.light ? .9 : .55)); const dl = new THREE.DirectionalLight(0xffffff, s.light ? .7 : .35); dl.position.set(4, 10, 8); scene.add(dl);
+
+  // the towers
+  const inC = col(s.inC).getHex(), outC = col(s.outC).getHex(), acc = col(s.acc).getHex();
+  const T = TEAMS.map((t, i) => { const st = t.first === d.star; const b = tower(st ? acc : i < PO ? inC : outC, st ? 1.0 : .82, s.light); b.position.x = X(i); b.scale.y = .001; scene.add(b); return b; });
+  const m = narrow ? 1.3 : 1;
+  const F = TEAMS.map(t => { const st = t.first === d.star, ring = st ? s.acc : (s.light ? "#000" : "#fff");
+    const f = sprite(faceTex(t.img, ring), 1.15 * m, 1.15 * m), l = sprite(labelTex(t.po + "%", t.first, s, st), 1.3 * m, .74 * m); over.add(f, l); return {f, l}; });
+  // the playoff line: a strip of the week's ink across the floor and up a thin wall
+  const gx = (X(PO - 1) + X(PO)) / 2;
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1), new THREE.MeshBasicMaterial({color:acc, transparent:true, opacity:s.light ? .35 : .22, side:THREE.DoubleSide, depthWrite:false, fog:false}));
+  pl.rotation.y = Math.PI / 2; scene.add(pl);
+
+  // the star: printed, with a rim in the week's ink, rising out of a slot in the floor
+  let starMat = null, rimMat = null;
+  if (starImg){
+    const tx = new THREE.Texture(starImg); tx.needsUpdate = true; tx.anisotropy = 8;
+    const h = 9.4, w = h * starImg.naturalWidth / starImg.naturalHeight, geo = new THREE.PlaneGeometry(w, h); geo.translate(0, h / 2, 0);
+    const mk = rim => new THREE.ShaderMaterial({transparent:true, depthWrite:false, fog:false,
+      uniforms:{map:{value:tx}, reveal:{value:0}, rim:{value:new THREE.Vector3(...col(s.acc).toArray())}, isRim:{value:rim ? 1 : 0}},
+      vertexShader:"varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }", fragmentShader:STAR_FRAG});
+    starMat = mk(false); rimMat = mk(true);
+    const grp = new THREE.Group(); grp.position.set(narrow ? 1.4 : 2.6, 0, -8.5); scene.add(grp);
+    const back = new THREE.Mesh(geo, rimMat); back.scale.set(1.05, 1.025, 1); back.position.set(-w * .025, -.02, -.06); grp.add(back);
+    grp.add(new THREE.Mesh(geo, starMat));
+    const slot = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.05, .2), new THREE.MeshBasicMaterial({color:acc, fog:false})); slot.rotation.x = -Math.PI / 2; slot.position.y = .02; grp.add(slot);
+  }
+
+  let comp = null;
+  if (!s.light && THREE.EffectComposer && THREE.UnrealBloomPass){
+    const W = el.clientWidth * PR, Hh = el.clientHeight * PR;
+    const rt = (THREE.WebGLMultisampleRenderTarget && r.capabilities.isWebGL2) ? new THREE.WebGLMultisampleRenderTarget(W, Hh, {format:THREE.RGBAFormat}) : undefined;
+    if (rt) rt.samples = 4;
+    comp = new THREE.EffectComposer(r, rt); comp.addPass(new THREE.RenderPass(scene, cam)); comp.setPixelRatio(PR); comp.setSize(el.clientWidth, el.clientHeight);
+    comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(el.clientWidth, el.clientHeight), .45, .25, .8));   // neon edges glow; the prints stay prints
+  }
+  let yaw = 0, drag = null, t0 = performance.now(), raf = 0, alive = true;
+  const down = e => { drag = {x:e.clientX, y:yaw}; }, move = e => { if (drag) yaw = drag.y + (e.clientX - drag.x) * .006; }, up = () => { drag = null; };
+  r.domElement.addEventListener("pointerdown", down); addEventListener("pointermove", move); addEventListener("pointerup", up);
+  r.domElement.addEventListener("dblclick", () => { t0 = performance.now(); });
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function frame(now){
+    if (!alive) return;
+    const t = still ? 6 : (now - t0) / 1000;
+    if (!drag) yaw *= .985;
+    const a = Math.sin(t * .18) * .3 + yaw - .12;
+    const R = 15.5 * Math.min(cam.aspect < 1 ? 1.88 : 1.9, Math.max(.7, 1.55 / cam.aspect));   // a portrait phone comes in close and looks up, so the set fills the frame
+    cam.position.set(Math.sin(a) * R, 4.4 + R * .1 + Math.sin(t * .35) * .25, Math.cos(a) * R); cam.lookAt(cam.aspect > 1.5 ? -1.9 : .2, cam.aspect > 1.5 ? 4.6 : 5.6, -3);   // desktop: aim high so the towers sit below the wordmark
+    // the build: the star prints, the towers rise, the playoff line goes in
+    if (starMat){ const k = ease(Math.min(1, Math.max(0, (t - .5) / 1.8))) * 1.02; starMat.uniforms.reveal.value = rimMat.uniforms.reveal.value = k; }
+    TEAMS.forEach((d2, i) => { const k = Math.min(1, Math.max(0, (t - .9 - i * .1) / 1.1)), h = H(d2) * easeBack(k);
+      T[i].scale.y = Math.max(.001, h); F[i].f.position.set(X(i), h + .72 * m, 0); F[i].l.position.set(X(i), h + 1.7 * m, 0); F[i].f.material.opacity = F[i].l.material.opacity = Math.min(1, k * 2); });
+    const pk = ease(Math.min(1, Math.max(0, (t - 2) / .8))), ph = 5.2 * pk; pl.scale.y = Math.max(.001, ph); pl.position.set(gx, ph / 2, 0);
+    ft.offset.y = -t * .15;
+    r.autoClear = true; comp ? comp.render() : r.render(scene, cam);
+    r.autoClear = false; r.clearDepth(); r.render(over, cam); r.autoClear = true;
+    if (!still && !document.hidden) raf = requestAnimationFrame(frame);
+  }
+  const vis = () => { if (!document.hidden && !still){ cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); } };
+  document.addEventListener("visibilitychange", vis);
+  const rs = () => { r.setSize(el.clientWidth, el.clientHeight); comp && comp.setSize(el.clientWidth, el.clientHeight); cam.aspect = el.clientWidth / el.clientHeight; cam.updateProjectionMatrix(); };
+  addEventListener("resize", rs);
+  raf = requestAnimationFrame(frame);
+  if (still) setTimeout(() => requestAnimationFrame(frame), 500);   // the faces load after the first still frame
+  kill = () => { alive = false; cancelAnimationFrame(raf); removeEventListener("pointermove", move); removeEventListener("pointerup", up);
+    removeEventListener("resize", rs); document.removeEventListener("visibilitychange", vis); r.dispose(); r.domElement.remove(); };
+}
+const FACES = ["92px Anton", "900 30px Archivo", "128px Archivo", "58px Bungee", "70px 'Grenze Gotisch'", "62px 'Metal Mania'", "92px Italiana", "62px Shrikhand", "64px Yellowtail", "34px 'Permanent Marker'"];
+Promise.all(FACES.map(f => document.fonts.load(f))).catch(() => {}).then(mount);
+</script>
+</body>
+</html>

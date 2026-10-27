@@ -174,3 +174,31 @@ def test_the_star_s_other_feats_lead_the_cover_lines_in_every_skin():
     s = dict(STORIES[0], feats=["BEAT BRANDON BY 2.3", "PLAYOFF ODDS 23% → 38%"])
     for skin in cover.SKINS:
         assert "BEAT BRANDON BY 2.3" in cover.render(s, _img(), skin=skin), skin
+
+
+def test_the_week_grid_lines_lead_with_the_number_then_the_star_s_feats():
+    s = dict(STORIES[0], feats=["BEAT BRANDON BY 2.3"])
+    lines = cover.grid_lines(s)
+    assert lines[0] == "149.9 POINTS" and lines[2] == "BEAT BRANDON BY 2.3" and len(lines) <= 3
+    assert all("<" not in x for x in lines)
+
+
+def test_a_story_without_a_unit_leads_with_its_own_feat():
+    s = dict(NEW_ONE_PERSON[0], feat="BEAT COREY BY 0.4", feats=["TOP SCORE: 156.6"])
+    assert cover.grid_lines(s)[:2] == ["BEAT COREY BY 0.4", "TOP SCORE: 156.6"]
+
+
+def test_every_skin_has_a_grid_look_the_photo_script_prints():
+    from halfmen import config
+    from pathlib import Path
+    d = Path(cover.__file__).parent.parent / "assets" / "managers"
+    assert set(cover.GRID_LOOK) == set(cover.SKINS)
+    for oid in config.managers():
+        for look in set(cover.GRID_LOOK.values()):
+            assert (d / f"{oid}_body-{look}.webp").exists(), (oid, look)
+
+
+def test_the_week_grid_template_has_its_slots_and_marker():
+    from pathlib import Path
+    t = (Path(cover.__file__).parent / "static" / "week_grid.html").read_text()
+    assert "__DATA__" in t and "__LABEL__" in t and 'name="halfmen-week-grid"' in t

@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import html
 import random
+import re
 from typing import Callable, Dict, Optional, Tuple
 
 FONTS = ("https://fonts.googleapis.com/css2?family=Anton&family=Bungee&family=Shrikhand"
@@ -120,6 +121,10 @@ CSS = """<style>
 .wc .ndash{ position:absolute; z-index:4; left:0; right:0; text-align:center; font:400 8cqw 'Anton',sans-serif; color:#fff; letter-spacing:.2cqw; }
 .wc .ndash small{ display:block; font:700 3.4cqw 'Space Mono',monospace; color:#d8141c; letter-spacing:.6cqw; }
 .wc .big-in{ position:absolute; right:5%; bottom:15%; z-index:4; font:900 22cqw/1 'Archivo',sans-serif; color:#fff; text-shadow:.6cqw .6cqw 0 #000; }
+/* the Week Grid (Home's 3D set) is a component iframe; a phone gets a portrait one */
+@media (max-width:760px){ iframe[srcdoc*="halfmen-week-grid"]{ height:500px !important; }
+  [data-testid="stElementContainer"]:has(> iframe[srcdoc*="halfmen-week-grid"]){ max-height:500px; overflow:hidden; } }
+.wc-in.wg-in{ margin:14px 0 18px; }
 /* the issue's other stories, beside the cover */
 .wc-in{ display:grid; gap:10px; min-width:0; }
 .wc-in .wc-k{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--acc); }
@@ -297,6 +302,31 @@ def deal(kinds: Dict[int, str], seed: str, chosen: Optional[Dict[int, str]] = No
         out[w] = sk
         recent.append(look)
     return out
+
+
+# The Week Grid (Home's 3D set) prints the star in the skin's own look.
+GRID_LOOK = {"checker": "blue", "concrete": "bw", "sky": "sky", "xerox": "xerox", "holo": "holo",
+             "night": "fire", "splat": "pop", "slate": "bw", "paper": "orange", "cyan": "cyan"}
+# The fixed one-person stories, on the Week Grid: their skin and their words.
+GRID_FIXED = {"champion": ("night", "CHAMPION"), "rip": ("slate", "R.I.P."), "issue": ("cyan", "THE WEEK")}
+
+
+def grid_lines(story: Dict) -> list:
+    """The lines over the Week Grid, plain text, hottest first: the star's
+    number, then his other feats that week, then the story's own lines."""
+    s = _slots(story)
+    feats = list(story.get("feats") or [])
+    if s:
+        first = f'{s["big"]} {s["unit"]}'.strip() if s["unit"] else (story.get("feat") or s["kicker"])
+        rest = ([s["kicker"]] if s["unit"] else []) + feats + [html.unescape(re.sub(r"<br>", " ", x)) for x in s["lines"]]
+    else:
+        first, rest = story.get("headline", "").upper(), feats
+    out = []
+    for x in [first] + rest:
+        x = re.sub(r"\s+", " ", str(x)).strip()
+        if x and x not in out:
+            out.append(x)
+    return out[:3]
 
 
 def _slots(story: Dict) -> Dict:
