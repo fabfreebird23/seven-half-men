@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>7½ Men Cover Grid</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wdth,wght@62..125,500..900&family=Bungee&family=Grenze+Gotisch:wght@900&family=Metal+Mania&family=Orbitron:wght@600;800&family=Permanent+Marker&family=Shrikhand&family=Space+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wdth,wght@62..125,500..900&family=Bungee&family=Grenze+Gotisch:wght@900&family=Italiana&family=Metal+Mania&family=Orbitron:wght@600;800&family=Permanent+Marker&family=Shrikhand&family=Space+Mono:wght@400;700&family=Yellowtail&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
@@ -10,77 +10,86 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <style>
-/* Layout: the app's Home slot, one wide stage: Kreeper's Tron grid of playoff-odds towers as the
-   "photo", the week's cover star printed behind them, and the magazine furniture laid over it.
-   Single dark look, the app's Bloody Sunday. */
+/* Layout: the app's Home slot. One wide stage per week: the dealt skin's cover background built
+   as a 3D set (floor, giant backdrop), the playoff-odds towers in the middle, the week's other
+   high points as mini covers on billboards behind them, the cover star printed in front of the
+   backdrop, and the magazine furniture over everything. Single dark page, the app's Bloody Sunday. */
 :root{
   color-scheme:dark;
-  --pg:#141314; --ink:#f4f1f2; --soft:#a99fa3; --line:#332f31; --kr:#c8063b; --kr2:#fb0849; --kg:#578ed5;
-  --f-head:'Archivo','Arial Black',sans-serif; --f-mono:'Space Mono',ui-monospace,Menlo,monospace; --f-hud:'Orbitron','Archivo',sans-serif;
-  --f-box:'Anton','Archivo',sans-serif;
+  --pg:#141314; --ink:#f4f1f2; --soft:#a99fa3; --line:#332f31; --kr2:#fb0849; --kg:#578ed5;
+  --f-head:'Archivo','Arial Black',sans-serif; --f-mono:'Space Mono',ui-monospace,Menlo,monospace; --f-box:'Anton','Archivo',sans-serif;
 }
 *{box-sizing:border-box}
 body{background:var(--pg);color:var(--ink);font-family:var(--f-head);margin:0}
 .wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:32px 72px}
 .k{font:700 11px var(--f-mono);letter-spacing:2px;text-transform:uppercase;color:var(--kr2)}
 h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-height:.92;margin:10px 0 0;text-transform:uppercase;text-wrap:balance}
-.intro p{max-width:66ch;color:var(--soft);font:400 14px/1.6 var(--f-mono);margin:12px 0 0}
+.intro p{max-width:68ch;color:var(--soft);font:400 14px/1.6 var(--f-mono);margin:12px 0 0}
 
-/* controls */
-.ctl{display:flex;flex-wrap:wrap;gap:18px 28px;margin:26px 0 14px;align-items:flex-end}
+.ctl{display:grid;gap:14px;margin:24px 0 14px}
 .grp{display:grid;gap:8px;min-width:0}
 .grp>span{font:700 10.5px var(--f-mono);letter-spacing:1.6px;text-transform:uppercase;color:var(--soft)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chips button{font:700 12px var(--f-mono);letter-spacing:.5px;color:var(--ink);background:#1d1b1c;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer}
+.chips button{font:700 12px var(--f-mono);color:var(--ink);background:#1d1b1c;border:1px solid var(--line);border-radius:3px;padding:7px 11px;cursor:pointer;text-align:left}
 .chips button[aria-pressed="true"]{background:var(--ink);color:#111;border-color:var(--ink)}
 .chips button:focus-visible{outline:2px solid var(--kr2);outline-offset:2px}
-.chips button i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--c);vertical-align:0}
-.chips button .dealt{font-style:normal;color:var(--kr2);margin-left:6px}
+.chips.weeks button{display:grid;gap:2px;min-width:118px}
+.chips.weeks b{font:400 15px var(--f-box);letter-spacing:.02em;text-transform:uppercase}
+.chips.weeks small{font:400 10.5px var(--f-mono);opacity:.75}
+.chips.skins button{border-radius:999px;font-size:11px;padding:5px 10px}
+.chips.skins button i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--c)}
 
-/* the stage: canvas + magazine furniture over it */
-.stage{position:relative;width:100%;aspect-ratio:16/8.4;max-width:100%;border-radius:4px;overflow:hidden;background:#000105;container-type:inline-size;
+.stage{position:relative;width:100%;aspect-ratio:16/8.6;max-width:100%;border-radius:3px;overflow:hidden;background:#000;container-type:inline-size;
   box-shadow:0 22px 50px -24px rgba(0,0,0,.9),0 0 0 1px #000}
-@media (max-width:700px){.stage{aspect-ratio:3/4.1}}
+@media (max-width:700px){.stage{aspect-ratio:3/4.15}}
 .stage canvas{display:block;width:100%!important;height:100%!important;cursor:grab;touch-action:pan-y}
 .mag{position:absolute;inset:0;pointer-events:none;z-index:2}
-.mag .topbar{position:absolute;left:0;right:0;top:0;background:#000;color:#fff;font:400 2.3cqw/1.25 var(--f-box);text-align:center;padding:.5cqw 1cqw;
+.mag .topbar{position:absolute;left:0;right:0;top:0;background:#000;color:#fff;font:400 2.2cqw/1.3 var(--f-box);text-align:center;padding:.4cqw 1cqw;
   letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mag .topbar em{font-style:normal;color:var(--acc)}
-.mag svg.mast{position:absolute;left:2.4%;top:7%;width:44%;overflow:visible;transform:rotate(-2deg);transform-origin:left top}
-.mag .lines{position:absolute;left:2.6%;top:31%;display:flex;flex-direction:column;align-items:flex-start;gap:1cqw;max-width:34%}
-.mag .bx{background:var(--boxbg);color:var(--boxfg);font:400 2.5cqw/1.02 var(--f-box);text-transform:uppercase;padding:.45cqw .9cqw;transform:rotate(-2deg)}
-.mag .bx.sm{font-size:1.75cqw}
-.mag .bx.lg{font-size:3.6cqw;line-height:.95}
-.mag .bx.hot{background:var(--acc);color:#000}
-.mag .bc{position:absolute;right:2%;bottom:3%;background:#fff;color:#000;padding:.4cqw .7cqw .3cqw;width:11%}
+.mag svg.mast{position:absolute;left:2.4%;top:6.5%;width:43%;overflow:visible;transform:rotate(-2deg);transform-origin:left top}
+.mag .lines{position:absolute;left:2.6%;top:30%;display:flex;flex-direction:column;align-items:flex-start;gap:.9cqw;max-width:33%}
+.mag .bx{background:var(--boxbg);color:var(--boxfg);font:400 2.4cqw/1.02 var(--f-box);text-transform:uppercase;padding:.45cqw .9cqw;transform:rotate(-2deg)}
+.mag .bx.sm{font-size:1.7cqw}
+.mag .bx.lg{font-size:3.7cqw;line-height:.95}
+.mag .bx.hot{background:var(--acc);color:var(--hotfg,#000)}
+.mag .sig{position:absolute;z-index:3}
+.mag .sig.script{right:3%;top:10%;text-align:right;color:#fff;text-shadow:.35cqw .35cqw 0 #000}
+.mag .sig.script small{display:block;font:900 1.8cqw var(--f-head);letter-spacing:.2cqw}
+.mag .sig.script b{display:block;font:400 7cqw/.85 'Yellowtail',cursive}
+.mag .sig.marker{right:3%;top:10%;font:400 4.4cqw/1 'Permanent Marker',cursive;color:#d4240f;transform:rotate(-4deg)}
+.mag .sig.paint{right:2%;top:9%;font:900 8cqw/1 var(--f-head);font-stretch:120%;color:rgba(255,255,255,.88);-webkit-text-stroke:.2cqw #1d1a3a;transform:rotate(-7deg) skewX(-10deg)}
+.mag .sig.badge{right:4%;top:12%;width:12cqw;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;text-align:center;background:#ffd400;color:#000;
+  font:900 1.8cqw/1 var(--f-head);transform:rotate(-12deg);box-shadow:0 0 0 .4cqw #000,0 0 0 .8cqw #ffd400}
+.mag .sig.badge b{display:block;font-size:4.4cqw}
+.mag .sig.vert{right:1.6%;top:10%;writing-mode:vertical-rl;transform:rotate(180deg);font:900 3.2cqw var(--f-head);font-stretch:80%;color:#fb0849;-webkit-text-stroke:.12cqw #000;text-transform:uppercase}
+.mag .sig.vert b{color:#ffd400}
+.mag .sig.big{right:3%;top:7%;font:900 11cqw/1 var(--f-head);color:#fff;text-shadow:.35cqw .35cqw 0 #000}
+.mag .bc{position:absolute;right:2%;bottom:3%;background:#fff;color:#000;padding:.4cqw .7cqw .3cqw;width:10.5%}
 .mag .bc .tp{display:flex;justify-content:space-between;font:700 1cqw var(--f-mono)}
-.mag .bc i{display:block;height:2.8cqw;margin-top:.3cqw;background:repeating-linear-gradient(90deg,#000 0 1px,transparent 1px 2px,#000 2px 4px,transparent 4px 5px,#000 5px 6px,transparent 6px 8px)}
+.mag .bc i{display:block;height:2.6cqw;margin-top:.3cqw;background:repeating-linear-gradient(90deg,#000 0 1px,transparent 1px 2px,#000 2px 4px,transparent 4px 5px,#000 5px 6px,transparent 6px 8px)}
 .mag .bc u{display:block;text-decoration:none;font:700 .9cqw var(--f-mono);text-align:center}
-.mag .hud{position:absolute;left:2.4%;bottom:3.4%;font:600 1.15cqw var(--f-hud);letter-spacing:.14em;color:#8fd8ff;opacity:.8;text-transform:uppercase}
-.mag .corner{position:absolute;width:2.2cqw;height:2.2cqw;border:2px solid var(--acc);filter:drop-shadow(0 0 4px var(--acc))}
-.mag .corner.a{right:1%;top:8%;border-left:0;border-bottom:0}.mag .corner.b{left:1%;bottom:1.6%;border-right:0;border-top:0}
+.mag .grain{position:absolute;inset:0;opacity:.16;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
 @media (max-width:700px){
-  .mag .topbar{font-size:4.6cqw}
-  .mag svg.mast{left:50%;top:7%;width:84%;transform:translateX(-50%) rotate(-2deg);transform-origin:center top}
-  .mag .lines{top:auto;bottom:4%;left:3.5%;max-width:62%;gap:1.6cqw}
-  .mag .bx{font-size:4.4cqw}.mag .bx.sm{font-size:3.3cqw}.mag .bx.lg{font-size:6.2cqw}
-  .mag .bc{width:21%;bottom:3%}.mag .bc .tp{font-size:2cqw}.mag .bc i{height:5cqw}.mag .bc u{font-size:1.7cqw}
-  .mag .hud{display:none}
+  .mag .topbar{font-size:4.2cqw}
+  .mag svg.mast{left:50%;top:6.5%;width:84%;transform:translateX(-50%) rotate(-2deg);transform-origin:center top}
+  .mag .lines{top:auto;bottom:4%;left:3.5%;max-width:64%;gap:1.5cqw}
+  .mag .bx{font-size:4.4cqw}.mag .bx.sm{font-size:3.2cqw}.mag .bx.lg{font-size:6.6cqw}
+  .mag .sig{transform-origin:right bottom;scale:1.9}
+  .mag .sig.script,.mag .sig.marker,.mag .sig.paint,.mag .sig.big,.mag .sig.vert{top:24%}
+  .mag .sig.badge{top:22%}
+  .mag .bc{width:21%}.mag .bc .tp{font-size:2cqw}.mag .bc i{height:5cqw}.mag .bc u{font-size:1.7cqw}
 }
 
-/* beside / below the stage: the issue */
 .issue{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;margin-top:22px}
 @media (max-width:760px){.issue{grid-template-columns:minmax(0,1fr)}}
-.issue h3{margin:6px 0 0;font:800 34px/.95 var(--f-head);font-stretch:110%;text-transform:uppercase}
+.issue h3{margin:6px 0 0;font:800 34px/.95 var(--f-head);font-stretch:110%;text-transform:uppercase;text-wrap:balance}
 .issue p{margin:8px 0 0;color:var(--soft);font-size:14px;max-width:52ch}
 .issue ol{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:8px}
 .issue li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline;border-top:1px solid var(--line);padding-top:8px}
 .issue li b{font:400 15px var(--f-box);letter-spacing:.02em;text-transform:uppercase}
 .issue li em{font-style:normal;font-size:13px;color:var(--soft)}
-.odds{font:400 13px/1.5 var(--f-mono);color:var(--soft);display:grid;gap:4px;font-variant-numeric:tabular-nums}
-.odds div{display:grid;grid-template-columns:5.5em 3.4em minmax(0,1fr);gap:10px;align-items:center}
-.odds b{color:var(--ink);font-weight:700}
-.odds s{display:block;height:6px;border-radius:3px;background:var(--c,#578ed5);text-decoration:none}
 .sec{margin-top:44px;border-top:3px solid var(--ink);padding-top:18px}
 .sec h2{margin:8px 0 0;font-weight:900;font-stretch:125%;font-size:clamp(24px,3.4vw,38px);line-height:.92;text-transform:uppercase}
 .rules{display:grid;gap:10px;margin-top:14px;max-width:74ch;font:400 13.5px/1.6 var(--f-mono);color:var(--soft)}
@@ -89,317 +98,363 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
 
 <div class="wrap">
 <header class="intro">
-  <div class="k">7½ Men · Home · the week's cover, in 3D</div>
+  <div class="k">7½ Men · Home · the weekly cover, built in 3D</div>
   <h1>The Cover Grid</h1>
-  <p>The Kreeper League's Tron grid, rebuilt as this league's weekly cover. Every team is a neon tower as tall as its
-  playoff odds from this morning's sim. The week's cover star stands behind them as a printed cut-out, and the
-  magazine's wordmark, cover lines and barcode sit on top of the scene. The look follows the skin the cover deals that week.</p>
+  <p>Every week the set is rebuilt from that week's issue. The skin the cover deals becomes the floor and the giant
+  backdrop. The week's other high points stand behind the playoff-odds towers as mini covers on billboards. The cover
+  star is printed out front, and the masthead and cover lines go over the top. Seven real weeks so far; pick one.</p>
 </header>
 
 <div class="ctl">
-  <div class="grp"><span>Take</span>
-    <div class="chips" id="takes" role="group" aria-label="Take">
-      <button type="button" id="take-print" data-take="print" aria-pressed="true">Giant print</button>
-      <button type="button" id="take-holo" data-take="holo" aria-pressed="false">Hologram print</button>
-    </div>
-  </div>
-  <div class="grp"><span>Skin (the week's deal)</span>
-    <div class="chips" id="skins" role="group" aria-label="Skin"></div>
-  </div>
+  <div class="grp"><span>Issue</span><div class="chips weeks" id="weeks" role="group" aria-label="Week"></div></div>
+  <div class="grp"><span>Try the week in another skin</span><div class="chips skins" id="skins" role="group" aria-label="Skin"></div></div>
 </div>
 
-<div class="stage" id="stage" aria-label="Playoff odds as neon towers on a grid, with Devin, the week 7 cover star, printed behind them">
+<div class="stage" id="stage" aria-label="The week's cover as a 3D scene: playoff-odds towers, the week's other stories on billboards, and the cover star printed in front of the backdrop">
   <div class="mag" id="mag"></div>
 </div>
 
 <section class="issue">
   <div>
-    <div class="k">Week 7 · the cover story</div>
-    <h3>Devin 149.9</h3>
-    <p>The week's top score, and McCaffrey's 29.7 did the heavy lifting. The tower under him is his playoff odds; it lights in the week's ink.</p>
-    <div class="k" style="margin-top:16px">Also in this issue</div>
-    <ol>
-      <li><b>Devin v Josh</b><em>36 points of playoff odds on the line</em></li>
-      <li><b>Thad's bench, 31.2</b><em>points his best lineup would have added</em></li>
-      <li><b>Brandon's lucky 125.0</b><em>3 teams scored more and he still won</em></li>
-    </ol>
+    <div class="k" id="is-k"></div>
+    <h3 id="is-h"></h3>
+    <p id="is-p"></p>
   </div>
   <div>
-    <div class="k">The towers · playoff odds after week 7</div>
-    <div class="odds" id="odds" style="margin-top:10px"></div>
+    <div class="k">On the billboards</div>
+    <ol id="is-ol"></ol>
   </div>
 </section>
 
 <section class="sec">
   <div class="k">How it would run</div>
-  <h2>In place of the flat cover on Home</h2>
+  <h2>A new set every Tuesday</h2>
   <div class="rules">
-    <p><b>The scene is the photo, the cover is the frame.</b> The towers are the live playoff sim (the Playoffs page's numbers, cached 15 minutes); the star is whoever the week's cover picked, and the cover lines are that issue's own.</p>
-    <p><b>The deal drives the look.</b> The week's skin sets the star's print, the wordmark's face and colour, the box colours and the scene's accent: the sun, the star's tower and the corners. A run of top scores still looks different every week.</p>
-    <p><b>Only the star gets the cover treatment.</b> Everyone else stays a Tron tower with a face and a percentage; the star's tower is lit in the week's ink and stands in front of his print.</p>
-    <p><b>The archive stays a rack of flat covers.</b> Fifteen live 3D scenes on one page would be heavy on a phone; each week's flat cover is what gets kept.</p>
-    <p><b>Phone:</b> the stage turns portrait, the wordmark centres over the scene and the cover lines drop to the bottom. Drag turns the camera; double-tap replays the rise. Reduced motion shows the finished frame.</p>
+    <p><b>The deal builds the set.</b> The week's skin decides the floor (checks, xerox crosshatch, concrete, paint, notebook paper…), the giant backdrop behind everything (a sun, a flame wall, the week's number in stacked xerox numerals, the standings written in marker), the inks on the towers and the masthead's face.</p>
+    <p><b>The high points go up on billboards.</b> The issue's other stories, the ones under "Also in this issue", each get a mini cover in their own story's look: a bench in xerox, a lucky win in holo, the Game of the Week in red riso, a top score in checks, the Chase in concrete, the mover in sky blue.</p>
+    <p><b>The towers stay honest.</b> They are the live playoff sim, labelled like cover lines. In this mock every week shows today's odds; on Home it is always the current week, so the odds are always live.</p>
+    <p><b>The star is the only full-size print.</b> Everyone else is a face on a tower or a figure on a billboard.</p>
+    <p><b>The archive stays a rack of flat covers;</b> one live 3D set per page is enough for a phone. Drag turns the camera, double-tap replays the build, and reduced motion shows the finished frame.</p>
   </div>
 </section>
 </div>
 
 <script>
-const STAR = "1254567796231114752";
-const TEAMS = [ // standings order after week 7; playoff_pct from playoffs.simulate
-  {id:"1001531274030305280", first:"Clayton", rec:"10–4", po:98},
-  {id:"964703051971887104",  first:"Brandon", rec:"9–5",  po:97},
-  {id:"1254567796231114752", first:"Devin",   rec:"9–5",  po:69},
-  {id:"334162589502144512",  first:"Josh",    rec:"7–7",  po:48},
-  {id:"979400432114102272",  first:"Isiah",   rec:"6–8",  po:36},
-  {id:"979382824706912256",  first:"Corey",   rec:"6–8",  po:33},
-  {id:"979455520442580992",  first:"Thad",    rec:"5–9",  po:6},
-  {id:"980569987930804224",  first:"Lucas",   rec:"4–10", po:12},
-];
+/* ---------------------------------------------------------------- data (the real archive) */
+const ID = {Clayton:"1001531274030305280", Brandon:"964703051971887104", Devin:"1254567796231114752", Josh:"334162589502144512",
+            Isiah:"979400432114102272", Corey:"979382824706912256", Thad:"979455520442580992", Lucas:"980569987930804224"};
+const TEAMS = [["Clayton",98],["Brandon",97],["Devin",69],["Josh",48],["Isiah",36],["Corey",33],["Thad",6],["Lucas",12]].map(([n, po]) => ({first:n, id:ID[n], po}));
 const PO = 4;
-// each skin: the star's printed look, the wordmark, the boxes, the scene's accent and the ink ramp the hologram uses
-const SKINS = {
-  checker: {name:"Checks",   look:"blue",   font:"Bungee",          size:64, fill:"#fb0849", stroke:"#000", acc:"#ffd400", boxbg:"#000", boxfg:"#fff", top:"SCORING IS (STILL) KING",
-            inks:["#0b0d2a","#24308f","#fb0849","#ffd9c2","#fff6ea"]},
-  concrete:{name:"Concrete", look:"bw",     font:"Shrikhand",       size:70, fill:"#ff7a1a", stroke:"#000", acc:"#ff7a1a", boxbg:"#000", boxfg:"#fff", top:"THE BIG SUNDAY ISSUE", title:true,
-            inks:["#000000","#2a2a2a","#7a7a7a","#c8c8c8","#ffffff"]},
-  sky:     {name:"Sky",      look:"sky",    font:"Metal Mania",     size:66, fill:"#ffd400", stroke:"#000", acc:"#5fb0ff", boxbg:"#000", boxfg:"#fff", top:"PUT UP NUMBERS",
-            inks:["#061634","#1450c8","#5fb0ff","#ffd400","#fffbe6"]},
-  xerox:   {name:"Xerox",    look:"xerox",  font:"Bungee",          size:62, fill:"#2a5bd8", stroke:"#e8202a", acc:"#efe59a", boxbg:"#efe59a", boxfg:"#1d1a3a", top:"SCORING IS (STILL) KING",
-            inks:["#1d1a3a","#1d1a3a","#4c4775","#c9bf7a","#f1e896"]},
-  holo:    {name:"Holo",     look:"holo",   font:"Grenze Gotisch",  size:76, fill:"#ff4fb0", stroke:"#000", acc:"#ff4fb0", boxbg:"#000", boxfg:"#fff", top:"THE BIG SUNDAY ISSUE", title:true,
-            inks:["#1a0730","#6a3bff","#ff4fb0","#ffd0ec","#fff4fb"]},
-  night:   {name:"Flames",   look:"fire",   font:"Bungee",          size:64, fill:"#ffd400", stroke:"#000", acc:"#ff5a00", boxbg:"#000", boxfg:"#fff", top:"HOT HOT HOT",
-            inks:["#1a0000","#7a0a00","#e02a00","#ff8a00","#fff2a8"]},
-  splat:   {name:"Splatter", look:"pop",    font:"Shrikhand",       size:70, fill:"#ffffff", stroke:"#000", acc:"#ff2d6f", boxbg:"#000", boxfg:"#fff", top:"PUT UP NUMBERS",
-            inks:["#1a1440","#6a3bff","#ff2d6f","#ffd400","#ffffff"]},
-  slate:   {name:"B&W",      look:"bw",     font:"Archivo",         size:72, fill:"#ffffff", stroke:"#000", acc:"#f4f1f2", boxbg:"#fff", boxfg:"#000", top:"SCORING IS (STILL) KING", black:true,
-            inks:["#000000","#2a2a2a","#7a7a7a","#c8c8c8","#ffffff"]},
-  paper:   {name:"Paper",    look:"orange", font:"Metal Mania",     size:66, fill:"#f3ead6", stroke:"#181512", acc:"#ff8a1f", boxbg:"#f3ead6", boxfg:"#181512", top:"THE BIG SUNDAY ISSUE",
-            inks:["#181512","#c43a0a","#ff8a1f","#ffc46b","#f3ead6"]},
-  cyan:    {name:"Cyan",     look:"cyan",   font:"Archivo",         size:70, fill:"#2fd3ff", stroke:"#000", acc:"#2fd3ff", boxbg:"#000", boxfg:"#fff", top:"SCORING IS (STILL) KING", black:true,
-            inks:["#04141c","#0e5d78","#1fb6dd","#e9fbff","#e9fbff"]},
+// each week: the cover story, the skin cover.deal gave it, and the other high points (billboards)
+const WEEKS = {
+  1:{kind:"mover", skin:"paper", star:"Clayton", head:"Clayton, up 7", sub:"The biggest climb on his draft seed.", big:"SEVEN", word:"MOVER",
+     lines:["UP SEVEN SPOTS","CLAYTON 10–2","THE CLIMB"], hot:0,
+     hi:[{t:"chase", who:["Lucas"], title:"THE CHASE IS REAL", stat:"LUCAS 2–10", note:"Lucas at 2–10, and a $120 pot to play for"}]},
+  2:{kind:"bench", skin:"xerox", star:"Clayton", head:"Clayton's bench, 46.2", sub:"Points his best lineup would have added.", big:"46.2", word:"BENCH",
+     lines:["46.2 POINTS","LEFT ON THE BENCH","CLAYTON'S BENCH"], hot:0,
+     hi:[{t:"top", who:["Thad"], title:"THAD 168.3", stat:"TOP SCORE", note:"The week's top score"},
+         {t:"lucky", who:["Brandon"], title:"LUCKY BRANDON", stat:"127.9", note:"6 teams scored more and he still won"},
+         {t:"mover", who:["Clayton"], title:"CLAYTON UP 7", stat:"MOVER", note:"The biggest climb on his draft seed"}]},
+  3:{kind:"biggest", skin:"slate", star:"Clayton", head:"Clayton 175.1", sub:"The week's top score. Smith-Njigba put up 42.5.", big:"175.1", word:"SCORING",
+     lines:["175.1 POINTS","IN ONE SUNDAY","SMITH-NJIGBA. 42.5. NOT BAD.","BURIED INSIDE: LUCAS'S BENCH"], hot:0,
+     hi:[{t:"bench", who:["Lucas"], title:"LUCAS'S BENCH", stat:"35.2", note:"Points his best lineup would have added"},
+         {t:"lucky", who:["Thad"], title:"LUCKY THAD", stat:"104.8", note:"4 teams scored more and he still won"},
+         {t:"chase", who:["Lucas"], title:"THE CHASE IS REAL", stat:"LUCAS 2–10", note:"A $120 pot to play for"}]},
+  4:{kind:"bench", skin:"paper", star:"Clayton", head:"Clayton's bench, 47.5", sub:"Points his best lineup would have added.", big:"47.5", word:"BENCH",
+     lines:["47.5 POINTS","LEFT ON THE BENCH","CLAYTON'S BENCH"], hot:0,
+     hi:[{t:"top", who:["Brandon"], title:"BRANDON 169.8", stat:"TOP SCORE", note:"The week's top score"},
+         {t:"lucky", who:["Lucas"], title:"LUCKY LUCAS", stat:"130.3", note:"5 teams scored more and he still won"},
+         {t:"chase", who:["Lucas"], title:"THE CHASE IS REAL", stat:"LUCAS 2–10", note:"A $120 pot to play for"}]},
+  5:{kind:"biggest", skin:"concrete", star:"Isiah", head:"Isiah 184.9", sub:"The week's top score.", big:"184.9", word:"SCORING",
+     lines:["184.9 POINTS","IN ONE SUNDAY","BURIED INSIDE: CLAYTON'S BENCH"], hot:0,
+     hi:[{t:"bench", who:["Clayton"], title:"CLAYTON'S BENCH", stat:"37.9", note:"Points his best lineup would have added"},
+         {t:"lucky", who:["Corey"], title:"LUCKY COREY", stat:"130.6", note:"4 teams scored more and he still won"},
+         {t:"mover", who:["Clayton"], title:"CLAYTON UP 7", stat:"MOVER", note:"The biggest climb on his draft seed"}]},
+  6:{kind:"lucky", skin:"splat", star:"Devin", head:"Devin's lucky 120.5", sub:"Five teams scored more and he still won.", big:"120.5", word:"LUCKY",
+     lines:["120.5 POINTS","THE LUCKIEST WIN OF THE WEEK","5 TEAMS SCORED MORE","TACO BANDIT WILL TAKE IT"], hot:0,
+     hi:[{t:"top", who:["Clayton"], title:"CLAYTON 194.2", stat:"TOP SCORE", note:"The week's top score"},
+         {t:"bench", who:["Thad"], title:"THAD'S BENCH", stat:"28.0", note:"Points his best lineup would have added"},
+         {t:"mover", who:["Clayton"], title:"CLAYTON UP 7", stat:"MOVER", note:"The biggest climb on his draft seed"}]},
+  7:{kind:"biggest", skin:"cyan", star:"Devin", head:"Devin 149.9", sub:"The week's top score, and McCaffrey's 29.7 did the heavy lifting.", big:"149.9", word:"SCORING",
+     lines:["149.9 POINTS","IN ONE SUNDAY","MCCAFFREY. 29.7. NOT BAD.","BURIED INSIDE: THAD'S BENCH"], hot:0,
+     hi:[{t:"gotw", who:["Devin","Josh"], title:"DEVIN V JOSH", stat:"36 PTS AT STAKE", note:"36 points of playoff odds on the line"},
+         {t:"bench", who:["Thad"], title:"THAD'S BENCH", stat:"31.2", note:"Points his best lineup would have added"},
+         {t:"lucky", who:["Brandon"], title:"LUCKY BRANDON", stat:"125.0", note:"3 teams scored more and he still won"}]},
 };
-const DEALT = "cyan";   // what cover.deal gave week 7
-let skin = DEALT, take = "print";
-try { const s = localStorage.getItem("cg-skin"), t = localStorage.getItem("cg-take"); if (SKINS[s]) skin = s; if (t === "print" || t === "holo") take = t; } catch (e) {}
+const MONTH = w => (w <= 4 ? "SEP" : "OCT") + " 2026";
 
-/* ---------- controls + the odds list ---------- */
-const skinsEl = document.getElementById("skins");
-skinsEl.innerHTML = Object.entries(SKINS).map(([k, s]) =>
-  `<button type="button" id="skin-${k}" data-skin="${k}" aria-pressed="${k === skin}" style="--c:${s.acc}"><i></i>${s.name}${k === DEALT ? '<em class="dealt">wk 7</em>' : ""}</button>`).join("");
-document.getElementById("odds").innerHTML = TEAMS.map((t, i) =>
-  `<div><b>${t.first}</b><span>${t.po}%</span><s style="width:${Math.max(2, t.po)}%;--c:${t.id === STAR ? "var(--kr2)" : i < PO ? "#578ed5" : "#5a4650"}"></s></div>`).join("");
-function press(group, attr, val){ group.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset[attr] === val)); }
-skinsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; skin = b.dataset.skin; press(skinsEl, "skin", skin);
-  try { localStorage.setItem("cg-skin", skin); } catch (er) {} mount(); });
-const takesEl = document.getElementById("takes");
-press(takesEl, "take", take);
-takesEl.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; take = b.dataset.take; press(takesEl, "take", take);
-  try { localStorage.setItem("cg-take", take); } catch (er) {} mount(); });
+/* ---------------------------------------------------------------- skins as sets
+   look: the star's print. light: a pale set (no bloom; ink lines instead of neon).
+   inC / outC: the towers in and out of the playoff spots. acc: the star's tower, his rim, the hot box. */
+const SKINS = {
+  checker: {name:"Checks", look:"blue", acc:"#ffd400", inC:"#2e9bff", outC:"#ff2d6f", boxbg:"#000", boxfg:"#fff", font:"Bungee", size:64, fill:"#fb0849", top:"SCORING IS (STILL) KING", sig:"badge"},
+  concrete:{name:"Concrete", look:"bw", acc:"#ff7a1a", inC:"#f4f1f2", outC:"#77767c", boxbg:"#000", boxfg:"#fff", font:"Shrikhand", size:70, fill:"#ff7a1a", title:true, top:"THE BIG SUNDAY ISSUE", sig:"script"},
+  sky:     {name:"Sky", look:"sky", acc:"#ffd400", inC:"#ffffff", outC:"#0c2f78", boxbg:"#000", boxfg:"#fff", font:"Metal Mania", size:66, fill:"#ffd400", top:"PUT UP NUMBERS", sig:"vert"},
+  xerox:   {name:"Xerox", look:"xerox", acc:"#e8202a", inC:"#2a5bd8", outC:"#1d1a3a", boxbg:"#1d1a3a", boxfg:"#f1e896", font:"Bungee", size:62, fill:"#2a5bd8", stroke:"#e8202a", hotfg:"#fff", light:true, top:"BENCH WATCH", sig:"paint"},
+  holo:    {name:"Holo", look:"holo", acc:"#ff4fb0", inC:"#9a7bff", outC:"#4a2a6a", boxbg:"#000", boxfg:"#fff", font:"Grenze Gotisch", size:76, fill:"#ff4fb0", title:true, top:"THE LUCKY ISSUE", sig:"none"},
+  night:   {name:"Flames", look:"fire", acc:"#ff5a00", inC:"#ffd400", outC:"#7a0a00", boxbg:"#000", boxfg:"#fff", font:"Bungee", size:64, fill:"#ffd400", top:"HOT HOT HOT", sig:"badge"},
+  splat:   {name:"Splatter", look:"pop", acc:"#ff2d6f", inC:"#1fb3ff", outC:"#18c26b", boxbg:"#000", boxfg:"#fff", font:"Shrikhand", size:70, fill:"#ffffff", light:true, top:"THE LUCKY ISSUE", sig:"paint"},
+  slate:   {name:"B&W", look:"bw", acc:"#ffffff", inC:"#c8c8c8", outC:"#555555", boxbg:"#fff", boxfg:"#000", font:"Archivo", size:72, fill:"#ffffff", black:true, top:"SCORING IS (STILL) KING", sig:"big"},
+  paper:   {name:"Paper", look:"orange", acc:"#d4240f", inC:"#181512", outC:"#c43a0a", boxbg:"#181512", boxfg:"#f3ead6", font:"Metal Mania", size:66, fill:"#181512", stroke:"#181512", hotfg:"#fff", light:true, top:"THE CLIMB", sig:"marker"},
+  cyan:    {name:"Cyan", look:"cyan", acc:"#2fd3ff", inC:"#1fb6dd", outC:"#0e5d78", boxbg:"#000", boxfg:"#fff", font:"Archivo", size:70, fill:"#2fd3ff", black:true, top:"SCORING IS (STILL) KING", sig:"none"},
+};
+const POSTER_LOOK = {top:"blue", bench:"xerox", lucky:"holo", mover:"sky", chase:"bw", gotw:"riso"};
 
-/* ---------- the magazine furniture ---------- */
-function magHTML(s){
+let week = 7, skinOver = null;
+try { const w = +localStorage.getItem("cg-week"); if (WEEKS[w]) week = w; } catch (e) {}
+
+/* ---------------------------------------------------------------- page */
+const weeksEl = document.getElementById("weeks"), skinsEl = document.getElementById("skins");
+weeksEl.innerHTML = Object.entries(WEEKS).map(([w, d]) =>
+  `<button type="button" id="wk-${w}" data-w="${w}"><b>Week ${w} · ${d.head.split(",")[0]}</b><small>${SKINS[d.skin].name} skin</small></button>`).reverse().join("");
+skinsEl.innerHTML = Object.entries(SKINS).map(([k, s]) => `<button type="button" id="sk-${k}" data-s="${k}" style="--c:${s.acc}"><i></i>${s.name}</button>`).join("");
+function sync(){
+  const d = WEEKS[week], sk = skinOver || d.skin;
+  weeksEl.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.w === week));
+  skinsEl.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.s === sk));
+  document.getElementById("is-k").textContent = `Week ${week} · the cover story · ${SKINS[sk].name} skin`;
+  document.getElementById("is-h").textContent = d.head;
+  document.getElementById("is-p").textContent = d.sub;
+  document.getElementById("is-ol").innerHTML = d.hi.map(h => `<li><b>${h.title}</b><em>${h.note}</em></li>`).join("");
+}
+weeksEl.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; week = +b.dataset.w; skinOver = null;
+  try { localStorage.setItem("cg-week", week); } catch (er) {} sync(); mount(); });
+skinsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; skinOver = b.dataset.s; sync(); mount(); });
+
+function magHTML(d, s){
   const word = s.title ? "7½ Men" : "7½ MEN", attrs = s.black ? 'font-weight="900" font-stretch="125%"' : "";
-  const stroke = s.black ? 'stroke-width="0"' : `stroke="${s.stroke}" stroke-width="3" paint-order="stroke"`;
-  return `<div class="topbar">${s.top} <em>•</em> WEEK 7 <em>•</em> PLAYOFF ODDS INSIDE</div>
-  <svg class="mast" viewBox="0 0 300 84" aria-hidden="true">
-    ${s.black ? "" : `<text x="154" y="67" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" font-family="${s.font}" font-size="${s.size}" fill="#000" stroke="#000" stroke-width="3">${word}</text>`}
+  const stroke = s.black ? 'stroke-width="0"' : `stroke="${s.stroke || "#000"}" stroke-width="${s.stroke ? 1.5 : 3}" paint-order="stroke"`;
+  const shadow = s.black ? "" : `<text x="154" y="67" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" font-family="${s.font}" font-size="${s.size}" fill="${s.stroke || "#000"}" stroke="${s.stroke || "#000"}" stroke-width="3">${word}</text>`;
+  const [first, ...rest] = d.lines;
+  const sig = {
+    badge:`<div class="sig badge"><div><b>${d.big.length > 4 ? d.big.split(".")[0] : d.big}</b>${d.word}</div></div>`,
+    script:`<div class="sig script"><small>THE</small><b>${d.word === "SCORING" ? "Big Sunday" : d.word[0] + d.word.slice(1).toLowerCase() + "!"}</b></div>`,
+    vert:`<div class="sig vert"><b>${d.big}</b> ${d.word}</div>`,
+    paint:`<div class="sig paint">${d.word}</div>`,
+    marker:`<div class="sig marker">${d.word}!!!</div>`,
+    big:`<div class="sig big">${d.big}</div>`, none:""}[s.sig] || "";
+  return `<div class="topbar">${s.top} <em>•</em> WEEK ${week} <em>•</em> PLAYOFF ODDS INSIDE</div>
+  <svg class="mast" viewBox="0 0 300 84" aria-hidden="true">${shadow}
     <text x="150" y="62" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" font-family="${s.font}" font-size="${s.size}" fill="${s.fill}" ${stroke} ${attrs}>${word}</text></svg>
-  <div class="lines">
-    <div class="bx hot lg">149.9 POINTS</div>
-    <div class="bx">IN ONE SUNDAY</div>
-    <div class="bx sm">MCCAFFREY. 29.7. NOT BAD.</div>
-    <div class="bx sm">BURIED INSIDE: THAD'S BENCH</div>
-  </div>
-  <span class="corner a"></span><span class="corner b"></span>
-  <div class="hud">Playoff odds · drag to look around · double-tap to replay</div>
-  <div class="bc"><div class="tp"><b>OCT 2026</b><b>07</b></div><i></i><u>0 75026 00007 9</u></div>`;
+  <div class="lines"><div class="bx hot lg">${first}</div>${rest.map((l, i) => `<div class="bx${i ? " sm" : ""}">${l}</div>`).join("")}</div>
+  ${sig}
+  <div class="bc"><div class="tp"><b>${MONTH(week)}</b><b>${String(week).padStart(2, "0")}</b></div><i></i><u>0 75026 000${String(week).padStart(2, "0")} ${week * 7 % 10}</u></div>
+  <div class="grain"></div>`;
 }
 
-/* ---------- the scene (after kreeper/static/grid_hero.html) ---------- */
+/* ---------------------------------------------------------------- canvas art: every cover background, drawn */
+const IMG = new Map();
+function photo(src){ if (!IMG.has(src)) IMG.set(src, new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; })); return IMG.get(src); }
+const cut = (name, look) => `managers/${ID[name]}_body-${look}.webp`;
+let seed = 11; const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function noise(g, w, h, alpha, dark){ const n = w * h / 18; for (let i = 0; i < n; i++){ g.fillStyle = `rgba(${dark ? "0,0,0" : "255,255,255"},${rand() * alpha})`; g.fillRect(rand() * w, rand() * h, 1.5, 1.5); } }
+function checks(g, w, h, a, b, s){ for (let y = 0; y < h; y += s) for (let x = 0; x < w; x += s){ g.fillStyle = ((x + y) / s) % 2 ? a : b; g.fillRect(x, y, s, s); } }
+function hatch(g, w, h, c, step, a){ g.strokeStyle = c; g.globalAlpha = a; g.lineWidth = 2; for (let x = -h; x < w; x += step){ g.beginPath(); g.moveTo(x, 0); g.lineTo(x + h, h); g.stroke(); g.beginPath(); g.moveTo(x + h, 0); g.lineTo(x, h); g.stroke(); } g.globalAlpha = 1; }
+function blobs(g, w, h, k){ const C = ["#1fb3ff","#ffd400","#ff2d6f","#18c26b","#ff7a1a","#6a3bff"];
+  for (let i = 0; i < k; i++){ const x = rand() * w, y = rand() * h, r = 20 + rand() * (w / 6); g.fillStyle = C[i % C.length]; g.beginPath();
+    for (let a = 0; a < Math.PI * 2; a += .35){ const rr = r * (.75 + rand() * .5); g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.fill();
+    for (let j = 0; j < 6; j++){ g.beginPath(); g.arc(x + (rand() - .5) * r * 3, y + (rand() - .5) * r * 3, 2 + rand() * 7, 0, 7); g.fill(); } } }
+function flames(g, w, h, base){ const gr = g.createLinearGradient(0, h, 0, h - base * 1.6); gr.addColorStop(0, "#fff2a8"); gr.addColorStop(.25, "#ffb000"); gr.addColorStop(.55, "#ff4a00"); gr.addColorStop(1, "rgba(160,20,0,0)");
+  g.fillStyle = gr; g.beginPath(); g.moveTo(0, h); let x = 0; while (x < w){ const ww = 14 + rand() * 26, pk = h - base * (.5 + rand() * .9); g.quadraticCurveTo(x + ww * .3, pk + 40, x + ww * .5, pk); g.quadraticCurveTo(x + ww * .7, pk + 50, x + ww, h - base * .35); x += ww; } g.lineTo(w, h); g.fill(); }
+function sun(g, x, y, r, top, mid, bot){ const gr = g.createLinearGradient(0, y - r, 0, y + r); gr.addColorStop(0, top); gr.addColorStop(.55, mid); gr.addColorStop(1, bot);
+  g.save(); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.globalCompositeOperation = "destination-out"; for (let i = 0; i < 8; i++) g.fillRect(x - r, y + r * .12 + i * r * .11, r * 2, 2 + i * 1.6); g.restore(); }
+
+// the floor tile, per skin
+function floorArt(k, g, w, h, s){
+  const line = (c, a, lw) => { g.globalAlpha = a; g.strokeStyle = c; g.lineWidth = lw; g.strokeRect(lw / 2, lw / 2, w - lw, h - lw); g.globalAlpha = 1; };
+  ({
+    checker(){ checks(g, w, h, "#ffd400", "#ffe866", w / 4); line("#000", .9, 4); },
+    concrete(){ g.fillStyle = "#6e6d72"; g.fillRect(0, 0, w, h); noise(g, w, h, .5, true); noise(g, w, h, .25); line("#2a2a2c", .8, 3); },
+    sky(){ g.fillStyle = "#1460d6"; g.fillRect(0, 0, w, h); line("#ffffff", .9, 3); },
+    xerox(){ g.fillStyle = "#efe59a"; g.fillRect(0, 0, w, h); hatch(g, w, h, "#1d1a3a", 26, .28); line("#2a5bd8", .9, 4); },
+    holo(){ const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, "#2a0f45"); gr.addColorStop(1, "#4a1a6a"); g.fillStyle = gr; g.fillRect(0, 0, w, h); line("#ff4fb0", 1, 3); },
+    night(){ g.fillStyle = "#07030a"; g.fillRect(0, 0, w, h); line("#ff5a00", 1, 3); },
+    splat(){ g.fillStyle = "#f4efe6"; g.fillRect(0, 0, w, h); blobs(g, w, h, 2); line("#000", .85, 3); },
+    slate(){ g.fillStyle = "#161616"; g.fillRect(0, 0, w, h); noise(g, w, h, .15); line("#ffffff", .55, 2); },
+    paper(){ g.fillStyle = "#f3ead6"; g.fillRect(0, 0, w, h); noise(g, w, h, .2, true); g.strokeStyle = "#181512"; g.lineWidth = 2.5; g.globalAlpha = .7;
+      g.beginPath(); g.moveTo(2, rand() * 4); g.lineTo(w - rand() * 4, 3); g.moveTo(3, 0); g.lineTo(rand() * 5, h); g.stroke(); g.globalAlpha = 1; },
+    cyan(){ g.fillStyle = "#04141c"; g.fillRect(0, 0, w, h); line("#2fd3ff", 1, 3); },
+  })[k]();
+}
+// the giant backdrop, per skin: the cover's background art at billboard scale
+function backdropArt(k, g, w, h, d, s){
+  ({
+    checker(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#0b0d2a"); gr.addColorStop(1, "#5a0620"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      sun(g, w * .63, h * .62, h * .34, "#fff6c8", "#ffd400", "#fb0849"); },
+    concrete(){ g.fillStyle = "#77767c"; g.fillRect(0, 0, w, h); noise(g, w, h, .6, true); noise(g, w, h, .3);
+      g.font = `${h * .5}px Shrikhand`; g.fillStyle = "rgba(255,122,26,.92)"; g.textAlign = "center"; g.save(); g.translate(w * .5, h * .7); g.rotate(-.06);
+      g.strokeStyle = "#000"; g.lineWidth = 10; g.strokeText(d.word === "SCORING" ? "Big Sunday" : d.word, 0, 0); g.fillText(d.word === "SCORING" ? "Big Sunday" : d.word, 0, 0); g.restore(); },
+    sky(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#0c3fa8"); gr.addColorStop(1, "#7cc0ff"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      g.font = `${h * .5}px Italiana`; g.fillStyle = "rgba(255,255,255,.9)"; g.textAlign = "center"; g.fillText(d.word.split("").join(" "), w * .48, h * .78); },
+    xerox(){ g.fillStyle = "#efe59a"; g.fillRect(0, 0, w, h); hatch(g, w, h, "#1d1a3a", 40, .3);
+      const [a, b] = String(d.big).split("."); g.font = `900 ${h * .62}px Archivo`; g.fillStyle = "#ff3030"; g.textAlign = "right";
+      g.font = `900 ${h * .78}px Archivo`; g.fillText(b !== undefined ? a + "." + b : d.big, w * .86, h * .96); },
+    holo(){ g.fillStyle = "#2a0f45"; g.fillRect(0, 0, w, h); const r1 = g.createRadialGradient(w * .3, h * .3, 0, w * .3, h * .3, h * .9); r1.addColorStop(0, "#ff5cc8"); r1.addColorStop(1, "rgba(255,92,200,0)");
+      g.fillStyle = r1; g.fillRect(0, 0, w, h); const r2 = g.createRadialGradient(w * .78, h * .7, 0, w * .78, h * .7, h); r2.addColorStop(0, "#6a3bff"); r2.addColorStop(1, "rgba(106,59,255,0)"); g.fillStyle = r2; g.fillRect(0, 0, w, h); },
+    night(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#05060c"); gr.addColorStop(1, "#1d2c52"); g.fillStyle = gr; g.fillRect(0, 0, w, h); flames(g, w, h, h * .55); },
+    splat(){ g.fillStyle = "#f4efe6"; g.fillRect(0, 0, w, h); seed = 3; blobs(g, w, h, 22); },
+    slate(){ g.fillStyle = "#1c1c1c"; g.fillRect(0, 0, w, h); noise(g, w, h, .12);
+      g.font = `900 ${h * .82}px Archivo`; g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 5; g.textAlign = "center"; g.strokeText(d.big, w * .56, h * .98); },
+    paper(){ g.fillStyle = "#f3ead6"; g.fillRect(0, 0, w, h); noise(g, w, h, .25, true);
+      // the standings, written in marker, the dead ones crossed out
+      g.font = `${h * .075}px "Permanent Marker"`; g.fillStyle = "#181512"; g.textAlign = "left";
+      g.fillStyle = "#d4240f"; g.fillText("THE HIT LIST", w * .37, h * .5); g.fillStyle = "#181512";
+      TEAMS.forEach((t, i) => { const y = h * (.58 + i * .052); g.font = `${h * .047}px "Permanent Marker"`; g.fillText(`${t.first} ${t.po}%`, w * .385, y);
+        if (t.po < 10){ g.strokeStyle = "#d4240f"; g.lineWidth = 6; g.beginPath(); g.moveTo(w * .38, y - h * .02); g.lineTo(w * .385 + g.measureText(`${t.first} ${t.po}%`).width + 6, y - h * .028); g.stroke(); } });
+      g.strokeStyle = "#181512"; g.lineWidth = 5; for (let i = 0; i < 9; i++){ g.beginPath(); const x = w * (.72 + rand() * .12), y = h * (.3 + rand() * .55); g.arc(x, y, 10 + rand() * 40, rand() * 3, 3 + rand() * 3); g.stroke(); } },
+    cyan(){ g.fillStyle = "#04141c"; g.fillRect(0, 0, w, h); g.strokeStyle = "#fafafa"; g.lineWidth = h * .03; g.strokeRect(w * .33, h * .5, w * .22, h * .47);
+      g.font = `${h * .062}px Anton`; g.textAlign = "left"; ["INSIDE WEEK " + week + ":", ...d.hi.map(x => x.title)].forEach((t, i) => {
+        const y = h * (.58 + i * .095), tw = g.measureText(t).width; g.fillStyle = i === d.hi.length ? "#d8141c" : "#000"; g.fillRect(w * .355, y - h * .058, tw + h * .036, h * .076);
+        g.fillStyle = "#fff"; g.fillText(t, w * .355 + h * .018, y); }); },
+  })[k]();
+}
+// a mini cover for one high point, in its own story's look
+async function posterArt(hp){
+  const W = 360, H = 480, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+  const imgs = await Promise.all(hp.who.map(n => photo(cut(n, POSTER_LOOK[hp.t]))));
+  const put = (im, x, hh, flip) => { if (!im) return; const h2 = H * hh, w2 = h2 * im.naturalWidth / im.naturalHeight; g.save();
+    if (flip){ g.translate(x + w2 / 2, 0); g.scale(-1, 1); g.translate(-(x + w2 / 2), 0); } g.drawImage(im, x - w2 / 2, H - h2, w2, h2); g.restore(); };
+  const mast = (font, size, fill, title) => { g.font = `${size}px "${font}"`; g.textAlign = "center"; const t = title ? "7½ Men" : "7½ MEN";
+    g.lineWidth = 6; g.strokeStyle = "#000"; g.strokeText(t, W / 2, 62); g.fillStyle = fill; g.fillText(t, W / 2, 62); };
+  const box = (t, x, y, size, bg, fg) => { g.font = `${size}px Anton`; const tw = g.measureText(t).width; g.fillStyle = bg || "#000"; g.fillRect(x, y - size * .92, tw + 14, size * 1.12); g.fillStyle = fg || "#fff"; g.textAlign = "left"; g.fillText(t, x + 7, y); };
+  seed = 7 + hp.title.length;
+  ({
+    top(){ checks(g, W, H, "#ffd400", "#ffe866", 32); mast("Bungee", 58, "#fb0849"); put(imgs[0], W * .6, .82); box(hp.title, 14, H * .4, 34); box(hp.stat, 14, H * .5, 24, "#fb0849", "#000"); },
+    bench(){ g.fillStyle = "#efe59a"; g.fillRect(0, 0, W, H); hatch(g, W, H, "#1d1a3a", 24, .3); mast("Bungee", 56, "#2a5bd8"); put(imgs[0], W * .32, .82);
+      const [a, b] = hp.stat.split("."); g.font = "900 128px Archivo"; g.fillStyle = "#ff3030"; g.textAlign = "right"; g.fillText(a, W - 16, H * .55); g.fillText("." + b, W - 16, H * .78);
+      box(hp.title, 14, H - 24, 30); },
+    lucky(){ g.fillStyle = "#2a0f45"; g.fillRect(0, 0, W, H); const r = g.createRadialGradient(W * .3, H * .3, 0, W * .3, H * .3, H * .6); r.addColorStop(0, "#ff5cc8"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, W, H);
+      mast("Grenze Gotisch", 70, "#ff4fb0", true); put(imgs[0], W / 2, .62); box(hp.stat + " POINTS", 16, H * .34, 36, "#ff4fb0", "#000"); box(hp.title, 16, H * .45, 30); },
+    mover(){ const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, "#1460d6"); gr.addColorStop(1, "#5fb0ff"); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+      mast("Metal Mania", 62, "#ffd400"); g.font = "92px Italiana"; g.fillStyle = "#fff"; g.textAlign = "center"; g.fillText("MOVER", W / 2, H * .5); put(imgs[0], W * .58, .78); box(hp.title, 14, H - 22, 30); },
+    chase(){ g.fillStyle = "#77767c"; g.fillRect(0, 0, W, H); noise(g, W, H, .5, true); mast("Shrikhand", 62, "#ff7a1a", true); put(imgs[0], W * .45, .8);
+      g.font = "64px Yellowtail"; g.fillStyle = "#fff"; g.textAlign = "right"; g.shadowColor = "#000"; g.shadowOffsetX = g.shadowOffsetY = 3; g.fillText("Chase is Real!", W - 12, H * .66); g.shadowColor = "transparent";
+      box(hp.stat, 14, H - 22, 26); },
+    gotw(){ g.fillStyle = "#9a98a4"; g.fillRect(0, 0, W, H); noise(g, W, H, .45, true); mast("Bungee", 56, "#d8141c"); put(imgs[0], W * .28, .7); put(imgs[1], W * .72, .74, true);
+      g.font = "34px \"Permanent Marker\""; g.fillStyle = "#e02a3a"; g.textAlign = "center"; g.fillText(hp.title, W / 2, H * .3); box(hp.stat, 14, H - 22, 26, "#d8141c"); },
+  })[hp.t]();
+  // grain + the barcode corner
+  noise(g, W, H, .08, true); g.fillStyle = "#fff"; g.fillRect(W - 78, H - 52, 66, 40); g.fillStyle = "#000"; for (let i = 0; i < 26; i++) if (i % 3) g.fillRect(W - 72 + i * 2.2, H - 46, 1.2, 26);
+  return c;
+}
+
+/* ---------------------------------------------------------------- the set */
 const easeBack = t => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
 const ease = t => 1 - Math.pow(1 - t, 3);
-const BLUE = 0x578ed5, DIM = 0x5a4650, CRIM = 0xfb0849;
 const X = i => (i - (TEAMS.length - 1) / 2) * 1.6 + (i >= PO ? .55 : -.55);
 const H = d => Math.max(.12, d.po / 100 * 4.4);
 const col = c => new THREE.Color(c);
-const hex = c => "#" + c.toString(16).padStart(6, "0");
-let seed = 11; const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-function canvasTex(w, h, draw){ const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); return new THREE.CanvasTexture(c); }
-function faceTex(src, ring){
-  const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d"); const t = new THREE.CanvasTexture(c);
-  const img = new Image(); img.onload = () => { g.save(); g.beginPath(); g.arc(128,128,112,0,Math.PI*2); g.clip(); g.drawImage(img,16,16,224,224); g.restore();
-    g.lineWidth = 12; g.strokeStyle = ring; g.beginPath(); g.arc(128,128,116,0,Math.PI*2); g.stroke(); t.needsUpdate = true; };
-  img.src = src; return t;
-}
-function pillTex(pct, name, ring, star){ return canvasTex(320, 150, (g, w, h) => {
-  const r = 26, x = 14, y = 10, ww = w - 28, hh = h - 20;
-  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + ww, y, x + ww, y + hh, r); g.arcTo(x + ww, y + hh, x, y + hh, r); g.arcTo(x, y + hh, x, y, r); g.arcTo(x, y, x + ww, y, r); g.closePath();
-  g.fillStyle = star ? ring : "rgba(2,4,12,.86)"; g.fill(); g.lineWidth = 4; g.strokeStyle = ring; g.shadowColor = ring; g.shadowBlur = 10; g.stroke(); g.shadowBlur = 0;
-  g.fillStyle = star ? "#000" : "#fff"; g.font = "76px Anton"; g.textAlign = "center"; g.fillText(pct, w / 2, 92);
-  g.fillStyle = star ? "#000" : ring; g.font = "600 26px Orbitron"; g.fillText(name.toUpperCase(), w / 2, 128); }); }
+function canvasTex(w, h, draw){ const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new THREE.CanvasTexture(c); t.anisotropy = 8; return t; }
 function sprite(tex, w, h){ const s = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, fog:false, depthWrite:false, depthTest:false})); s.scale.set(w, h, 1); return s; }
-
-function gridWorld(scene, acc){
-  scene.background = new THREE.Color(0x000105); scene.fog = new THREE.Fog(0x000105, 14, 70);
-  const gt = canvasTex(256, 256, (g, w, h) => { g.fillStyle = "#00030c"; g.fillRect(0, 0, w, h);
-    g.shadowColor = "#3b9cff"; g.shadowBlur = 10; g.strokeStyle = "#3b9cff"; g.lineWidth = 3; g.strokeRect(1.5, 1.5, w - 3, h - 3);
-    g.shadowBlur = 0; g.strokeStyle = "rgba(90,209,255,.18)"; g.lineWidth = 1; g.strokeRect(w / 2, 0, 0, h); g.strokeRect(0, h / 2, w, 0); });
-  gt.wrapS = gt.wrapT = THREE.RepeatWrapping; gt.repeat.set(50, 50); gt.anisotropy = 8;
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshBasicMaterial({map:gt}));
-  floor.rotation.x = -Math.PI / 2; scene.add(floor);
-  const hz = new THREE.Mesh(new THREE.PlaneGeometry(220, 30), new THREE.MeshBasicMaterial({fog:false, transparent:true, depthWrite:false,
-    map:canvasTex(8, 256, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(.75, "rgba(59,111,209,.5)");
-      gr.addColorStop(.92, acc); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); })}));
-  hz.position.set(0, 6, -60); scene.add(hz);
-  // the wireframe ridge and a striped sun in the week's ink
-  const mg = new THREE.PlaneGeometry(160, 26, 80, 13); const p = mg.attributes.position;
-  for (let i = 0; i < p.count; i++){ const x = p.getX(i), y = p.getY(i); const ridge = (y + 13) / 26;
-    p.setZ(i, (Math.sin(x * .17) * 4 + Math.sin(x * .41 + 1.3) * 2.2 + rand() * 1.4) * ridge * Math.min(1, Math.abs(x) / 20 + .25)); }
-  const mtn = new THREE.Mesh(mg, new THREE.MeshBasicMaterial({color:0x3b6fd1, wireframe:true, transparent:true, opacity:.5, fog:false}));
-  mtn.rotation.x = -Math.PI / 2 + .02; mtn.position.set(0, -.2, -48); scene.add(mtn);
-  const sun = new THREE.Mesh(new THREE.CircleGeometry(9, 64), new THREE.MeshBasicMaterial({fog:false, transparent:true,
-    map:canvasTex(256, 256, (g, ww, hh) => { const gr = g.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, "#fff6e6"); gr.addColorStop(.55, acc); gr.addColorStop(1, "#c8063b");
-      g.fillStyle = gr; g.beginPath(); g.arc(128, 128, 126, 0, Math.PI * 2); g.fill(); g.globalCompositeOperation = "destination-out";
-      for (let i = 0; i < 8; i++) g.fillRect(0, 140 + i * 15, ww, 3 + i * 1.3); })}));
-  sun.position.set(innerWidth < 700 ? 3 : 6, 7, -62); scene.add(sun);
-  scene.add(new THREE.AmbientLight(0x334466, .6));
-  return gt;
-}
-function neonBox(color, w){
-  w = w || .82; const g = new THREE.BoxGeometry(w, 1, w); g.translate(0, .5, 0);
-  const grp = new THREE.Group();
-  grp.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0x02050e, metalness:.9, roughness:.15, transparent:true, opacity:.82, emissive:color, emissiveIntensity:.2})));
-  grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({color})));
-  const outer = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({color, transparent:true, opacity:.55})); outer.scale.set(1.035, 1, 1.035); grp.add(outer);
-  [[0, w / 2 + .005], [0, -w / 2 - .005]].forEach(([x, z]) => { const s = new THREE.Mesh(new THREE.PlaneGeometry(.05, 1), new THREE.MeshBasicMaterial({color, transparent:true, opacity:.8}));
-    s.position.set(x, .5, z); if (z < 0) s.rotation.y = Math.PI; grp.add(s); });
-  const cap = new THREE.Mesh(new THREE.PlaneGeometry(w * .96, w * .96), new THREE.MeshBasicMaterial({color, transparent:true, opacity:.75})); cap.rotation.x = -Math.PI / 2; cap.position.y = 1.001; grp.add(cap);
+function faceTex(src, ring){ const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d"); const t = new THREE.CanvasTexture(c);
+  photo(src).then(img => { if (!img) return; g.fillStyle = ring; g.beginPath(); g.arc(128,128,124,0,7); g.fill(); g.fillStyle = "#000"; g.beginPath(); g.arc(128,128,114,0,7); g.fill();
+    g.save(); g.beginPath(); g.arc(128,128,108,0,7); g.clip(); g.drawImage(img,20,20,216,216); g.restore(); t.needsUpdate = true; }); return t; }
+// the towers' labels as cover lines: a black box with the odds, the name on a strip under it
+function labelTex(pct, name, s, isStar){ return canvasTex(300, 170, (g, w) => {
+  g.fillStyle = isStar ? s.acc : s.boxbg; g.fillRect(20, 6, w - 40, 104); g.font = "92px Anton"; g.textAlign = "center"; g.fillStyle = isStar ? (s.hotfg || "#000") : s.boxfg; g.fillText(pct, w / 2, 96);
+  g.fillStyle = isStar ? s.boxbg : s.acc; g.fillRect(48, 114, w - 96, 44); g.fillStyle = isStar ? s.boxfg : (s.hotfg || "#000"); g.font = "900 30px Archivo"; g.fillText(name.toUpperCase(), w / 2, 147); }); }
+function tower(color, w, light){
+  w = w || .82; const g = new THREE.BoxGeometry(w, 1, w); g.translate(0, .5, 0); const grp = new THREE.Group();
+  grp.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial(light ? {color, roughness:.6, metalness:.1} : {color:0x02050e, metalness:.9, roughness:.15, transparent:true, opacity:.82, emissive:color, emissiveIntensity:.25})));
+  grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({color:light ? 0x000000 : color})));
+  if (!light){ const o = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({color, transparent:true, opacity:.55})); o.scale.set(1.035, 1, 1.035); grp.add(o); }
   return grp;
 }
-function lightWall(scene){
-  const color = CRIM, gx = (X(PO - 1) + X(PO)) / 2;
-  const wall = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1), new THREE.MeshBasicMaterial({color, transparent:true, opacity:.22, side:THREE.DoubleSide, depthWrite:false, fog:false, blending:THREE.AdditiveBlending}));
-  wall.rotation.y = Math.PI / 2; scene.add(wall);
-  const top = new THREE.Mesh(new THREE.BoxGeometry(.05, .05, 3.2), new THREE.MeshBasicMaterial({color, fog:false})); scene.add(top);
-  return k => { const h = 5.4 * k; wall.scale.y = Math.max(.001, h); wall.position.set(gx, h / 2, 0); top.position.set(gx, h, 0); };
-}
-function lightCycle(scene, color, path, speed, n){
-  const pts = [], geo = new THREE.BufferGeometry(), pos = new Float32Array(n * 6); const idx = [];
-  for (let i = 0; i < n - 1; i++){ const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
-  geo.setIndex(idx); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  const trail = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color, transparent:true, opacity:.42, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false}));
-  trail.frustumCulled = false; scene.add(trail);
-  const bike = new THREE.Mesh(new THREE.BoxGeometry(.5, .22, .2), new THREE.MeshBasicMaterial({color})); scene.add(bike);
-  return t => { const p = path(t * speed); bike.position.set(p.x, .12, p.z); const q = path(t * speed - .01); bike.lookAt(q.x, .12, q.z); bike.rotateY(Math.PI / 2);
-    pts.unshift(p.clone()); if (pts.length > n) pts.pop();
-    for (let i = 0; i < n; i++){ const v = pts[Math.min(i, pts.length - 1)]; pos.set([v.x, 0, v.z, v.x, .26, v.z], i * 6); }
-    geo.attributes.position.needsUpdate = true; };
-}
-const rectPath = (w, d) => u => { u = ((u % 1) + 1) % 1; const L = 2 * (w + d), s = u * L;
-  if (s < w) return new THREE.Vector3(-w / 2 + s, 0, d / 2); if (s < w + d) return new THREE.Vector3(w / 2, 0, d / 2 - (s - w));
-  if (s < 2 * w + d) return new THREE.Vector3(w / 2 - (s - w - d), 0, -d / 2); return new THREE.Vector3(-w / 2, 0, -d / 2 + (s - 2 * w - d)); };
-const ovalPath = (rx, rz) => u => new THREE.Vector3(Math.cos(u * Math.PI * 2) * rx, 0, Math.sin(u * Math.PI * 2) * rz);
+const STAR_FRAG = `uniform sampler2D map; uniform float reveal; uniform vec3 rim; uniform float isRim; varying vec2 vUv;
+  void main(){ vec4 c = texture2D(map, vUv); if (c.a < .04 || vUv.y > reveal) discard;
+    float edge = smoothstep(reveal - .04, reveal, vUv.y);
+    gl_FragColor = isRim > .5 ? vec4(rim, c.a) : vec4(c.rgb + edge * .7, c.a); }`;
 
-// the cover star. "print": his printed cut-out sliding up out of the grid like a page off the press.
-// "holo": the same print as a hologram - posterized to the skin's inks, halftone dots, scanlines and a sweep.
-const STAR_FRAG = `uniform sampler2D map; uniform float t; uniform float reveal; uniform float holo; uniform vec3 ink[5]; varying vec2 vUv;
-  void main(){
-    vec4 c = texture2D(map, vUv);
-    if (c.a < .04 || vUv.y > reveal) discard;
-    vec3 rgb = c.rgb;
-    if (holo > .5){
-      float l = dot(c.rgb, vec3(.3, .59, .11));
-      float q = clamp(l * 1.35 - .12, 0., .999) * 5.;
-      int k = int(q);
-      vec3 col = ink[0];
-      if (k == 1) col = ink[1]; else if (k == 2) col = ink[2]; else if (k == 3) col = ink[3]; else if (k >= 4) col = ink[4];
-      vec2 cell = fract(gl_FragCoord.xy / 5.) - .5;
-      float dot_ = step(length(cell), .5 * sqrt(1. - l));
-      col *= 1. - .35 * dot_;
-      float scan = .72 + .28 * step(.5, fract(vUv.y * 160. - t * 2.));
-      float sweep = smoothstep(.03, 0., abs(vUv.y - fract(t * .22)));
-      rgb = col * scan + ink[3] * sweep * .5;
-    }
-    float rise = smoothstep(reveal - .05, reveal, vUv.y);
-    rgb += vec3(1.) * rise * (holo > .5 ? 1.2 : .6);
-    gl_FragColor = vec4(rgb, c.a * (holo > .5 ? .92 + .06 * sin(t * 31.) : 1.));
-  }`;
-function star(scene, s){
-  const img = new Image(); let mat = null, rim = null, grp = new THREE.Group(); scene.add(grp);
-  const inks = s.inks.map(h => new THREE.Vector3(...col(h).toArray()));
-  const narrow = innerWidth < 700;
-  grp.position.set(narrow ? 1.2 : 2.2, 0, -10);
-  img.onload = () => {
-    const tex = new THREE.Texture(img); tex.needsUpdate = true; tex.anisotropy = 8;
-    const h = 9.6, w = h * img.naturalWidth / img.naturalHeight;
-    mat = new THREE.ShaderMaterial({transparent:true, depthWrite:false, fog:false,
-      uniforms:{map:{value:tex}, t:{value:0}, reveal:{value:0}, holo:{value:take === "holo" ? 1 : 0}, ink:{value:inks}},
-      vertexShader:"varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }",
-      fragmentShader:STAR_FRAG});
-    const geo = new THREE.PlaneGeometry(w, h); geo.translate(0, h / 2, 0);
-    // a neon rim in the week's ink: his silhouette, a touch bigger, just behind him - the bloom turns it into a glow
-    rim = new THREE.ShaderMaterial({transparent:true, depthWrite:false, fog:false,
-      uniforms:{map:{value:tex}, reveal:{value:0}, c:{value:new THREE.Vector3(...col(s.acc).toArray())}},
-      vertexShader:"varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }",
-      fragmentShader:"uniform sampler2D map; uniform float reveal; uniform vec3 c; varying vec2 vUv; void main(){ float a = texture2D(map, vUv).a; if (a < .04 || vUv.y > reveal) discard; gl_FragColor = vec4(c, a * .9); }"});
-    const back = new THREE.Mesh(geo, rim); back.scale.set(1.045, 1.02, 1); back.position.set(-w * .0225, -.02, -.06); grp.add(back);
-    grp.add(new THREE.Mesh(geo, mat));
-    // the slot in the grid he rises out of, in the week's ink
-    const slot = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.05, .18), new THREE.MeshBasicMaterial({color:col(s.acc), transparent:true, opacity:.9, fog:false}));
-    slot.rotation.x = -Math.PI / 2; slot.position.y = .02; grp.add(slot);
-  };
-  img.src = `managers/${STAR}_body-${s.look}.webp`;
-  return t => { if (!mat) return; const k = Math.min(1, Math.max(0, (t - .3) / 1.9)); mat.uniforms.t.value = t; mat.uniforms.reveal.value = ease(k) * 1.02; if (rim) rim.uniforms.reveal.value = ease(k) * 1.02; };
-}
-
-let killer = null;
-function mount(){
-  const s = SKINS[skin], stage = document.getElementById("stage"), mag = document.getElementById("mag");
-  stage.style.setProperty("--acc", s.acc); stage.style.setProperty("--boxbg", s.boxbg); stage.style.setProperty("--boxfg", s.boxfg);
-  mag.innerHTML = magHTML(s);
-  if (killer) killer();
+let kill = null;
+async function mount(){
+  const d = WEEKS[week], sk = skinOver || d.skin, s = SKINS[sk];
+  const stage = document.getElementById("stage"), mag = document.getElementById("mag");
+  stage.style.setProperty("--acc", s.acc); stage.style.setProperty("--boxbg", s.boxbg); stage.style.setProperty("--boxfg", s.boxfg); stage.style.setProperty("--hotfg", s.hotfg || "#000");
+  mag.innerHTML = magHTML(d, s);
+  if (kill) kill(); kill = null;
   if (!window.THREE) return;
-  seed = 11;
+  const myMount = {}; mount.cur = myMount;
+  const posters = await Promise.all(d.hi.map(posterArt));
+  const starImg = await photo(cut(d.star, s.look));
+  if (mount.cur !== myMount) return;   // the reader picked another week while the photos loaded
+
+  seed = 11 + week;
   const el = stage, r = new THREE.WebGLRenderer({antialias:true}); const PR = Math.min(2, devicePixelRatio || 1); r.setPixelRatio(PR);
   r.setSize(el.clientWidth, el.clientHeight); el.insertBefore(r.domElement, mag);
   const scene = new THREE.Scene(), over = new THREE.Scene(), cam = new THREE.PerspectiveCamera(40, el.clientWidth / el.clientHeight, .1, 300);
-  const grid = gridWorld(scene, s.acc);
-  const acc = col(s.acc).getHex();
-  const T = TEAMS.map((d, i) => { const isStar = d.id === STAR; const b = neonBox(isStar ? acc : i < PO ? BLUE : DIM, isStar ? 1.0 : .82);
-    b.position.x = X(i); b.scale.y = .001; scene.add(b); return b; });
-  const m = innerWidth < 700 ? 1.3 : 1;
-  const F = TEAMS.map((d, i) => { const ring = d.id === STAR ? s.acc : hex(i < PO ? BLUE : DIM);
-    const f = sprite(faceTex(`managers/${d.id}.jpg`, ring), 1.2 * m, 1.2 * m), l = sprite(pillTex(d.po + "%", d.first, ring, d.id === STAR), 1.38 * m, .65 * m);
-    over.add(f, l); return {f, l}; });
-  const st = star(scene, s), wall = lightWall(scene);
-  const cyc = [lightCycle(scene, acc, rectPath(17, 8), .06, 90), lightCycle(scene, 0x4fb8ff, rectPath(20, 10.5), -.045, 90), lightCycle(scene, CRIM, ovalPath(12, 6), .042, 90)];
+  const narrow = innerWidth < 700;
+  // the backdrop doubles as the sky: one big painted wall at the far end of the floor
+  const bd = canvasTex(1600, 640, (g, w, h) => backdropArt(sk, g, w, h, d, s));
+  const fogC = {checker:0x0b0d2a, concrete:0x6e6d72, sky:0x4f93ea, xerox:0xefe59a, holo:0x2a0f45, night:0x05060c, splat:0xf4efe6, slate:0x161616, paper:0xf3ead6, cyan:0x04141c}[sk];
+  scene.background = new THREE.Color(fogC); scene.fog = new THREE.Fog(fogC, 18, 62);
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(110, 44), new THREE.MeshBasicMaterial({map:bd, fog:false})); wall.position.set(narrow ? 1 : -2, 16, -46); scene.add(wall);   // the camera sees roughly x 14-86%, the lower 60% of this art
+  const ft = canvasTex(256, 256, (g, w, h) => floorArt(sk, g, w, h, s)); ft.wrapS = ft.wrapT = THREE.RepeatWrapping; ft.repeat.set(44, 44);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(180, 180), new THREE.MeshBasicMaterial({map:ft})); floor.rotation.x = -Math.PI / 2; scene.add(floor);
+  scene.add(new THREE.AmbientLight(0xffffff, s.light ? .9 : .55)); const dl = new THREE.DirectionalLight(0xffffff, s.light ? .7 : .35); dl.position.set(4, 10, 8); scene.add(dl);
+
+  // the towers
+  const inC = col(s.inC).getHex(), outC = col(s.outC).getHex(), acc = col(s.acc).getHex();
+  const T = TEAMS.map((t, i) => { const st = t.first === d.star; const b = tower(st ? acc : i < PO ? inC : outC, st ? 1.0 : .82, s.light); b.position.x = X(i); b.scale.y = .001; scene.add(b); return b; });
+  const m = narrow ? 1.3 : 1;
+  const F = TEAMS.map(t => { const st = t.first === d.star, ring = st ? s.acc : (s.light ? "#000" : "#fff");
+    const f = sprite(faceTex(`managers/${t.id}.jpg`, ring), 1.15 * m, 1.15 * m), l = sprite(labelTex(t.po + "%", t.first, s, st), 1.3 * m, .74 * m); over.add(f, l); return {f, l}; });
+  // the playoff line: a strip of the week's ink across the floor and up a thin wall
+  const gx = (X(PO - 1) + X(PO)) / 2;
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1), new THREE.MeshBasicMaterial({color:acc, transparent:true, opacity:s.light ? .35 : .22, side:THREE.DoubleSide, depthWrite:false, fog:false}));
+  pl.rotation.y = Math.PI / 2; scene.add(pl);
+
+  // the billboards: the week's other high points, each a mini cover on two posts
+  const spots = narrow ? [[-4.6, -13, .25], [6.4, -12, -.3], [1.2, -19, 0]] : [[-5.8, -14, .22], [9.2, -12, -.32], [14.5, -20, -.3]];
+  const boards = posters.map((cv, i) => { const tx = new THREE.CanvasTexture(cv); tx.anisotropy = 8;
+    const grp = new THREE.Group(), w = 4.3, h = 5.73;
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({map:tx, fog:false})); face.position.y = h / 2 + 1.3; grp.add(face);
+    const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(w + .18, h + .18)), new THREE.LineBasicMaterial({color:s.light ? 0x000000 : acc}));
+    frame.position.copy(face.position); grp.add(frame);
+    [-w * .32, w * .32].forEach(px => { const post = new THREE.Mesh(new THREE.BoxGeometry(.09, 1.3, .09), new THREE.MeshBasicMaterial({color:s.light ? 0x181512 : acc})); post.position.set(px, .65, 0); grp.add(post); });
+    const [x, z, ry] = spots[i] || spots[0]; grp.position.set(x, 0, z); grp.rotation.y = ry; grp.scale.setScalar(.001); scene.add(grp); return grp; });
+
+  // the star: printed, with a rim in the week's ink, rising out of a slot in the floor
+  let starMat = null, rimMat = null;
+  if (starImg){
+    const tx = new THREE.Texture(starImg); tx.needsUpdate = true; tx.anisotropy = 8;
+    const h = 9.4, w = h * starImg.naturalWidth / starImg.naturalHeight, geo = new THREE.PlaneGeometry(w, h); geo.translate(0, h / 2, 0);
+    const mk = rim => new THREE.ShaderMaterial({transparent:true, depthWrite:false, fog:false,
+      uniforms:{map:{value:tx}, reveal:{value:0}, rim:{value:new THREE.Vector3(...col(s.acc).toArray())}, isRim:{value:rim ? 1 : 0}},
+      vertexShader:"varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }", fragmentShader:STAR_FRAG});
+    starMat = mk(false); rimMat = mk(true);
+    const grp = new THREE.Group(); grp.position.set(narrow ? 1.4 : 2.6, 0, -8.5); scene.add(grp);
+    const back = new THREE.Mesh(geo, rimMat); back.scale.set(1.05, 1.025, 1); back.position.set(-w * .025, -.02, -.06); grp.add(back);
+    grp.add(new THREE.Mesh(geo, starMat));
+    const slot = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.05, .2), new THREE.MeshBasicMaterial({color:acc, fog:false})); slot.rotation.x = -Math.PI / 2; slot.position.y = .02; grp.add(slot);
+  }
+
   let comp = null;
-  if (THREE.EffectComposer && THREE.UnrealBloomPass){
+  if (!s.light && THREE.EffectComposer && THREE.UnrealBloomPass){
     const W = el.clientWidth * PR, Hh = el.clientHeight * PR;
     const rt = (THREE.WebGLMultisampleRenderTarget && r.capabilities.isWebGL2) ? new THREE.WebGLMultisampleRenderTarget(W, Hh, {format:THREE.RGBAFormat}) : undefined;
     if (rt) rt.samples = 4;
     comp = new THREE.EffectComposer(r, rt); comp.addPass(new THREE.RenderPass(scene, cam)); comp.setPixelRatio(PR); comp.setSize(el.clientWidth, el.clientHeight);
-    // a higher threshold than Kreeper's: the neon glows, the printed star stays a print
-    comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(el.clientWidth, el.clientHeight), .95, .35, .55));
+    comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(el.clientWidth, el.clientHeight), .45, .25, .8));   // neon edges glow; the prints stay prints
   }
   let yaw = 0, drag = null, t0 = performance.now(), raf = 0, alive = true;
   const down = e => { drag = {x:e.clientX, y:yaw}; }, move = e => { if (drag) yaw = drag.y + (e.clientX - drag.x) * .006; }, up = () => { drag = null; };
-  const dbl = () => { t0 = performance.now(); };
-  r.domElement.addEventListener("pointerdown", down); addEventListener("pointermove", move); addEventListener("pointerup", up); r.domElement.addEventListener("dblclick", dbl);
+  r.domElement.addEventListener("pointerdown", down); addEventListener("pointermove", move); addEventListener("pointerup", up);
+  r.domElement.addEventListener("dblclick", () => { t0 = performance.now(); });
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   function frame(now){
     if (!alive) return;
     const t = still ? 6 : (now - t0) / 1000;
     if (!drag) yaw *= .985;
-    const a = Math.sin(t * .2) * .38 + yaw - .18;
-    const R = 15.5 * Math.min(1.9, Math.max(.7, 1.55 / cam.aspect));
-    cam.position.set(Math.sin(a) * R, 4.6 + R * .1 + Math.sin(t * .35) * .3, Math.cos(a) * R); cam.lookAt(cam.aspect > 1.5 ? -1.9 : 0, cam.aspect > 1.5 ? 3.6 : 3.4, -2);   // desktop: aim left so the scene sits right of the cover lines
-    grid.offset.y = -t * .35; st(t);
-    TEAMS.forEach((d, i) => { const k = Math.min(1, Math.max(0, (t - .2 - i * .12) / 1.1)), h = H(d) * easeBack(k);
-      T[i].scale.y = Math.max(.001, h); F[i].f.position.set(X(i), h + .75 * m, 0); F[i].l.position.set(X(i), h + 1.72 * m, 0);
-      F[i].f.material.opacity = F[i].l.material.opacity = Math.min(1, k * 2); });
-    wall(ease(Math.min(1, Math.max(0, (t - 1.2) / .8)))); cyc.forEach(c => c(t));
+    const a = Math.sin(t * .18) * .3 + yaw - .12;
+    const R = 15.5 * Math.min(cam.aspect < 1 ? 1.74 : 1.9, Math.max(.7, 1.55 / cam.aspect));   // a portrait phone comes in close and looks up, so the set fills the cover
+    cam.position.set(Math.sin(a) * R, 4.4 + R * .1 + Math.sin(t * .35) * .25, Math.cos(a) * R); cam.lookAt(cam.aspect > 1.5 ? -1.9 : .2, cam.aspect > 1.5 ? 3.7 : 5.6, -3);
+    // the build: billboards go up, the star prints, the towers rise, the playoff line goes in
+    boards.forEach((b, i) => { const k = Math.min(1, Math.max(0, (t - .1 - i * .18) / .8)); b.scale.setScalar(Math.max(.001, easeBack(k))); });
+    if (starMat){ const k = ease(Math.min(1, Math.max(0, (t - .5) / 1.8))) * 1.02; starMat.uniforms.reveal.value = rimMat.uniforms.reveal.value = k; }
+    TEAMS.forEach((d2, i) => { const k = Math.min(1, Math.max(0, (t - .9 - i * .1) / 1.1)), h = H(d2) * easeBack(k);
+      T[i].scale.y = Math.max(.001, h); F[i].f.position.set(X(i), h + .72 * m, 0); F[i].l.position.set(X(i), h + 1.7 * m, 0); F[i].f.material.opacity = F[i].l.material.opacity = Math.min(1, k * 2); });
+    const pk = ease(Math.min(1, Math.max(0, (t - 2) / .8))), ph = 5.2 * pk; pl.scale.y = Math.max(.001, ph); pl.position.set(gx, ph / 2, 0);
+    ft.offset.y = -t * .15;
     r.autoClear = true; comp ? comp.render() : r.render(scene, cam);
     r.autoClear = false; r.clearDepth(); r.render(over, cam); r.autoClear = true;
     if (!still && !document.hidden) raf = requestAnimationFrame(frame);
@@ -409,9 +464,11 @@ function mount(){
   const rs = () => { r.setSize(el.clientWidth, el.clientHeight); comp && comp.setSize(el.clientWidth, el.clientHeight); cam.aspect = el.clientWidth / el.clientHeight; cam.updateProjectionMatrix(); };
   addEventListener("resize", rs);
   raf = requestAnimationFrame(frame);
-  if (still) setTimeout(() => requestAnimationFrame(frame), 400);   // the photos load after the first still frame
-  killer = () => { alive = false; cancelAnimationFrame(raf); removeEventListener("pointermove", move); removeEventListener("pointerup", up);
+  if (still) setTimeout(() => requestAnimationFrame(frame), 500);   // the faces load after the first still frame
+  kill = () => { alive = false; cancelAnimationFrame(raf); removeEventListener("pointermove", move); removeEventListener("pointerup", up);
     removeEventListener("resize", rs); document.removeEventListener("visibilitychange", vis); r.dispose(); r.domElement.remove(); };
 }
-Promise.all(["76px Anton", "600 26px Orbitron"].map(f => document.fonts.load(f))).catch(() => {}).then(() => { press(skinsEl, "skin", skin); mount(); });
+const FACES = ["92px Anton", "900 30px Archivo", "128px Archivo", "58px Bungee", "70px 'Grenze Gotisch'", "62px 'Metal Mania'", "92px Italiana", "62px Shrikhand", "64px Yellowtail", "34px 'Permanent Marker'"];
+sync();
+Promise.all(FACES.map(f => document.fonts.load(f))).catch(() => {}).then(mount);
 </script>
