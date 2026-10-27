@@ -26,3 +26,13 @@ def test_a_tie_on_wins_still_leaves_the_door_open():
     # the 5th team can reach exactly the 4th team's wins: neither is decided
     out = playoffs.locks(_rows([20, 18, 16, 14, 12, 3, 2, 1], 26), 4, 28)
     assert "3" not in out and "4" not in out
+
+
+def test_reverting_a_week_takes_back_its_wins_and_points():
+    teams = {"a": {"wins": 9, "losses": 5, "pf": 1000.0}, "b": {"wins": 7, "losses": 7, "pf": 900.0}}
+    res = {"a": {"pts": 150.0, "h2h": True, "med": True, "median_game": True},
+           "b": {"pts": 90.0, "h2h": False, "med": False, "median_game": True}}
+    out = playoffs.revert_week(teams, res)
+    assert out["a"] == {"wins": 7, "losses": 5, "pf": 850.0}
+    assert out["b"] == {"wins": 7, "losses": 5, "pf": 810.0}
+    assert teams["a"]["wins"] == 9          # the table it was given is untouched

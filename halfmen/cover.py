@@ -271,7 +271,7 @@ BLACK = 'font-weight="900" font-stretch="125%"'
 # championship issue, the table of contents - keep their own.
 SKINS = ("checker", "concrete", "sky", "xerox", "holo", "night", "splat", "slate", "paper", "cyan")
 HOME = {"biggest": "checker", "chase": "concrete", "mover": "sky", "bench": "xerox", "lucky": "holo",
-        "streak": "night", "blowout": "splat", "clinch": "slate"}
+        "streak": "night", "blowout": "splat", "clinch": "slate", "close": "concrete", "surge": "night", "trade": "cyan"}
 ROTATING = tuple(HOME)
 # The skin each fixed layout looks most like, so the deal never puts, say, a
 # cyan frame the week after the table of contents.
@@ -337,6 +337,20 @@ def _slots(story: Dict) -> Dict:
         return dict(big="BY " + str(story["margin"]), unit="", word="BLOWOUT", kicker="NOT EVEN CLOSE",
                     script="Blowout", tag="CALL<br>IT", top="THE BLOWOUT ISSUE",
                     lines=["%s %s" % (first, story["pts_w"]), "%s %s" % (str(story["loser"]).upper(), story["pts_l"])])
+    if k == "close":
+        return dict(big="BY " + str(story["margin"]), unit="", word="CLOSE ONE", kicker="THE WEEK'S CLOSEST GAME",
+                    script="Close One", tag="SWEAT<br>IT OUT", top="THE CLOSEST GAME",
+                    lines=["%s %s" % (first, story["pts_w"]), "%s %s" % (str(story["loser"]).upper(), story["pts_l"])])
+    if k == "surge":
+        up = bool(story.get("up"))
+        return dict(big="%s%%" % story["delta"], unit="PLAYOFF ODDS", word="SURGE" if up else "FREEFALL",
+                    kicker="%s%% TO %s%%" % (story["before"], story["after"]), script="Surge" if up else "Freefall",
+                    tag="LOOK<br>OUT" if up else "UH<br>OH", top="PLAYOFF ODDS",
+                    lines=["%s %s" % (first, story["rec"]), "%s%% → %s%%" % (story["before"], story["after"])])
+    if k == "trade":
+        return dict(big="TRADE", unit="", word="TRADE", kicker="%s AND %s" % (first, str(story["other"]).upper()),
+                    script="Trade!", tag="DEAL", top="THE TRADE",
+                    lines=["%s GETS %s" % (first, story["gets_a"]), "%s GETS %s" % (str(story["other"]).upper(), story["gets_b"])])
     if k == "clinch":
         return dict(big="IN.", unit="", word="CLINCHED", kicker="LOCKED INTO THE PLAYOFFS", script="Clinched",
                     tag="SEE YOU IN<br>DECEMBER", top="PLAYOFF BOUND", lines=["%s · CLINCHED" % first])
@@ -356,6 +370,9 @@ def _skin(skin: str, story: Dict, img: Img, wordmark: str) -> str:
     first = _e(str(story.get("first") or "").upper())
     big, unit, word = _e(s["big"]), _e(s["unit"]), _e(s["word"])
     lines = s["lines"] if s.get("raw") else [_e(x) for x in s["lines"]]
+    # the star's other feats that week (the closest win, the jump in the odds...) come first
+    feats = [_e(f) for f in (story.get("feats") or [])]
+    lines = (feats + [x for x in lines if x not in feats])[:3]
     if skin == "checker":
         return ('<div class="bg checker"></div>' + f'<div class="topbar">{_e(s["top"])}</div>'
                 + _mast(wordmark, "Bungee", 64, "#fb0849", top="9%")
@@ -372,7 +389,7 @@ def _skin(skin: str, story: Dict, img: Img, wordmark: str) -> str:
                 + _cut(img, o, "bw", height=86, x=44)
                 + f'<div class="script"><small>THE</small><b>{_e(s["script"])}</b><i>{first} · {big} {unit} · '
                   f'{_e(s["kicker"])}</i></div>'
-                + f'<div class="scrawl">{_e(s["quote"]) if s.get("quote") else (lines[-1] if lines else "")}</div>'
+                + f'<div class="scrawl">{lines[0] if story.get("feats") else _e(s["quote"]) if s.get("quote") else (lines[-1] if lines else "")}</div>'
                 + _barcode(wk, month))
     if skin == "sky":
         return ('<div class="bg sky"></div>' + f'<div class="topbar dark">{_e(s["top"])} <em>•</em> WEEK {wk}</div>'
@@ -391,6 +408,7 @@ def _skin(skin: str, story: Dict, img: Img, wordmark: str) -> str:
         return ('<div class="bg xerox"></div>'
                 + _mast(wordmark, "Bungee", 62, "#2a5bd8", top="6%", tilt=-1, stroke="#e8202a", shadow="#e8202a", sw=1.5)
                 + _cut(img, o, "xerox", height=86, x=34)
+                + (f'<div class="bx sm" style="left:4%;top:24%">{lines[0]}</div>' if story.get("feats") else "")
                 + f'<div class="paint" style="{"left:auto;right:-3%;" if on_right else ""}font-size:{_fit(s["word"], 15, 80)}cqw">{word}</div>'
                 + f'<div class="stack" style="{stack_at}font-size:{size}cqw">{num}<small>{unit or _e(s["kicker"])}</small></div>'
                 + _barcode(wk, month, right=not on_right))
@@ -424,6 +442,7 @@ def _skin(skin: str, story: Dict, img: Img, wordmark: str) -> str:
         return ('<div class="bg slate"></div>'
                 + _mast(wordmark, "Archivo", 72, "#fff", top="4%", tilt=0, shadow=None, sw=0, attrs=BLACK, z=4)
                 + _cut(img, o, "bw", height=112, x=50, bottom=-18)
+                + (f'<div class="bx sm" style="left:4%;top:24%;transform:none;background:#fff;color:#000">{lines[0]}</div>' if story.get("feats") else "")
                 + f'<div class="big-in" style="font-size:{_fit(s["big"], 22, 70)}cqw">{big}</div>'
                 + f'<div class="bx" style="right:5%;bottom:9%;transform:none;background:#fff;color:#000">{first} · {word}</div>'
                 + _barcode(wk, month))

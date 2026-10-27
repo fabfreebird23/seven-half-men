@@ -2050,8 +2050,9 @@ def _recap_png(week: int, me: str) -> bytes:
 # ---------------------------------------------------------------- the weekly cover
 # Every week's biggest story as a skate-mag cover (halfmen/cover.py), on Home.
 # The story is chosen by "heat" - how far outside normal the week's number
-# is - and never a kind that ran in the two weeks before; the look is dealt
-# separately (cover.deal), so a run of top scores still looks different.
+# is, with a manager's other feats that week counted in (see _cover_issue);
+# the look is dealt separately (cover.deal), so a run of top scores still
+# looks different. It rolls on Tuesday, once last week is final (_issue_week).
 
 _NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"]
 
@@ -2095,6 +2096,45 @@ def _win_streaks(through: int) -> dict:
     return run
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_odds_swing(week: int) -> dict:
+    """{owner: {before, after}} playoff odds either side of `week`."""
+    return playoffs.odds_swing(LG, SEASON, week)
+
+
+def _trade_stories(week: int) -> list:
+    """A story per trade made in `week`; the more that moved, the hotter."""
+    out = []
+    try:
+        moves = [t for t in season.transactions(limit=40, week=week) if t["raw_kind"] == "trade" and t["week"] == week]
+    except Exception:          # noqa: BLE001
+        return []
+    for t in moves:
+        a, b = (t["owners"] + ["", ""])[:2]
+        if not (a and b):
+            continue
+        gets = lambda o: [x["name"].split(" ")[-1].upper() for x in t["adds"] if x["owner_id"] == o]
+        ga, gb = gets(a), gets(b)
+        out.append({"kind": "trade", "owner": a, "first": _first(a), "other": _first(b),
+                    "gets_a": ", ".join(ga) or "PICKS", "gets_b": ", ".join(gb) or "PICKS",
+                    "heat": 40 + 8 * len(t["adds"]), "headline": "%s and %s trade" % (_first(a), _first(b)),
+                    "sub": "%s gets %s; %s gets %s" % (_first(a), ", ".join(ga) or "picks", _first(b), ", ".join(gb) or "picks"),
+                    "short": "%s–%s TRADE" % (_first(a).upper(), _first(b).upper()), "link": "?p=inseason&g=league&t=trades"})
+    return out
+
+
+def _issue_week() -> int:
+    """The week whose set is up. It rolls the moment last week's games are
+    all final - Tuesday morning, after Monday night - rather than whenever
+    Sleeper's league clock ticks over, which can be a day later."""
+    cur = season.current_week() or 1
+    try:
+        done = season.week_is_final(LG, cur)
+    except Exception:          # noqa: BLE001
+        done = False
+    return cur + 1 if done and cur < 18 else cur
+
+
 def _playoff_locks(rows: list) -> dict:
     s_ = playoffs._settings(LG)
     return playoffs.locks(rows, int(s_["playoff_teams"]),
@@ -2124,16 +2164,16 @@ def _cover_stories(cur: int, with_gotw: bool = True) -> list:
                     "star": (_surname(_pname(star[0])).upper() + "." if star and star[1] == top else None),
                     "star_pts": ("%.1f. NOT BAD." % star[2]) if star and star[1] == top else None,
                     "buried": (_first(bo).upper() + "'S BENCH") if bo != top else None,
-                    "heat": 200 * (pts[top] - avg) / max(1, avg),
+                    "heat": 200 * (pts[top] - avg) / max(1, avg), "feat": "TOP SCORE: %.1f" % pts[top],
                     "headline": "%s %.1f" % (_first(top), pts[top]), "sub": "the week's top score",
                     "short": "%s %.0f" % (_first(top).upper(), pts[top]), "link": "?p=inseason&g=week&t=live"})
-        out.append({"kind": "bench", "owner": bo, "first": _first(bo), "pts": r["bench"][bo],
+        out.append({"kind": "bench", "side": True, "owner": bo, "first": _first(bo), "pts": r["bench"][bo],
                     "heat": 1.6 * r["bench"][bo], "headline": "%s's bench, %.1f" % (_first(bo), r["bench"][bo]),
                     "sub": "points his best lineup would have added", "short": "%s'S BENCH" % _first(bo).upper(),
                     "link": "?p=inseason&g=week&t=live"})
         lk = r["lucky"]
         if r["lucky_beaten"] >= 2:
-            out.append({"kind": "lucky", "owner": lk["w"], "first": _first(lk["w"]), "pts": "%.1f" % pts[lk["w"]],
+            out.append({"kind": "lucky", "side": True, "owner": lk["w"], "first": _first(lk["w"]), "pts": "%.1f" % pts[lk["w"]],
                         "beaten": r["lucky_beaten"], "team": team_of(lk["w"]), "heat": 12 * r["lucky_beaten"],
                         "headline": "%s's lucky %.1f" % (_first(lk["w"]), pts[lk["w"]]),
                         "sub": "%d teams scored more and he still won" % r["lucky_beaten"],
@@ -2144,7 +2184,7 @@ def _cover_stories(cur: int, with_gotw: bool = True) -> list:
             third = next((x["owner_id"] for x in rows if x["owner_id"] not in (g["a"], g["b"])), None)
             out.append({"kind": "gotw", "a": g["a"], "b": g["b"], "team_a": team_of(g["a"]), "team_b": team_of(g["b"]),
                         "stakes": g["stakes"], "photos": [_mgr_photo(str(o)) for o in (g["a"], g["b"], third) if o],
-                        "heat": 1.4 * g["stakes"],
+                        "heat": 1.6 * g["stakes"], "side": g["stakes"] < 30,
                         "headline": "%s v %s" % (_first(g["a"]), _first(g["b"])),
                         "sub": "%d points of playoff odds on the line" % g["stakes"],
                         "short": "%s V %s" % (_first(g["a"]).upper(), _first(g["b"]).upper()),
@@ -2152,7 +2192,7 @@ def _cover_stories(cur: int, with_gotw: bool = True) -> list:
     if rows:
         last = rows[-1]
         chase_start = int(config.league()["chase_weeks"][0])
-        out.append({"kind": "chase", "owner": last["owner_id"], "first": _first(last["owner_id"]), "rec": last["record"],
+        out.append({"kind": "chase", "side": True, "owner": last["owner_id"], "first": _first(last["owner_id"]), "rec": last["record"],
                     "team": team_of(last["owner_id"]), "cap": int(pot.cap_amount()[0]),
                     "heat": 20 + 8 * max(0, cur - (chase_start - 5)),
                     "headline": "The Chase is real", "sub": "%s at %s, and a $%d pot to play for" % (
@@ -2165,7 +2205,7 @@ def _cover_stories(cur: int, with_gotw: bool = True) -> list:
     if pw:
         m = max(pw, key=lambda x: x["moved"])
         if m["moved"] >= 3:
-            out.append({"kind": "mover", "owner": m["owner_id"], "first": _first(m["owner_id"]), "rec": m["record"],
+            out.append({"kind": "mover", "side": True, "owner": m["owner_id"], "first": _first(m["owner_id"]), "rec": m["record"],
                         "moved_word": _NUMBER_WORDS[m["moved"]] if m["moved"] < len(_NUMBER_WORDS) else str(m["moved"]),
                         "heat": 5 * m["moved"] - 5,
                         "headline": "%s, up %d" % (_first(m["owner_id"]), m["moved"]),
@@ -2190,9 +2230,16 @@ def _cover_stories_more(cur: int, live: bool, rows: list, r: dict, last_reg: int
                         "heat": 1.1 * b["margin"], "headline": "%s by %.0f" % (_first(b["w"]), b["margin"]),
                         "sub": "%.1f to %.1f over %s" % (pw, pl, _first(b["l"])),
                         "short": "%s BY %.0f" % (_first(b["w"]).upper(), b["margin"]), "link": "?p=inseason&g=week&t=live"})
+        c = r["close"]
+        if c["margin"] < 3:
+            out.append({"kind": "close", "owner": c["w"], "first": _first(c["w"]), "loser": _first(c["l"]),
+                        "margin": "%.1f" % c["margin"], "pts_w": "%.1f" % r["pts"][c["w"]], "pts_l": "%.1f" % r["pts"][c["l"]],
+                        "heat": 48 - 12 * c["margin"], "feat": "BEAT %s BY %.1f" % (_first(c["l"]).upper(), c["margin"]), "headline": "%s by %.1f" % (_first(c["w"]), c["margin"]),
+                        "sub": "%.1f to %.1f over %s, the week's closest game" % (r["pts"][c["w"]], r["pts"][c["l"]], _first(c["l"])),
+                        "short": "%s BY %.1f" % (_first(c["w"]).upper(), c["margin"]), "link": "?p=inseason&g=week&t=live"})
         # the quiet week's cover: every story at once, as a table of contents
         lead = r["top"]
-        out.append({"kind": "issue", "owner": lead, "first": _first(lead), "heat": 24,
+        out.append({"kind": "issue", "owner": lead, "first": _first(lead), "heat": 1,
                     "headline": "The week in one issue", "sub": "no one story ran away with it",
                     "short": "THE ISSUE", "link": "?p=inseason&g=week&t=live"})
     if cur > 1:
@@ -2207,6 +2254,7 @@ def _cover_stories_more(cur: int, live: bool, rows: list, r: dict, last_reg: int
                             "pf": "%.0f" % by[o]["points_for"], "heat": 15 * n,
                             "headline": "%s, %d straight" % (_first(o), n), "sub": "%d head-to-head wins in a row" % n,
                             "short": "%s ON FIRE" % _first(o).upper(), "link": "?p=home"})
+    out += _trade_stories(cur - 1)
     if cur == last_reg:
         pairs = (playoffs.fixtures(LG, cur, cur) or {}).get(cur) or []
         if pairs:
@@ -2236,6 +2284,20 @@ def _cover_stories_more(cur: int, live: bool, rows: list, r: dict, last_reg: int
         told = {(i.get("kind"), i.get("owner")) for i in storage.load_covers(SEASON).values()}
     except Exception:          # noqa: BLE001
         told = set()
+    try:
+        swing = get_odds_swing(cur - 1) if cur > 1 else {}
+    except Exception:          # noqa: BLE001
+        swing = {}
+    if swing:
+        o = max(swing, key=lambda k: abs(swing[k]["after"] - swing[k]["before"]))
+        b4, af = swing[o]["before"], swing[o]["after"]
+        if abs(af - b4) >= 12 and o in by:
+            up = af > b4
+            out.append({"kind": "surge", "owner": o, "first": _first(o), "rec": by[o]["record"], "before": b4, "after": af,
+                        "delta": "%+d" % (af - b4), "up": up, "heat": 1.3 * abs(af - b4), "feat": "PLAYOFF ODDS %d%% → %d%%" % (b4, af),
+                        "headline": "%s, %d%% to %d%%" % (_first(o), b4, af),
+                        "sub": "the week's biggest swing in playoff odds" if up else "the week's biggest drop in playoff odds",
+                        "short": "%s %+d%%" % (_first(o).upper(), af - b4), "link": po})
     locks = _playoff_locks(rows)
     gone = [x for x in reversed(rows) if locks.get(x["owner_id"]) == "out" and ("rip", x["owner_id"]) not in told]
     if gone:
@@ -2257,12 +2319,17 @@ def _cover_stories_more(cur: int, live: bool, rows: list, r: dict, last_reg: int
     dead = [x["owner_id"] for x in rows if x["owner_id"] in pct and pct[x["owner_id"]] < 2]
     if dead and len(dead) < len(rows):
         worst = sorted(dead, key=lambda o: (pct[o], by[o]["wins"]))[:2]
-        out.append({"kind": "hitlist", "owners": worst,
+        out.append({"kind": "hitlist", "side": True, "owners": worst,
                     "rows": [[_first(x["owner_id"]), x["record"], x["owner_id"] in dead] for x in rows],
                     "heat": 22 + 14 * len(dead), "headline": "The hit list",
                     "sub": "%d team%s under 2%% to make the playoffs" % (len(dead), "s" if len(dead) != 1 else ""),
                     "short": "THE HIT LIST", "link": po})
     return out
+
+
+def _cap(s: str) -> str:
+    """First letter up, the rest as written (str.capitalize lowercases names)."""
+    return s[:1].upper() + s[1:]
 
 
 def _issue_month(week: int) -> str:
@@ -2288,20 +2355,29 @@ def _cover_issue(week: int, live: bool = False, _depth: int = 0) -> dict:
     if not stories:
         return {}
     prev = _cover_issue(week - 1, False, _depth + 1) if week > 1 and _depth < 8 else {}
-    try:
-        before = storage.load_covers(SEASON).get(str(week - 2)) or {}
-    except Exception:          # noqa: BLE001
-        before = {}
-    recent = {prev.get("kind"), before.get("kind")}
-    # once-only stories (the champion, the field, a clinch...) run whatever ran before
-    pick = next((x for x in stories if x["heat"] >= 1000 or x["kind"] not in recent),
-                next((x for x in stories if x["kind"] != prev.get("kind")), stories[0]))
+    # The lead is the hottest of the stories allowed to lead (side stories
+    # only ever run in the ticker). A manager who did several things in one
+    # week - the top score, the closest win, the biggest jump in the odds -
+    # gets half the heat of his other feats on top, so his week leads; last
+    # week's kind of story is marked down a little. Once-only stories (the
+    # champion, the field, a clinch...) lead whatever else happened.
+    leads = [x for x in stories if not x.get("side")] or stories
+
+    def score(x):
+        if x["heat"] >= 1000:
+            return x["heat"]
+        same = sum(y["heat"] for y in stories if y is not x and x.get("owner") and y.get("owner") == x.get("owner")
+                   and y["heat"] < 1000 and y["kind"] != "issue")
+        return (x["heat"] + .5 * same) * (.8 if x["kind"] == prev.get("kind") else 1)
+    pick = max(leads, key=score)
     others = [x for x in stories if x is not pick]
     issue = {k: v for k, v in pick.items() if k != "photos"}
     if pick["kind"] == "gotw":
         third = next((r["owner_id"] for r in season.standings()
                       if r["owner_id"] not in (pick["a"], pick["b"])), None)
         issue["photo_owners"] = [o for o in (pick["a"], pick["b"], third) if o]
+    issue["feats"] = [x.get("feat") or x["short"] for x in others
+                      if pick.get("owner") and x.get("owner") == pick.get("owner") and x["kind"] != "issue"][:3]
     issue.update(week=week, month=_issue_month(week),
                  lines=[x["short"] for x in others[:5 if pick["kind"] == "issue" else 3]],
                  others=[{k: x[k] for k in ("headline", "sub", "link", "short")} for x in others[:4]])
@@ -2336,7 +2412,9 @@ def _cover_html(issue: dict, skin: str = None) -> str:
 
 def render_cover(cur: int) -> str:
     """Home's weekly cover, beside the issue's other stories. Returns the
-    story kind, so Home can leave out whatever the cover already says."""
+    story kind, so Home can leave out whatever the cover already says. The
+    cover is for the week whose set is up (see _issue_week), not `cur`."""
+    cur = _issue_week()
     try:
         story = _cover_issue(cur, live=True)
     except Exception:          # noqa: BLE001 - a missing photo or number must not cost Home
@@ -2353,7 +2431,7 @@ def render_cover(cur: int) -> str:
     st.markdown(cover.CSS, unsafe_allow_html=True)
     st.markdown(
         f'<div class="wc-row">{html_}<div class="wc-in"><span class="wc-k">Week {cur} &middot; the cover story</span>'
-        f'<h3>{esc(story["headline"])}</h3><p>{esc(story["sub"]).capitalize()}.</p>'
+        f'<h3>{esc(story["headline"])}</h3><p>{_cap(esc(story["sub"]))}.</p>'
         + (f'<span class="wc-k" style="margin-top:10px">Also in this issue</span><ol>{inside}</ol>' if inside else "")
         + f'<a class="wc-all" href="?p=inseason&g=league&t=covers{_keep()}" target="_self">Every issue this season &rarr;</a>'
         + '</div></div>', unsafe_allow_html=True)
@@ -5475,7 +5553,7 @@ def render_covers() -> None:
     st.markdown(_ThemeShim.section_head('The <span class="g">covers</span>',
                                         "every issue this season, newest first", page=True),
                 unsafe_allow_html=True)
-    cur = season.current_week() or 1
+    cur = _issue_week()
     issues = []
     for w in range(cur, 0, -1):
         try:
@@ -5491,9 +5569,9 @@ def render_covers() -> None:
     st.markdown(cover.CSS, unsafe_allow_html=True)
     st.markdown('<div class="wc-rack">' + "".join(
         f'<figure>{_cover_html(i, skins.get(int(i["week"])))}<figcaption><b>Week {i["week"]} &middot; {esc(i["headline"])}</b>'
-        f'{esc(i["sub"]).capitalize()}</figcaption></figure>' for i in issues) + '</div>',
+        f'{_cap(esc(i["sub"]))}</figcaption></figure>' for i in issues) + '</div>',
         unsafe_allow_html=True)
-    st.caption("Each cover is the week's hottest story, never a story that ran in the two weeks before, "
+    st.caption("Each cover is the week's hottest story, led by the biggest week anyone had, "
                "printed in a look off the skate-mag shelf that hasn't run in the two weeks before it.")
 
 

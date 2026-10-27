@@ -149,3 +149,28 @@ def test_the_deal_is_the_same_every_time_and_keeps_pinned_weeks():
 def test_fixed_layouts_keep_their_own_look_and_block_their_lookalike():
     skins = cover.deal({1: "issue", 2: "biggest", 3: "biggest"}, "x")
     assert skins[1] == "issue" and "cyan" not in (skins[2], skins[3])
+
+
+NEW_ONE_PERSON = [
+    dict(BASE, kind="close", owner="1", first="Josh", loser="Corey", margin="0.4", pts_w="118.2", pts_l="117.8"),
+    dict(BASE, kind="surge", owner="1", first="Josh", rec="7–7", before=31, after=62, delta="+31", up=True),
+    dict(BASE, kind="surge", owner="1", first="Isiah", rec="6–8", before=58, after=36, delta="-22", up=False),
+    dict(BASE, kind="trade", owner="1", first="Thad", other="Lucas", gets_a="KAMARA", gets_b="WADDLE, PICKS"),
+]
+
+
+@pytest.mark.parametrize("skin", cover.SKINS)
+@pytest.mark.parametrize("story", NEW_ONE_PERSON, ids=lambda s: s["kind"] + str(s.get("up", "")))
+def test_the_new_highlights_run_in_every_skin(story, skin):
+    out = cover.render(story, _img(), skin=skin)
+    assert out.startswith('<div class="kx wc"') and 'class="cut"' in out
+
+
+def test_a_drop_in_playoff_odds_reads_as_a_freefall():
+    assert "FREEFALL" in cover.render(NEW_ONE_PERSON[2], _img(), skin="splat")
+
+
+def test_the_star_s_other_feats_lead_the_cover_lines_in_every_skin():
+    s = dict(STORIES[0], feats=["BEAT BRANDON BY 2.3", "PLAYOFF ODDS 23% → 38%"])
+    for skin in cover.SKINS:
+        assert "BEAT BRANDON BY 2.3" in cover.render(s, _img(), skin=skin), skin

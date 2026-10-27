@@ -231,6 +231,57 @@ def locks(rows: List[dict], playoff_teams: int, total_results: int) -> Dict[str,
     return out
 
 
+def week_results(league_id: str, week: int, median: bool) -> Dict[str, dict]:
+    """{owner: {pts, h2h, med}} for one played week: his points, whether he
+    won his game, and whether he beat the league median that week."""
+    r2o = {r["roster_id"]: str(r.get("owner_id")) for r in sleeper.get_rosters(league_id) or []}
+    rows = [m for m in sleeper.get_matchups(league_id, week) or [] if r2o.get(m.get("roster_id"))]
+    pts = {r2o[m["roster_id"]]: float(m.get("points") or 0) for m in rows}
+    by: Dict[int, list] = {}
+    for m in rows:
+        if m.get("matchup_id") is not None:
+            by.setdefault(m["matchup_id"], []).append(r2o[m["roster_id"]])
+    won = {}
+    for pair in by.values():
+        if len(pair) == 2:
+            a, b = pair
+            won[a], won[b] = pts[a] > pts[b], pts[b] > pts[a]
+    top = set(sorted(pts, key=pts.get, reverse=True)[:len(pts) // 2]) if median else set()
+    return {o: {"pts": p, "h2h": won.get(o, False), "med": o in top, "median_game": median} for o, p in pts.items()}
+
+
+def revert_week(teams: dict, results: Dict[str, dict]) -> dict:
+    """`teams` (team_strength) as they stood before a week was played:
+    that week's wins and points taken back off."""
+    out = {o: dict(t) for o, t in teams.items()}
+    for o, r in results.items():
+        if o in out:
+            out[o]["wins"] -= int(r["h2h"]) + int(r["med"])
+            out[o]["losses"] -= int(not r["h2h"]) + int(r.get("median_game", False) and not r["med"])
+            out[o]["pf"] -= r["pts"]
+    return out
+
+
+def odds_swing(league_id: str, season: int, week: int, n_sims: int = 4000) -> Dict[str, dict]:
+    """{owner: {before, after}}: playoff odds just before `week` was played
+    and just after - how far one week moved everybody. Only true of the
+    latest finished week (it unwinds that week from today's table). Both
+    sims use the same team strengths, so the swing is the results alone."""
+    s = _settings(league_id)
+    teams = team_strength(league_id, season, week + 1, s["slots"])
+    before = revert_week(teams, week_results(league_id, week, s["median"]))
+    n = min(s["playoff_teams"], len(teams))
+    def pct(t, first):
+        fx = fixtures(league_id, first, s["last_regular"]) if first <= s["last_regular"] else {}
+        if fx:
+            sim = simulate(t, fx, n, n_sims=n_sims, median=s["median"])
+            return {o: v["playoff_pct"] for o, v in sim["teams"].items()}
+        order = sorted(t, key=lambda o: (-t[o]["wins"], -t[o]["pf"]))
+        return {o: 100 if i < n else 0 for i, o in enumerate(order)}
+    a, b = pct(teams, week + 1), pct(before, week)
+    return {o: {"before": b.get(o, 0), "after": a.get(o, 0)} for o in teams}
+
+
 # ------------------------------------------------- playoff-week matchups
 def _week_stats(season: int, week: int) -> list:
     """[{o: opponent, p: pid, s: {pts_*}}] for one played week, disk-cached."""
