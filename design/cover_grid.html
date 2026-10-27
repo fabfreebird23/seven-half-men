@@ -1,0 +1,417 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>7½ Men Cover Grid</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wdth,wght@62..125,500..900&family=Bungee&family=Grenze+Gotisch:wght@900&family=Metal+Mania&family=Orbitron:wght@600;800&family=Permanent+Marker&family=Shrikhand&family=Space+Mono:wght@400;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<style>
+/* Layout: the app's Home slot, one wide stage: Kreeper's Tron grid of playoff-odds towers as the
+   "photo", the week's cover star printed behind them, and the magazine furniture laid over it.
+   Single dark look, the app's Bloody Sunday. */
+:root{
+  color-scheme:dark;
+  --pg:#141314; --ink:#f4f1f2; --soft:#a99fa3; --line:#332f31; --kr:#c8063b; --kr2:#fb0849; --kg:#578ed5;
+  --f-head:'Archivo','Arial Black',sans-serif; --f-mono:'Space Mono',ui-monospace,Menlo,monospace; --f-hud:'Orbitron','Archivo',sans-serif;
+  --f-box:'Anton','Archivo',sans-serif;
+}
+*{box-sizing:border-box}
+body{background:var(--pg);color:var(--ink);font-family:var(--f-head);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:32px 72px}
+.k{font:700 11px var(--f-mono);letter-spacing:2px;text-transform:uppercase;color:var(--kr2)}
+h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-height:.92;margin:10px 0 0;text-transform:uppercase;text-wrap:balance}
+.intro p{max-width:66ch;color:var(--soft);font:400 14px/1.6 var(--f-mono);margin:12px 0 0}
+
+/* controls */
+.ctl{display:flex;flex-wrap:wrap;gap:18px 28px;margin:26px 0 14px;align-items:flex-end}
+.grp{display:grid;gap:8px;min-width:0}
+.grp>span{font:700 10.5px var(--f-mono);letter-spacing:1.6px;text-transform:uppercase;color:var(--soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:700 12px var(--f-mono);letter-spacing:.5px;color:var(--ink);background:#1d1b1c;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--ink);color:#111;border-color:var(--ink)}
+.chips button:focus-visible{outline:2px solid var(--kr2);outline-offset:2px}
+.chips button i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--c);vertical-align:0}
+.chips button .dealt{font-style:normal;color:var(--kr2);margin-left:6px}
+
+/* the stage: canvas + magazine furniture over it */
+.stage{position:relative;width:100%;aspect-ratio:16/8.4;max-width:100%;border-radius:4px;overflow:hidden;background:#000105;container-type:inline-size;
+  box-shadow:0 22px 50px -24px rgba(0,0,0,.9),0 0 0 1px #000}
+@media (max-width:700px){.stage{aspect-ratio:3/4.1}}
+.stage canvas{display:block;width:100%!important;height:100%!important;cursor:grab;touch-action:pan-y}
+.mag{position:absolute;inset:0;pointer-events:none;z-index:2}
+.mag .topbar{position:absolute;left:0;right:0;top:0;background:#000;color:#fff;font:400 2.3cqw/1.25 var(--f-box);text-align:center;padding:.5cqw 1cqw;
+  letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mag .topbar em{font-style:normal;color:var(--acc)}
+.mag svg.mast{position:absolute;left:2.4%;top:7%;width:44%;overflow:visible;transform:rotate(-2deg);transform-origin:left top}
+.mag .lines{position:absolute;left:2.6%;top:31%;display:flex;flex-direction:column;align-items:flex-start;gap:1cqw;max-width:34%}
+.mag .bx{background:var(--boxbg);color:var(--boxfg);font:400 2.5cqw/1.02 var(--f-box);text-transform:uppercase;padding:.45cqw .9cqw;transform:rotate(-2deg)}
+.mag .bx.sm{font-size:1.75cqw}
+.mag .bx.lg{font-size:3.6cqw;line-height:.95}
+.mag .bx.hot{background:var(--acc);color:#000}
+.mag .bc{position:absolute;right:2%;bottom:3%;background:#fff;color:#000;padding:.4cqw .7cqw .3cqw;width:11%}
+.mag .bc .tp{display:flex;justify-content:space-between;font:700 1cqw var(--f-mono)}
+.mag .bc i{display:block;height:2.8cqw;margin-top:.3cqw;background:repeating-linear-gradient(90deg,#000 0 1px,transparent 1px 2px,#000 2px 4px,transparent 4px 5px,#000 5px 6px,transparent 6px 8px)}
+.mag .bc u{display:block;text-decoration:none;font:700 .9cqw var(--f-mono);text-align:center}
+.mag .hud{position:absolute;left:2.4%;bottom:3.4%;font:600 1.15cqw var(--f-hud);letter-spacing:.14em;color:#8fd8ff;opacity:.8;text-transform:uppercase}
+.mag .corner{position:absolute;width:2.2cqw;height:2.2cqw;border:2px solid var(--acc);filter:drop-shadow(0 0 4px var(--acc))}
+.mag .corner.a{right:1%;top:8%;border-left:0;border-bottom:0}.mag .corner.b{left:1%;bottom:1.6%;border-right:0;border-top:0}
+@media (max-width:700px){
+  .mag .topbar{font-size:4.6cqw}
+  .mag svg.mast{left:50%;top:7%;width:84%;transform:translateX(-50%) rotate(-2deg);transform-origin:center top}
+  .mag .lines{top:auto;bottom:4%;left:3.5%;max-width:62%;gap:1.6cqw}
+  .mag .bx{font-size:4.4cqw}.mag .bx.sm{font-size:3.3cqw}.mag .bx.lg{font-size:6.2cqw}
+  .mag .bc{width:21%;bottom:3%}.mag .bc .tp{font-size:2cqw}.mag .bc i{height:5cqw}.mag .bc u{font-size:1.7cqw}
+  .mag .hud{display:none}
+}
+
+/* beside / below the stage: the issue */
+.issue{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;margin-top:22px}
+@media (max-width:760px){.issue{grid-template-columns:minmax(0,1fr)}}
+.issue h3{margin:6px 0 0;font:800 34px/.95 var(--f-head);font-stretch:110%;text-transform:uppercase}
+.issue p{margin:8px 0 0;color:var(--soft);font-size:14px;max-width:52ch}
+.issue ol{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:8px}
+.issue li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline;border-top:1px solid var(--line);padding-top:8px}
+.issue li b{font:400 15px var(--f-box);letter-spacing:.02em;text-transform:uppercase}
+.issue li em{font-style:normal;font-size:13px;color:var(--soft)}
+.odds{font:400 13px/1.5 var(--f-mono);color:var(--soft);display:grid;gap:4px;font-variant-numeric:tabular-nums}
+.odds div{display:grid;grid-template-columns:5.5em 3.4em minmax(0,1fr);gap:10px;align-items:center}
+.odds b{color:var(--ink);font-weight:700}
+.odds s{display:block;height:6px;border-radius:3px;background:var(--c,#578ed5);text-decoration:none}
+.sec{margin-top:44px;border-top:3px solid var(--ink);padding-top:18px}
+.sec h2{margin:8px 0 0;font-weight:900;font-stretch:125%;font-size:clamp(24px,3.4vw,38px);line-height:.92;text-transform:uppercase}
+.rules{display:grid;gap:10px;margin-top:14px;max-width:74ch;font:400 13.5px/1.6 var(--f-mono);color:var(--soft)}
+.rules b{color:var(--ink)}
+</style>
+
+<div class="wrap">
+<header class="intro">
+  <div class="k">7½ Men · Home · the week's cover, in 3D</div>
+  <h1>The Cover Grid</h1>
+  <p>The Kreeper League's Tron grid, rebuilt as this league's weekly cover. Every team is a neon tower as tall as its
+  playoff odds from this morning's sim. The week's cover star stands behind them as a printed cut-out, and the
+  magazine's wordmark, cover lines and barcode sit on top of the scene. The look follows the skin the cover deals that week.</p>
+</header>
+
+<div class="ctl">
+  <div class="grp"><span>Take</span>
+    <div class="chips" id="takes" role="group" aria-label="Take">
+      <button type="button" id="take-print" data-take="print" aria-pressed="true">Giant print</button>
+      <button type="button" id="take-holo" data-take="holo" aria-pressed="false">Hologram print</button>
+    </div>
+  </div>
+  <div class="grp"><span>Skin (the week's deal)</span>
+    <div class="chips" id="skins" role="group" aria-label="Skin"></div>
+  </div>
+</div>
+
+<div class="stage" id="stage" aria-label="Playoff odds as neon towers on a grid, with Devin, the week 7 cover star, printed behind them">
+  <div class="mag" id="mag"></div>
+</div>
+
+<section class="issue">
+  <div>
+    <div class="k">Week 7 · the cover story</div>
+    <h3>Devin 149.9</h3>
+    <p>The week's top score, and McCaffrey's 29.7 did the heavy lifting. The tower under him is his playoff odds; it lights in the week's ink.</p>
+    <div class="k" style="margin-top:16px">Also in this issue</div>
+    <ol>
+      <li><b>Devin v Josh</b><em>36 points of playoff odds on the line</em></li>
+      <li><b>Thad's bench, 31.2</b><em>points his best lineup would have added</em></li>
+      <li><b>Brandon's lucky 125.0</b><em>3 teams scored more and he still won</em></li>
+    </ol>
+  </div>
+  <div>
+    <div class="k">The towers · playoff odds after week 7</div>
+    <div class="odds" id="odds" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="k">How it would run</div>
+  <h2>In place of the flat cover on Home</h2>
+  <div class="rules">
+    <p><b>The scene is the photo, the cover is the frame.</b> The towers are the live playoff sim (the Playoffs page's numbers, cached 15 minutes); the star is whoever the week's cover picked, and the cover lines are that issue's own.</p>
+    <p><b>The deal drives the look.</b> The week's skin sets the star's print, the wordmark's face and colour, the box colours and the scene's accent: the sun, the star's tower and the corners. A run of top scores still looks different every week.</p>
+    <p><b>Only the star gets the cover treatment.</b> Everyone else stays a Tron tower with a face and a percentage; the star's tower is lit in the week's ink and stands in front of his print.</p>
+    <p><b>The archive stays a rack of flat covers.</b> Fifteen live 3D scenes on one page would be heavy on a phone; each week's flat cover is what gets kept.</p>
+    <p><b>Phone:</b> the stage turns portrait, the wordmark centres over the scene and the cover lines drop to the bottom. Drag turns the camera; double-tap replays the rise. Reduced motion shows the finished frame.</p>
+  </div>
+</section>
+</div>
+
+<script>
+const STAR = "1254567796231114752";
+const TEAMS = [ // standings order after week 7; playoff_pct from playoffs.simulate
+  {id:"1001531274030305280", first:"Clayton", rec:"10–4", po:98},
+  {id:"964703051971887104",  first:"Brandon", rec:"9–5",  po:97},
+  {id:"1254567796231114752", first:"Devin",   rec:"9–5",  po:69},
+  {id:"334162589502144512",  first:"Josh",    rec:"7–7",  po:48},
+  {id:"979400432114102272",  first:"Isiah",   rec:"6–8",  po:36},
+  {id:"979382824706912256",  first:"Corey",   rec:"6–8",  po:33},
+  {id:"979455520442580992",  first:"Thad",    rec:"5–9",  po:6},
+  {id:"980569987930804224",  first:"Lucas",   rec:"4–10", po:12},
+];
+const PO = 4;
+// each skin: the star's printed look, the wordmark, the boxes, the scene's accent and the ink ramp the hologram uses
+const SKINS = {
+  checker: {name:"Checks",   look:"blue",   font:"Bungee",          size:64, fill:"#fb0849", stroke:"#000", acc:"#ffd400", boxbg:"#000", boxfg:"#fff", top:"SCORING IS (STILL) KING",
+            inks:["#0b0d2a","#24308f","#fb0849","#ffd9c2","#fff6ea"]},
+  concrete:{name:"Concrete", look:"bw",     font:"Shrikhand",       size:70, fill:"#ff7a1a", stroke:"#000", acc:"#ff7a1a", boxbg:"#000", boxfg:"#fff", top:"THE BIG SUNDAY ISSUE", title:true,
+            inks:["#000000","#2a2a2a","#7a7a7a","#c8c8c8","#ffffff"]},
+  sky:     {name:"Sky",      look:"sky",    font:"Metal Mania",     size:66, fill:"#ffd400", stroke:"#000", acc:"#5fb0ff", boxbg:"#000", boxfg:"#fff", top:"PUT UP NUMBERS",
+            inks:["#061634","#1450c8","#5fb0ff","#ffd400","#fffbe6"]},
+  xerox:   {name:"Xerox",    look:"xerox",  font:"Bungee",          size:62, fill:"#2a5bd8", stroke:"#e8202a", acc:"#efe59a", boxbg:"#efe59a", boxfg:"#1d1a3a", top:"SCORING IS (STILL) KING",
+            inks:["#1d1a3a","#1d1a3a","#4c4775","#c9bf7a","#f1e896"]},
+  holo:    {name:"Holo",     look:"holo",   font:"Grenze Gotisch",  size:76, fill:"#ff4fb0", stroke:"#000", acc:"#ff4fb0", boxbg:"#000", boxfg:"#fff", top:"THE BIG SUNDAY ISSUE", title:true,
+            inks:["#1a0730","#6a3bff","#ff4fb0","#ffd0ec","#fff4fb"]},
+  night:   {name:"Flames",   look:"fire",   font:"Bungee",          size:64, fill:"#ffd400", stroke:"#000", acc:"#ff5a00", boxbg:"#000", boxfg:"#fff", top:"HOT HOT HOT",
+            inks:["#1a0000","#7a0a00","#e02a00","#ff8a00","#fff2a8"]},
+  splat:   {name:"Splatter", look:"pop",    font:"Shrikhand",       size:70, fill:"#ffffff", stroke:"#000", acc:"#ff2d6f", boxbg:"#000", boxfg:"#fff", top:"PUT UP NUMBERS",
+            inks:["#1a1440","#6a3bff","#ff2d6f","#ffd400","#ffffff"]},
+  slate:   {name:"B&W",      look:"bw",     font:"Archivo",         size:72, fill:"#ffffff", stroke:"#000", acc:"#f4f1f2", boxbg:"#fff", boxfg:"#000", top:"SCORING IS (STILL) KING", black:true,
+            inks:["#000000","#2a2a2a","#7a7a7a","#c8c8c8","#ffffff"]},
+  paper:   {name:"Paper",    look:"orange", font:"Metal Mania",     size:66, fill:"#f3ead6", stroke:"#181512", acc:"#ff8a1f", boxbg:"#f3ead6", boxfg:"#181512", top:"THE BIG SUNDAY ISSUE",
+            inks:["#181512","#c43a0a","#ff8a1f","#ffc46b","#f3ead6"]},
+  cyan:    {name:"Cyan",     look:"cyan",   font:"Archivo",         size:70, fill:"#2fd3ff", stroke:"#000", acc:"#2fd3ff", boxbg:"#000", boxfg:"#fff", top:"SCORING IS (STILL) KING", black:true,
+            inks:["#04141c","#0e5d78","#1fb6dd","#e9fbff","#e9fbff"]},
+};
+const DEALT = "cyan";   // what cover.deal gave week 7
+let skin = DEALT, take = "print";
+try { const s = localStorage.getItem("cg-skin"), t = localStorage.getItem("cg-take"); if (SKINS[s]) skin = s; if (t === "print" || t === "holo") take = t; } catch (e) {}
+
+/* ---------- controls + the odds list ---------- */
+const skinsEl = document.getElementById("skins");
+skinsEl.innerHTML = Object.entries(SKINS).map(([k, s]) =>
+  `<button type="button" id="skin-${k}" data-skin="${k}" aria-pressed="${k === skin}" style="--c:${s.acc}"><i></i>${s.name}${k === DEALT ? '<em class="dealt">wk 7</em>' : ""}</button>`).join("");
+document.getElementById("odds").innerHTML = TEAMS.map((t, i) =>
+  `<div><b>${t.first}</b><span>${t.po}%</span><s style="width:${Math.max(2, t.po)}%;--c:${t.id === STAR ? "var(--kr2)" : i < PO ? "#578ed5" : "#5a4650"}"></s></div>`).join("");
+function press(group, attr, val){ group.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset[attr] === val)); }
+skinsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; skin = b.dataset.skin; press(skinsEl, "skin", skin);
+  try { localStorage.setItem("cg-skin", skin); } catch (er) {} mount(); });
+const takesEl = document.getElementById("takes");
+press(takesEl, "take", take);
+takesEl.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; take = b.dataset.take; press(takesEl, "take", take);
+  try { localStorage.setItem("cg-take", take); } catch (er) {} mount(); });
+
+/* ---------- the magazine furniture ---------- */
+function magHTML(s){
+  const word = s.title ? "7½ Men" : "7½ MEN", attrs = s.black ? 'font-weight="900" font-stretch="125%"' : "";
+  const stroke = s.black ? 'stroke-width="0"' : `stroke="${s.stroke}" stroke-width="3" paint-order="stroke"`;
+  return `<div class="topbar">${s.top} <em>•</em> WEEK 7 <em>•</em> PLAYOFF ODDS INSIDE</div>
+  <svg class="mast" viewBox="0 0 300 84" aria-hidden="true">
+    ${s.black ? "" : `<text x="154" y="67" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" font-family="${s.font}" font-size="${s.size}" fill="#000" stroke="#000" stroke-width="3">${word}</text>`}
+    <text x="150" y="62" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" font-family="${s.font}" font-size="${s.size}" fill="${s.fill}" ${stroke} ${attrs}>${word}</text></svg>
+  <div class="lines">
+    <div class="bx hot lg">149.9 POINTS</div>
+    <div class="bx">IN ONE SUNDAY</div>
+    <div class="bx sm">MCCAFFREY. 29.7. NOT BAD.</div>
+    <div class="bx sm">BURIED INSIDE: THAD'S BENCH</div>
+  </div>
+  <span class="corner a"></span><span class="corner b"></span>
+  <div class="hud">Playoff odds · drag to look around · double-tap to replay</div>
+  <div class="bc"><div class="tp"><b>OCT 2026</b><b>07</b></div><i></i><u>0 75026 00007 9</u></div>`;
+}
+
+/* ---------- the scene (after kreeper/static/grid_hero.html) ---------- */
+const easeBack = t => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+const ease = t => 1 - Math.pow(1 - t, 3);
+const BLUE = 0x578ed5, DIM = 0x5a4650, CRIM = 0xfb0849;
+const X = i => (i - (TEAMS.length - 1) / 2) * 1.6 + (i >= PO ? .55 : -.55);
+const H = d => Math.max(.12, d.po / 100 * 4.4);
+const col = c => new THREE.Color(c);
+const hex = c => "#" + c.toString(16).padStart(6, "0");
+let seed = 11; const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function canvasTex(w, h, draw){ const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); return new THREE.CanvasTexture(c); }
+function faceTex(src, ring){
+  const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d"); const t = new THREE.CanvasTexture(c);
+  const img = new Image(); img.onload = () => { g.save(); g.beginPath(); g.arc(128,128,112,0,Math.PI*2); g.clip(); g.drawImage(img,16,16,224,224); g.restore();
+    g.lineWidth = 12; g.strokeStyle = ring; g.beginPath(); g.arc(128,128,116,0,Math.PI*2); g.stroke(); t.needsUpdate = true; };
+  img.src = src; return t;
+}
+function pillTex(pct, name, ring, star){ return canvasTex(320, 150, (g, w, h) => {
+  const r = 26, x = 14, y = 10, ww = w - 28, hh = h - 20;
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + ww, y, x + ww, y + hh, r); g.arcTo(x + ww, y + hh, x, y + hh, r); g.arcTo(x, y + hh, x, y, r); g.arcTo(x, y, x + ww, y, r); g.closePath();
+  g.fillStyle = star ? ring : "rgba(2,4,12,.86)"; g.fill(); g.lineWidth = 4; g.strokeStyle = ring; g.shadowColor = ring; g.shadowBlur = 10; g.stroke(); g.shadowBlur = 0;
+  g.fillStyle = star ? "#000" : "#fff"; g.font = "76px Anton"; g.textAlign = "center"; g.fillText(pct, w / 2, 92);
+  g.fillStyle = star ? "#000" : ring; g.font = "600 26px Orbitron"; g.fillText(name.toUpperCase(), w / 2, 128); }); }
+function sprite(tex, w, h){ const s = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, fog:false, depthWrite:false, depthTest:false})); s.scale.set(w, h, 1); return s; }
+
+function gridWorld(scene, acc){
+  scene.background = new THREE.Color(0x000105); scene.fog = new THREE.Fog(0x000105, 14, 70);
+  const gt = canvasTex(256, 256, (g, w, h) => { g.fillStyle = "#00030c"; g.fillRect(0, 0, w, h);
+    g.shadowColor = "#3b9cff"; g.shadowBlur = 10; g.strokeStyle = "#3b9cff"; g.lineWidth = 3; g.strokeRect(1.5, 1.5, w - 3, h - 3);
+    g.shadowBlur = 0; g.strokeStyle = "rgba(90,209,255,.18)"; g.lineWidth = 1; g.strokeRect(w / 2, 0, 0, h); g.strokeRect(0, h / 2, w, 0); });
+  gt.wrapS = gt.wrapT = THREE.RepeatWrapping; gt.repeat.set(50, 50); gt.anisotropy = 8;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshBasicMaterial({map:gt}));
+  floor.rotation.x = -Math.PI / 2; scene.add(floor);
+  const hz = new THREE.Mesh(new THREE.PlaneGeometry(220, 30), new THREE.MeshBasicMaterial({fog:false, transparent:true, depthWrite:false,
+    map:canvasTex(8, 256, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(.75, "rgba(59,111,209,.5)");
+      gr.addColorStop(.92, acc); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); })}));
+  hz.position.set(0, 6, -60); scene.add(hz);
+  // the wireframe ridge and a striped sun in the week's ink
+  const mg = new THREE.PlaneGeometry(160, 26, 80, 13); const p = mg.attributes.position;
+  for (let i = 0; i < p.count; i++){ const x = p.getX(i), y = p.getY(i); const ridge = (y + 13) / 26;
+    p.setZ(i, (Math.sin(x * .17) * 4 + Math.sin(x * .41 + 1.3) * 2.2 + rand() * 1.4) * ridge * Math.min(1, Math.abs(x) / 20 + .25)); }
+  const mtn = new THREE.Mesh(mg, new THREE.MeshBasicMaterial({color:0x3b6fd1, wireframe:true, transparent:true, opacity:.5, fog:false}));
+  mtn.rotation.x = -Math.PI / 2 + .02; mtn.position.set(0, -.2, -48); scene.add(mtn);
+  const sun = new THREE.Mesh(new THREE.CircleGeometry(9, 64), new THREE.MeshBasicMaterial({fog:false, transparent:true,
+    map:canvasTex(256, 256, (g, ww, hh) => { const gr = g.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, "#fff6e6"); gr.addColorStop(.55, acc); gr.addColorStop(1, "#c8063b");
+      g.fillStyle = gr; g.beginPath(); g.arc(128, 128, 126, 0, Math.PI * 2); g.fill(); g.globalCompositeOperation = "destination-out";
+      for (let i = 0; i < 8; i++) g.fillRect(0, 140 + i * 15, ww, 3 + i * 1.3); })}));
+  sun.position.set(innerWidth < 700 ? 3 : 6, 7, -62); scene.add(sun);
+  scene.add(new THREE.AmbientLight(0x334466, .6));
+  return gt;
+}
+function neonBox(color, w){
+  w = w || .82; const g = new THREE.BoxGeometry(w, 1, w); g.translate(0, .5, 0);
+  const grp = new THREE.Group();
+  grp.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0x02050e, metalness:.9, roughness:.15, transparent:true, opacity:.82, emissive:color, emissiveIntensity:.2})));
+  grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({color})));
+  const outer = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({color, transparent:true, opacity:.55})); outer.scale.set(1.035, 1, 1.035); grp.add(outer);
+  [[0, w / 2 + .005], [0, -w / 2 - .005]].forEach(([x, z]) => { const s = new THREE.Mesh(new THREE.PlaneGeometry(.05, 1), new THREE.MeshBasicMaterial({color, transparent:true, opacity:.8}));
+    s.position.set(x, .5, z); if (z < 0) s.rotation.y = Math.PI; grp.add(s); });
+  const cap = new THREE.Mesh(new THREE.PlaneGeometry(w * .96, w * .96), new THREE.MeshBasicMaterial({color, transparent:true, opacity:.75})); cap.rotation.x = -Math.PI / 2; cap.position.y = 1.001; grp.add(cap);
+  return grp;
+}
+function lightWall(scene){
+  const color = CRIM, gx = (X(PO - 1) + X(PO)) / 2;
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1), new THREE.MeshBasicMaterial({color, transparent:true, opacity:.22, side:THREE.DoubleSide, depthWrite:false, fog:false, blending:THREE.AdditiveBlending}));
+  wall.rotation.y = Math.PI / 2; scene.add(wall);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(.05, .05, 3.2), new THREE.MeshBasicMaterial({color, fog:false})); scene.add(top);
+  return k => { const h = 5.4 * k; wall.scale.y = Math.max(.001, h); wall.position.set(gx, h / 2, 0); top.position.set(gx, h, 0); };
+}
+function lightCycle(scene, color, path, speed, n){
+  const pts = [], geo = new THREE.BufferGeometry(), pos = new Float32Array(n * 6); const idx = [];
+  for (let i = 0; i < n - 1; i++){ const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  geo.setIndex(idx); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  const trail = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color, transparent:true, opacity:.42, side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false}));
+  trail.frustumCulled = false; scene.add(trail);
+  const bike = new THREE.Mesh(new THREE.BoxGeometry(.5, .22, .2), new THREE.MeshBasicMaterial({color})); scene.add(bike);
+  return t => { const p = path(t * speed); bike.position.set(p.x, .12, p.z); const q = path(t * speed - .01); bike.lookAt(q.x, .12, q.z); bike.rotateY(Math.PI / 2);
+    pts.unshift(p.clone()); if (pts.length > n) pts.pop();
+    for (let i = 0; i < n; i++){ const v = pts[Math.min(i, pts.length - 1)]; pos.set([v.x, 0, v.z, v.x, .26, v.z], i * 6); }
+    geo.attributes.position.needsUpdate = true; };
+}
+const rectPath = (w, d) => u => { u = ((u % 1) + 1) % 1; const L = 2 * (w + d), s = u * L;
+  if (s < w) return new THREE.Vector3(-w / 2 + s, 0, d / 2); if (s < w + d) return new THREE.Vector3(w / 2, 0, d / 2 - (s - w));
+  if (s < 2 * w + d) return new THREE.Vector3(w / 2 - (s - w - d), 0, -d / 2); return new THREE.Vector3(-w / 2, 0, -d / 2 + (s - 2 * w - d)); };
+const ovalPath = (rx, rz) => u => new THREE.Vector3(Math.cos(u * Math.PI * 2) * rx, 0, Math.sin(u * Math.PI * 2) * rz);
+
+// the cover star. "print": his printed cut-out sliding up out of the grid like a page off the press.
+// "holo": the same print as a hologram - posterized to the skin's inks, halftone dots, scanlines and a sweep.
+const STAR_FRAG = `uniform sampler2D map; uniform float t; uniform float reveal; uniform float holo; uniform vec3 ink[5]; varying vec2 vUv;
+  void main(){
+    vec4 c = texture2D(map, vUv);
+    if (c.a < .04 || vUv.y > reveal) discard;
+    vec3 rgb = c.rgb;
+    if (holo > .5){
+      float l = dot(c.rgb, vec3(.3, .59, .11));
+      float q = clamp(l * 1.35 - .12, 0., .999) * 5.;
+      int k = int(q);
+      vec3 col = ink[0];
+      if (k == 1) col = ink[1]; else if (k == 2) col = ink[2]; else if (k == 3) col = ink[3]; else if (k >= 4) col = ink[4];
+      vec2 cell = fract(gl_FragCoord.xy / 5.) - .5;
+      float dot_ = step(length(cell), .5 * sqrt(1. - l));
+      col *= 1. - .35 * dot_;
+      float scan = .72 + .28 * step(.5, fract(vUv.y * 160. - t * 2.));
+      float sweep = smoothstep(.03, 0., abs(vUv.y - fract(t * .22)));
+      rgb = col * scan + ink[3] * sweep * .5;
+    }
+    float rise = smoothstep(reveal - .05, reveal, vUv.y);
+    rgb += vec3(1.) * rise * (holo > .5 ? 1.2 : .6);
+    gl_FragColor = vec4(rgb, c.a * (holo > .5 ? .92 + .06 * sin(t * 31.) : 1.));
+  }`;
+function star(scene, s){
+  const img = new Image(); let mat = null, rim = null, grp = new THREE.Group(); scene.add(grp);
+  const inks = s.inks.map(h => new THREE.Vector3(...col(h).toArray()));
+  const narrow = innerWidth < 700;
+  grp.position.set(narrow ? 1.2 : 2.2, 0, -10);
+  img.onload = () => {
+    const tex = new THREE.Texture(img); tex.needsUpdate = true; tex.anisotropy = 8;
+    const h = 9.6, w = h * img.naturalWidth / img.naturalHeight;
+    mat = new THREE.ShaderMaterial({transparent:true, depthWrite:false, fog:false,
+      uniforms:{map:{value:tex}, t:{value:0}, reveal:{value:0}, holo:{value:take === "holo" ? 1 : 0}, ink:{value:inks}},
+      vertexShader:"varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }",
+      fragmentShader:STAR_FRAG});
+    const geo = new THREE.PlaneGeometry(w, h); geo.translate(0, h / 2, 0);
+    // a neon rim in the week's ink: his silhouette, a touch bigger, just behind him - the bloom turns it into a glow
+    rim = new THREE.ShaderMaterial({transparent:true, depthWrite:false, fog:false,
+      uniforms:{map:{value:tex}, reveal:{value:0}, c:{value:new THREE.Vector3(...col(s.acc).toArray())}},
+      vertexShader:"varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }",
+      fragmentShader:"uniform sampler2D map; uniform float reveal; uniform vec3 c; varying vec2 vUv; void main(){ float a = texture2D(map, vUv).a; if (a < .04 || vUv.y > reveal) discard; gl_FragColor = vec4(c, a * .9); }"});
+    const back = new THREE.Mesh(geo, rim); back.scale.set(1.045, 1.02, 1); back.position.set(-w * .0225, -.02, -.06); grp.add(back);
+    grp.add(new THREE.Mesh(geo, mat));
+    // the slot in the grid he rises out of, in the week's ink
+    const slot = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.05, .18), new THREE.MeshBasicMaterial({color:col(s.acc), transparent:true, opacity:.9, fog:false}));
+    slot.rotation.x = -Math.PI / 2; slot.position.y = .02; grp.add(slot);
+  };
+  img.src = `managers/${STAR}_body-${s.look}.webp`;
+  return t => { if (!mat) return; const k = Math.min(1, Math.max(0, (t - .3) / 1.9)); mat.uniforms.t.value = t; mat.uniforms.reveal.value = ease(k) * 1.02; if (rim) rim.uniforms.reveal.value = ease(k) * 1.02; };
+}
+
+let killer = null;
+function mount(){
+  const s = SKINS[skin], stage = document.getElementById("stage"), mag = document.getElementById("mag");
+  stage.style.setProperty("--acc", s.acc); stage.style.setProperty("--boxbg", s.boxbg); stage.style.setProperty("--boxfg", s.boxfg);
+  mag.innerHTML = magHTML(s);
+  if (killer) killer();
+  if (!window.THREE) return;
+  seed = 11;
+  const el = stage, r = new THREE.WebGLRenderer({antialias:true}); const PR = Math.min(2, devicePixelRatio || 1); r.setPixelRatio(PR);
+  r.setSize(el.clientWidth, el.clientHeight); el.insertBefore(r.domElement, mag);
+  const scene = new THREE.Scene(), over = new THREE.Scene(), cam = new THREE.PerspectiveCamera(40, el.clientWidth / el.clientHeight, .1, 300);
+  const grid = gridWorld(scene, s.acc);
+  const acc = col(s.acc).getHex();
+  const T = TEAMS.map((d, i) => { const isStar = d.id === STAR; const b = neonBox(isStar ? acc : i < PO ? BLUE : DIM, isStar ? 1.0 : .82);
+    b.position.x = X(i); b.scale.y = .001; scene.add(b); return b; });
+  const m = innerWidth < 700 ? 1.3 : 1;
+  const F = TEAMS.map((d, i) => { const ring = d.id === STAR ? s.acc : hex(i < PO ? BLUE : DIM);
+    const f = sprite(faceTex(`managers/${d.id}.jpg`, ring), 1.2 * m, 1.2 * m), l = sprite(pillTex(d.po + "%", d.first, ring, d.id === STAR), 1.38 * m, .65 * m);
+    over.add(f, l); return {f, l}; });
+  const st = star(scene, s), wall = lightWall(scene);
+  const cyc = [lightCycle(scene, acc, rectPath(17, 8), .06, 90), lightCycle(scene, 0x4fb8ff, rectPath(20, 10.5), -.045, 90), lightCycle(scene, CRIM, ovalPath(12, 6), .042, 90)];
+  let comp = null;
+  if (THREE.EffectComposer && THREE.UnrealBloomPass){
+    const W = el.clientWidth * PR, Hh = el.clientHeight * PR;
+    const rt = (THREE.WebGLMultisampleRenderTarget && r.capabilities.isWebGL2) ? new THREE.WebGLMultisampleRenderTarget(W, Hh, {format:THREE.RGBAFormat}) : undefined;
+    if (rt) rt.samples = 4;
+    comp = new THREE.EffectComposer(r, rt); comp.addPass(new THREE.RenderPass(scene, cam)); comp.setPixelRatio(PR); comp.setSize(el.clientWidth, el.clientHeight);
+    // a higher threshold than Kreeper's: the neon glows, the printed star stays a print
+    comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(el.clientWidth, el.clientHeight), .95, .35, .55));
+  }
+  let yaw = 0, drag = null, t0 = performance.now(), raf = 0, alive = true;
+  const down = e => { drag = {x:e.clientX, y:yaw}; }, move = e => { if (drag) yaw = drag.y + (e.clientX - drag.x) * .006; }, up = () => { drag = null; };
+  const dbl = () => { t0 = performance.now(); };
+  r.domElement.addEventListener("pointerdown", down); addEventListener("pointermove", move); addEventListener("pointerup", up); r.domElement.addEventListener("dblclick", dbl);
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function frame(now){
+    if (!alive) return;
+    const t = still ? 6 : (now - t0) / 1000;
+    if (!drag) yaw *= .985;
+    const a = Math.sin(t * .2) * .38 + yaw - .18;
+    const R = 15.5 * Math.min(1.9, Math.max(.7, 1.55 / cam.aspect));
+    cam.position.set(Math.sin(a) * R, 4.6 + R * .1 + Math.sin(t * .35) * .3, Math.cos(a) * R); cam.lookAt(cam.aspect > 1.5 ? -1.9 : 0, cam.aspect > 1.5 ? 3.6 : 3.4, -2);   // desktop: aim left so the scene sits right of the cover lines
+    grid.offset.y = -t * .35; st(t);
+    TEAMS.forEach((d, i) => { const k = Math.min(1, Math.max(0, (t - .2 - i * .12) / 1.1)), h = H(d) * easeBack(k);
+      T[i].scale.y = Math.max(.001, h); F[i].f.position.set(X(i), h + .75 * m, 0); F[i].l.position.set(X(i), h + 1.72 * m, 0);
+      F[i].f.material.opacity = F[i].l.material.opacity = Math.min(1, k * 2); });
+    wall(ease(Math.min(1, Math.max(0, (t - 1.2) / .8)))); cyc.forEach(c => c(t));
+    r.autoClear = true; comp ? comp.render() : r.render(scene, cam);
+    r.autoClear = false; r.clearDepth(); r.render(over, cam); r.autoClear = true;
+    if (!still && !document.hidden) raf = requestAnimationFrame(frame);
+  }
+  const vis = () => { if (!document.hidden && !still){ cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); } };
+  document.addEventListener("visibilitychange", vis);
+  const rs = () => { r.setSize(el.clientWidth, el.clientHeight); comp && comp.setSize(el.clientWidth, el.clientHeight); cam.aspect = el.clientWidth / el.clientHeight; cam.updateProjectionMatrix(); };
+  addEventListener("resize", rs);
+  raf = requestAnimationFrame(frame);
+  if (still) setTimeout(() => requestAnimationFrame(frame), 400);   // the photos load after the first still frame
+  killer = () => { alive = false; cancelAnimationFrame(raf); removeEventListener("pointermove", move); removeEventListener("pointerup", up);
+    removeEventListener("resize", rs); document.removeEventListener("visibilitychange", vis); r.dispose(); r.domElement.remove(); };
+}
+Promise.all(["76px Anton", "600 26px Orbitron"].map(f => document.fonts.load(f))).catch(() => {}).then(() => { press(skinsEl, "skin", skin); mount(); });
+</script>
