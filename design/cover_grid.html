@@ -48,7 +48,7 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
   letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mag .topbar em{font-style:normal;color:var(--acc)}
 .mag svg.mast{position:absolute;left:2.4%;top:6.5%;width:43%;overflow:visible;transform:rotate(-2deg);transform-origin:left top}
-.mag .lines{position:absolute;left:2.6%;top:30%;display:flex;flex-direction:column;align-items:flex-start;gap:.9cqw;max-width:33%}
+.mag .lines{position:absolute;left:2.6%;bottom:5%;display:flex;flex-direction:column;align-items:flex-start;gap:.9cqw;max-width:33%}
 .mag .bx{background:var(--boxbg);color:var(--boxfg);font:400 2.4cqw/1.02 var(--f-box);text-transform:uppercase;padding:.45cqw .9cqw;transform:rotate(-2deg)}
 .mag .bx.sm{font-size:1.7cqw}
 .mag .bx.lg{font-size:3.7cqw;line-height:.95}
@@ -96,7 +96,7 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
   <div class="k">7½ Men · Home · the week, built in 3D</div>
   <h1>The Week Grid</h1>
   <p>Every week the set is rebuilt from that week. The skin the week deals becomes the floor and the giant backdrop.
-  The playoff-odds towers stand in the middle, the week's star is printed out front, with the league's wordmark and the week's numbers over the top. Seven real weeks so far; pick one.</p>
+  The playoff-odds towers stand in the middle, the week's star is printed out front, with the league's wordmark and the week's numbers over the top. Eight real weeks so far, and the newest went up this morning; pick one.</p>
 </header>
 
 <div class="ctl">
@@ -137,10 +137,15 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
 /* ---------------------------------------------------------------- data (the real archive) */
 const ID = {Clayton:"1001531274030305280", Brandon:"964703051971887104", Devin:"1254567796231114752", Josh:"334162589502144512",
             Isiah:"979400432114102272", Corey:"979382824706912256", Thad:"979455520442580992", Lucas:"980569987930804224"};
-const TEAMS = [["Clayton",98],["Brandon",97],["Devin",69],["Josh",48],["Isiah",36],["Corey",33],["Thad",6],["Lucas",12]].map(([n, po]) => ({first:n, id:ID[n], po}));
+const TEAMS = [["Clayton",98],["Brandon",96],["Devin",89],["Josh",57],["Isiah",38],["Corey",19],["Thad",1],["Lucas",3]].map(([n, po]) => ({first:n, id:ID[n], po}));
 const PO = 4;
 // each week: the star's story, the skin cover.deal gave it, and the other high points (the ticker)
 const WEEKS = {
+  8:{kind:"close", skin:"concrete", star:"Isiah", head:"Isiah by 2.3", sub:"156.6 to 154.2 over Brandon: the week's closest game, its top score, and the biggest jump in playoff odds (23% to 38%).", big:"BY 2.3", word:"CLOSE ONE",
+     lines:["BEAT BRANDON BY 2.3","TOP SCORE: 156.6","PLAYOFF ODDS 23% → 38%"], hot:0, now:true,
+     hi:[{t:"lucky", who:["Thad"], title:"LUCKY THAD", stat:"127.7", note:"5 teams scored more and he still won"},
+         {t:"gotw", who:["Thad","Josh"], title:"THAD V JOSH", stat:"28 PTS AT STAKE", note:"28 points of playoff odds on the line"},
+         {t:"bench", who:["Brandon"], title:"BRANDON'S BENCH", stat:"23.6", note:"Points his best lineup would have added"}]},
   1:{kind:"mover", skin:"paper", star:"Clayton", head:"Clayton, up 7", sub:"The biggest climb on his draft seed.", big:"SEVEN", word:"MOVER",
      lines:["UP SEVEN SPOTS","CLAYTON 10–2","THE CLIMB"], hot:0,
      hi:[{t:"chase", who:["Lucas"], title:"THE CHASE IS REAL", stat:"LUCAS 2–10", note:"Lucas at 2–10, and a $120 pot to play for"}]},
@@ -192,13 +197,12 @@ const SKINS = {
   cyan:    {name:"Cyan", look:"cyan", acc:"#2fd3ff", inC:"#1fb6dd", outC:"#0e5d78", boxbg:"#000", boxfg:"#fff", font:"Archivo", size:70, fill:"#2fd3ff", black:true, sig:"none"},
 };
 
-let week = 7, skinOver = null;
-try { const w = +localStorage.getItem("cg-week"); if (WEEKS[w]) week = w; } catch (e) {}
+let week = 8, skinOver = null;
 
 /* ---------------------------------------------------------------- page */
 const weeksEl = document.getElementById("weeks"), skinsEl = document.getElementById("skins");
 weeksEl.innerHTML = Object.entries(WEEKS).map(([w, d]) =>
-  `<button type="button" id="wk-${w}" data-w="${w}"><b>Week ${w} · ${d.head.split(",")[0]}</b><small>${SKINS[d.skin].name} skin</small></button>`).reverse().join("");
+  `<button type="button" id="wk-${w}" data-w="${w}"><b>Week ${w} · ${d.head.split(",")[0]}</b><small>${SKINS[d.skin].name} skin${d.now ? " · up now" : ""}</small></button>`).reverse().join("");
 skinsEl.innerHTML = Object.entries(SKINS).map(([k, s]) => `<button type="button" id="sk-${k}" data-s="${k}" style="--c:${s.acc}"><i></i>${s.name}</button>`).join("");
 function sync(){
   const d = WEEKS[week], sk = skinOver || d.skin;
