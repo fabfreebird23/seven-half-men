@@ -239,7 +239,7 @@ def _hard_sides(cut: Image.Image) -> list:
         return max(sum(1 for x in range(w) if px[x, y] > 100) / w for y in rows)
     shares = {"left": share(cols=range(band)), "right": share(cols=range(w - band, w)),
               "bottom": share(rows=range(h - band, h))}
-    return {k: round(v, 2) for k, v in shares.items() if v > (0.10 if k == "bottom" else 0.04)}
+    return {k: round(v, 2) for k, v in shares.items() if v > (0.10 if k == "bottom" else 0.08)}
 
 
 def _fade(im: Image.Image, sides: dict) -> Image.Image:
@@ -253,7 +253,7 @@ def _fade(im: Image.Image, sides: dict) -> Image.Image:
     for side in ("left", "right"):
         if side not in sides:
             continue
-        span = max(12, int(w * (0.14 + 0.16 * min(1.0, sides[side]))))
+        span = max(12, int(w * (0.05 + 0.25 * min(1.0, sides[side]))))
         for i in range(span):
             x = i if side == "left" else w - 1 - i
             rp[x, 0] = min(rp[x, 0], int(255 * (i / span) ** 1.4))
