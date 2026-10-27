@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>7½ Men Cover Grid</title>
+<title>7½ Men Week Grid</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wdth,wght@62..125,500..900&family=Bungee&family=Grenze+Gotisch:wght@900&family=Italiana&family=Metal+Mania&family=Orbitron:wght@600;800&family=Permanent+Marker&family=Shrikhand&family=Space+Mono:wght@400;700&family=Yellowtail&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
@@ -10,10 +10,10 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <style>
-/* Layout: the app's Home slot. One wide stage per week: the dealt skin's cover background built
+/* Layout: the app's Home slot. One wide stage per week: the dealt skin's background built
    as a 3D set (floor, giant backdrop), the playoff-odds towers in the middle, the week's other
-   high points as mini covers on billboards behind them, the cover star printed in front of the
-   backdrop, and the magazine furniture over everything. Single dark page, the app's Bloody Sunday. */
+   high points on billboards behind them, the week's star printed in front of the
+   backdrop, and the wordmark and the week's numbers over everything. Single dark page, the app's Bloody Sunday. */
 :root{
   color-scheme:dark;
   --pg:#141314; --ink:#f4f1f2; --soft:#a99fa3; --line:#332f31; --kr2:#fb0849; --kg:#578ed5;
@@ -65,10 +65,6 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
 .mag .sig.vert{right:1.6%;top:10%;writing-mode:vertical-rl;transform:rotate(180deg);font:900 3.2cqw var(--f-head);font-stretch:80%;color:#fb0849;-webkit-text-stroke:.12cqw #000;text-transform:uppercase}
 .mag .sig.vert b{color:#ffd400}
 .mag .sig.big{right:3%;top:7%;font:900 11cqw/1 var(--f-head);color:#fff;text-shadow:.35cqw .35cqw 0 #000}
-.mag .bc{position:absolute;right:2%;bottom:3%;background:#fff;color:#000;padding:.4cqw .7cqw .3cqw;width:10.5%}
-.mag .bc .tp{display:flex;justify-content:space-between;font:700 1cqw var(--f-mono)}
-.mag .bc i{display:block;height:2.6cqw;margin-top:.3cqw;background:repeating-linear-gradient(90deg,#000 0 1px,transparent 1px 2px,#000 2px 4px,transparent 4px 5px,#000 5px 6px,transparent 6px 8px)}
-.mag .bc u{display:block;text-decoration:none;font:700 .9cqw var(--f-mono);text-align:center}
 .mag .grain{position:absolute;inset:0;opacity:.16;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
 @media (max-width:700px){
@@ -79,17 +75,16 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
   .mag .sig{transform-origin:right bottom;scale:1.9}
   .mag .sig.script,.mag .sig.marker,.mag .sig.paint,.mag .sig.big,.mag .sig.vert{top:24%}
   .mag .sig.badge{top:22%}
-  .mag .bc{width:21%}.mag .bc .tp{font-size:2cqw}.mag .bc i{height:5cqw}.mag .bc u{font-size:1.7cqw}
-}
+  }
 
-.issue{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;margin-top:22px}
-@media (max-width:760px){.issue{grid-template-columns:minmax(0,1fr)}}
-.issue h3{margin:6px 0 0;font:800 34px/.95 var(--f-head);font-stretch:110%;text-transform:uppercase;text-wrap:balance}
-.issue p{margin:8px 0 0;color:var(--soft);font-size:14px;max-width:52ch}
-.issue ol{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:8px}
-.issue li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline;border-top:1px solid var(--line);padding-top:8px}
-.issue li b{font:400 15px var(--f-box);letter-spacing:.02em;text-transform:uppercase}
-.issue li em{font-style:normal;font-size:13px;color:var(--soft)}
+.wkx{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;margin-top:22px}
+@media (max-width:760px){.wkx{grid-template-columns:minmax(0,1fr)}}
+.wkx h3{margin:6px 0 0;font:800 34px/.95 var(--f-head);font-stretch:110%;text-transform:uppercase;text-wrap:balance}
+.wkx p{margin:8px 0 0;color:var(--soft);font-size:14px;max-width:52ch}
+.wkx ol{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:8px}
+.wkx li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline;border-top:1px solid var(--line);padding-top:8px}
+.wkx li b{font:400 15px var(--f-box);letter-spacing:.02em;text-transform:uppercase}
+.wkx li em{font-style:normal;font-size:13px;color:var(--soft)}
 .sec{margin-top:44px;border-top:3px solid var(--ink);padding-top:18px}
 .sec h2{margin:8px 0 0;font-weight:900;font-stretch:125%;font-size:clamp(24px,3.4vw,38px);line-height:.92;text-transform:uppercase}
 .rules{display:grid;gap:10px;margin-top:14px;max-width:74ch;font:400 13.5px/1.6 var(--f-mono);color:var(--soft)}
@@ -98,23 +93,23 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
 
 <div class="wrap">
 <header class="intro">
-  <div class="k">7½ Men · Home · the weekly cover, built in 3D</div>
-  <h1>The Cover Grid</h1>
-  <p>Every week the set is rebuilt from that week's issue. The skin the cover deals becomes the floor and the giant
-  backdrop. The week's other high points stand behind the playoff-odds towers as mini covers on billboards. The cover
-  star is printed out front, and the masthead and cover lines go over the top. Seven real weeks so far; pick one.</p>
+  <div class="k">7½ Men · Home · the week, built in 3D</div>
+  <h1>The Week Grid</h1>
+  <p>Every week the set is rebuilt from that week. The skin the week deals becomes the floor and the giant backdrop.
+  The week's other high points stand behind the playoff-odds towers on billboards, each in its own look. The week's
+  star is printed out front, with the league's wordmark and the week's numbers over the top. Seven real weeks so far; pick one.</p>
 </header>
 
 <div class="ctl">
-  <div class="grp"><span>Issue</span><div class="chips weeks" id="weeks" role="group" aria-label="Week"></div></div>
+  <div class="grp"><span>Week</span><div class="chips weeks" id="weeks" role="group" aria-label="Week"></div></div>
   <div class="grp"><span>Try the week in another skin</span><div class="chips skins" id="skins" role="group" aria-label="Skin"></div></div>
 </div>
 
-<div class="stage" id="stage" aria-label="The week's cover as a 3D scene: playoff-odds towers, the week's other stories on billboards, and the cover star printed in front of the backdrop">
+<div class="stage" id="stage" aria-label="The week as a 3D scene: playoff-odds towers, the week's other high points on billboards, and the week's star printed in front of the backdrop">
   <div class="mag" id="mag"></div>
 </div>
 
-<section class="issue">
+<section class="wkx">
   <div>
     <div class="k" id="is-k"></div>
     <h3 id="is-h"></h3>
@@ -130,11 +125,11 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
   <div class="k">How it would run</div>
   <h2>A new set every Tuesday</h2>
   <div class="rules">
-    <p><b>The deal builds the set.</b> The week's skin decides the floor (checks, xerox crosshatch, concrete, paint, notebook paper…), the giant backdrop behind everything (a sun, a flame wall, the week's number in stacked xerox numerals, the standings written in marker), the inks on the towers and the masthead's face.</p>
-    <p><b>The high points go up on billboards.</b> The issue's other stories, the ones under "Also in this issue", each get a mini cover in their own story's look: a bench in xerox, a lucky win in holo, the Game of the Week in red riso, a top score in checks, the Chase in concrete, the mover in sky blue.</p>
-    <p><b>The towers stay honest.</b> They are the live playoff sim, labelled like cover lines. In this mock every week shows today's odds; on Home it is always the current week, so the odds are always live.</p>
+    <p><b>The deal builds the set.</b> The week's skin decides the floor (checks, xerox crosshatch, concrete, paint, notebook paper…), the giant backdrop behind everything (a sun, a flame wall, the week's number in stacked xerox numerals, the odds written in marker), the inks on the towers and the wordmark's face.</p>
+    <p><b>The high points go up on billboards.</b> The week's other stories each get a billboard in their own look: a bench in xerox, a lucky win in holo, the Game of the Week in red riso, a top score in checks, the Chase in concrete, the mover in sky blue.</p>
+    <p><b>The towers stay honest.</b> They are the live playoff sim, labelled in the week's black boxes. In this mock every week shows today's odds; on Home it is always the current week, so the odds are always live.</p>
     <p><b>The star is the only full-size print.</b> Everyone else is a face on a tower or a figure on a billboard.</p>
-    <p><b>The archive stays a rack of flat covers;</b> one live 3D set per page is enough for a phone. Drag turns the camera, double-tap replays the build, and reduced motion shows the finished frame.</p>
+    <p><b>Past weeks stay flat;</b> one live 3D set per page is enough for a phone. Drag turns the camera, double-tap replays the build, and reduced motion shows the finished frame.</p>
   </div>
 </section>
 </div>
@@ -145,7 +140,7 @@ const ID = {Clayton:"1001531274030305280", Brandon:"964703051971887104", Devin:"
             Isiah:"979400432114102272", Corey:"979382824706912256", Thad:"979455520442580992", Lucas:"980569987930804224"};
 const TEAMS = [["Clayton",98],["Brandon",97],["Devin",69],["Josh",48],["Isiah",36],["Corey",33],["Thad",6],["Lucas",12]].map(([n, po]) => ({first:n, id:ID[n], po}));
 const PO = 4;
-// each week: the cover story, the skin cover.deal gave it, and the other high points (billboards)
+// each week: the star's story, the skin cover.deal gave it, and the other high points (billboards)
 const WEEKS = {
   1:{kind:"mover", skin:"paper", star:"Clayton", head:"Clayton, up 7", sub:"The biggest climb on his draft seed.", big:"SEVEN", word:"MOVER",
      lines:["UP SEVEN SPOTS","CLAYTON 10–2","THE CLIMB"], hot:0,
@@ -156,7 +151,7 @@ const WEEKS = {
          {t:"lucky", who:["Brandon"], title:"LUCKY BRANDON", stat:"127.9", note:"6 teams scored more and he still won"},
          {t:"mover", who:["Clayton"], title:"CLAYTON UP 7", stat:"MOVER", note:"The biggest climb on his draft seed"}]},
   3:{kind:"biggest", skin:"slate", star:"Clayton", head:"Clayton 175.1", sub:"The week's top score. Smith-Njigba put up 42.5.", big:"175.1", word:"SCORING",
-     lines:["175.1 POINTS","IN ONE SUNDAY","SMITH-NJIGBA. 42.5. NOT BAD.","BURIED INSIDE: LUCAS'S BENCH"], hot:0,
+     lines:["175.1 POINTS","IN ONE SUNDAY","SMITH-NJIGBA. 42.5. NOT BAD.","LUCAS'S BENCH: 35.2"], hot:0,
      hi:[{t:"bench", who:["Lucas"], title:"LUCAS'S BENCH", stat:"35.2", note:"Points his best lineup would have added"},
          {t:"lucky", who:["Thad"], title:"LUCKY THAD", stat:"104.8", note:"4 teams scored more and he still won"},
          {t:"chase", who:["Lucas"], title:"THE CHASE IS REAL", stat:"LUCAS 2–10", note:"A $120 pot to play for"}]},
@@ -166,7 +161,7 @@ const WEEKS = {
          {t:"lucky", who:["Lucas"], title:"LUCKY LUCAS", stat:"130.3", note:"5 teams scored more and he still won"},
          {t:"chase", who:["Lucas"], title:"THE CHASE IS REAL", stat:"LUCAS 2–10", note:"A $120 pot to play for"}]},
   5:{kind:"biggest", skin:"concrete", star:"Isiah", head:"Isiah 184.9", sub:"The week's top score.", big:"184.9", word:"SCORING",
-     lines:["184.9 POINTS","IN ONE SUNDAY","BURIED INSIDE: CLAYTON'S BENCH"], hot:0,
+     lines:["184.9 POINTS","IN ONE SUNDAY","CLAYTON'S BENCH: 37.9"], hot:0,
      hi:[{t:"bench", who:["Clayton"], title:"CLAYTON'S BENCH", stat:"37.9", note:"Points his best lineup would have added"},
          {t:"lucky", who:["Corey"], title:"LUCKY COREY", stat:"130.6", note:"4 teams scored more and he still won"},
          {t:"mover", who:["Clayton"], title:"CLAYTON UP 7", stat:"MOVER", note:"The biggest climb on his draft seed"}]},
@@ -176,27 +171,26 @@ const WEEKS = {
          {t:"bench", who:["Thad"], title:"THAD'S BENCH", stat:"28.0", note:"Points his best lineup would have added"},
          {t:"mover", who:["Clayton"], title:"CLAYTON UP 7", stat:"MOVER", note:"The biggest climb on his draft seed"}]},
   7:{kind:"biggest", skin:"cyan", star:"Devin", head:"Devin 149.9", sub:"The week's top score, and McCaffrey's 29.7 did the heavy lifting.", big:"149.9", word:"SCORING",
-     lines:["149.9 POINTS","IN ONE SUNDAY","MCCAFFREY. 29.7. NOT BAD.","BURIED INSIDE: THAD'S BENCH"], hot:0,
+     lines:["149.9 POINTS","IN ONE SUNDAY","MCCAFFREY. 29.7. NOT BAD.","THAD'S BENCH: 31.2"], hot:0,
      hi:[{t:"gotw", who:["Devin","Josh"], title:"DEVIN V JOSH", stat:"36 PTS AT STAKE", note:"36 points of playoff odds on the line"},
          {t:"bench", who:["Thad"], title:"THAD'S BENCH", stat:"31.2", note:"Points his best lineup would have added"},
          {t:"lucky", who:["Brandon"], title:"LUCKY BRANDON", stat:"125.0", note:"3 teams scored more and he still won"}]},
 };
-const MONTH = w => (w <= 4 ? "SEP" : "OCT") + " 2026";
 
 /* ---------------------------------------------------------------- skins as sets
    look: the star's print. light: a pale set (no bloom; ink lines instead of neon).
    inC / outC: the towers in and out of the playoff spots. acc: the star's tower, his rim, the hot box. */
 const SKINS = {
-  checker: {name:"Checks", look:"blue", acc:"#ffd400", inC:"#2e9bff", outC:"#ff2d6f", boxbg:"#000", boxfg:"#fff", font:"Bungee", size:64, fill:"#fb0849", top:"SCORING IS (STILL) KING", sig:"badge"},
-  concrete:{name:"Concrete", look:"bw", acc:"#ff7a1a", inC:"#f4f1f2", outC:"#77767c", boxbg:"#000", boxfg:"#fff", font:"Shrikhand", size:70, fill:"#ff7a1a", title:true, top:"THE BIG SUNDAY ISSUE", sig:"script"},
-  sky:     {name:"Sky", look:"sky", acc:"#ffd400", inC:"#ffffff", outC:"#0c2f78", boxbg:"#000", boxfg:"#fff", font:"Metal Mania", size:66, fill:"#ffd400", top:"PUT UP NUMBERS", sig:"vert"},
-  xerox:   {name:"Xerox", look:"xerox", acc:"#e8202a", inC:"#2a5bd8", outC:"#1d1a3a", boxbg:"#1d1a3a", boxfg:"#f1e896", font:"Bungee", size:62, fill:"#2a5bd8", stroke:"#e8202a", hotfg:"#fff", light:true, top:"BENCH WATCH", sig:"paint"},
-  holo:    {name:"Holo", look:"holo", acc:"#ff4fb0", inC:"#9a7bff", outC:"#4a2a6a", boxbg:"#000", boxfg:"#fff", font:"Grenze Gotisch", size:76, fill:"#ff4fb0", title:true, top:"THE LUCKY ISSUE", sig:"none"},
-  night:   {name:"Flames", look:"fire", acc:"#ff5a00", inC:"#ffd400", outC:"#7a0a00", boxbg:"#000", boxfg:"#fff", font:"Bungee", size:64, fill:"#ffd400", top:"HOT HOT HOT", sig:"badge"},
-  splat:   {name:"Splatter", look:"pop", acc:"#ff2d6f", inC:"#1fb3ff", outC:"#18c26b", boxbg:"#000", boxfg:"#fff", font:"Shrikhand", size:70, fill:"#ffffff", light:true, top:"THE LUCKY ISSUE", sig:"paint"},
-  slate:   {name:"B&W", look:"bw", acc:"#ffffff", inC:"#c8c8c8", outC:"#555555", boxbg:"#fff", boxfg:"#000", font:"Archivo", size:72, fill:"#ffffff", black:true, top:"SCORING IS (STILL) KING", sig:"big"},
-  paper:   {name:"Paper", look:"orange", acc:"#d4240f", inC:"#181512", outC:"#c43a0a", boxbg:"#181512", boxfg:"#f3ead6", font:"Metal Mania", size:66, fill:"#181512", stroke:"#181512", hotfg:"#fff", light:true, top:"THE CLIMB", sig:"marker"},
-  cyan:    {name:"Cyan", look:"cyan", acc:"#2fd3ff", inC:"#1fb6dd", outC:"#0e5d78", boxbg:"#000", boxfg:"#fff", font:"Archivo", size:70, fill:"#2fd3ff", black:true, top:"SCORING IS (STILL) KING", sig:"none"},
+  checker: {name:"Checks", look:"blue", acc:"#ffd400", inC:"#2e9bff", outC:"#ff2d6f", boxbg:"#000", boxfg:"#fff", font:"Bungee", size:64, fill:"#fb0849", sig:"badge"},
+  concrete:{name:"Concrete", look:"bw", acc:"#ff7a1a", inC:"#f4f1f2", outC:"#77767c", boxbg:"#000", boxfg:"#fff", font:"Shrikhand", size:70, fill:"#ff7a1a", title:true, sig:"script"},
+  sky:     {name:"Sky", look:"sky", acc:"#ffd400", inC:"#ffffff", outC:"#0c2f78", boxbg:"#000", boxfg:"#fff", font:"Metal Mania", size:66, fill:"#ffd400", sig:"vert"},
+  xerox:   {name:"Xerox", look:"xerox", acc:"#e8202a", inC:"#2a5bd8", outC:"#1d1a3a", boxbg:"#1d1a3a", boxfg:"#f1e896", font:"Bungee", size:62, fill:"#2a5bd8", stroke:"#e8202a", hotfg:"#fff", light:true, sig:"paint"},
+  holo:    {name:"Holo", look:"holo", acc:"#ff4fb0", inC:"#9a7bff", outC:"#4a2a6a", boxbg:"#000", boxfg:"#fff", font:"Grenze Gotisch", size:76, fill:"#ff4fb0", title:true, sig:"none"},
+  night:   {name:"Flames", look:"fire", acc:"#ff5a00", inC:"#ffd400", outC:"#7a0a00", boxbg:"#000", boxfg:"#fff", font:"Bungee", size:64, fill:"#ffd400", sig:"badge"},
+  splat:   {name:"Splatter", look:"pop", acc:"#ff2d6f", inC:"#1fb3ff", outC:"#18c26b", boxbg:"#000", boxfg:"#fff", font:"Shrikhand", size:70, fill:"#ffffff", light:true, sig:"paint"},
+  slate:   {name:"B&W", look:"bw", acc:"#ffffff", inC:"#c8c8c8", outC:"#555555", boxbg:"#fff", boxfg:"#000", font:"Archivo", size:72, fill:"#ffffff", black:true, sig:"big"},
+  paper:   {name:"Paper", look:"orange", acc:"#d4240f", inC:"#181512", outC:"#c43a0a", boxbg:"#181512", boxfg:"#f3ead6", font:"Metal Mania", size:66, fill:"#181512", stroke:"#181512", hotfg:"#fff", light:true, sig:"marker"},
+  cyan:    {name:"Cyan", look:"cyan", acc:"#2fd3ff", inC:"#1fb6dd", outC:"#0e5d78", boxbg:"#000", boxfg:"#fff", font:"Archivo", size:70, fill:"#2fd3ff", black:true, sig:"none"},
 };
 const POSTER_LOOK = {top:"blue", bench:"xerox", lucky:"holo", mover:"sky", chase:"bw", gotw:"riso"};
 
@@ -212,7 +206,7 @@ function sync(){
   const d = WEEKS[week], sk = skinOver || d.skin;
   weeksEl.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.w === week));
   skinsEl.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.s === sk));
-  document.getElementById("is-k").textContent = `Week ${week} · the cover story · ${SKINS[sk].name} skin`;
+  document.getElementById("is-k").textContent = `Week ${week} · the star · ${SKINS[sk].name} skin`;
   document.getElementById("is-h").textContent = d.head;
   document.getElementById("is-p").textContent = d.sub;
   document.getElementById("is-ol").innerHTML = d.hi.map(h => `<li><b>${h.title}</b><em>${h.note}</em></li>`).join("");
@@ -233,16 +227,16 @@ function magHTML(d, s){
     paint:`<div class="sig paint">${d.word}</div>`,
     marker:`<div class="sig marker">${d.word}!!!</div>`,
     big:`<div class="sig big">${d.big}</div>`, none:""}[s.sig] || "";
-  return `<div class="topbar">${s.top} <em>•</em> WEEK ${week} <em>•</em> PLAYOFF ODDS INSIDE</div>
+  const ticker = [`WEEK ${week}`, d.head.toUpperCase(), ...d.hi.map(h => h.title + (/^\d/.test(h.stat) ? " " + h.stat : ""))].join(" <em>•</em> ");
+  return `<div class="topbar">${ticker}</div>
   <svg class="mast" viewBox="0 0 300 84" aria-hidden="true">${shadow}
     <text x="150" y="62" text-anchor="middle" textLength="286" lengthAdjust="spacingAndGlyphs" font-family="${s.font}" font-size="${s.size}" fill="${s.fill}" ${stroke} ${attrs}>${word}</text></svg>
   <div class="lines"><div class="bx hot lg">${first}</div>${rest.map((l, i) => `<div class="bx${i ? " sm" : ""}">${l}</div>`).join("")}</div>
   ${sig}
-  <div class="bc"><div class="tp"><b>${MONTH(week)}</b><b>${String(week).padStart(2, "0")}</b></div><i></i><u>0 75026 000${String(week).padStart(2, "0")} ${week * 7 % 10}</u></div>
   <div class="grain"></div>`;
 }
 
-/* ---------------------------------------------------------------- canvas art: every cover background, drawn */
+/* ---------------------------------------------------------------- canvas art: every skin's background, drawn */
 const IMG = new Map();
 function photo(src){ if (!IMG.has(src)) IMG.set(src, new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; })); return IMG.get(src); }
 const cut = (name, look) => `managers/${ID[name]}_body-${look}.webp`;
@@ -276,7 +270,7 @@ function floorArt(k, g, w, h, s){
     cyan(){ g.fillStyle = "#04141c"; g.fillRect(0, 0, w, h); line("#2fd3ff", 1, 3); },
   })[k]();
 }
-// the giant backdrop, per skin: the cover's background art at billboard scale
+// the giant backdrop, per skin, at billboard scale
 function backdropArt(k, g, w, h, d, s){
   ({
     checker(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#0b0d2a"); gr.addColorStop(1, "#5a0620"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
@@ -303,38 +297,39 @@ function backdropArt(k, g, w, h, d, s){
         if (t.po < 10){ g.strokeStyle = "#d4240f"; g.lineWidth = 6; g.beginPath(); g.moveTo(w * .38, y - h * .02); g.lineTo(w * .385 + g.measureText(`${t.first} ${t.po}%`).width + 6, y - h * .028); g.stroke(); } });
       g.strokeStyle = "#181512"; g.lineWidth = 5; for (let i = 0; i < 9; i++){ g.beginPath(); const x = w * (.72 + rand() * .12), y = h * (.3 + rand() * .55); g.arc(x, y, 10 + rand() * 40, rand() * 3, 3 + rand() * 3); g.stroke(); } },
     cyan(){ g.fillStyle = "#04141c"; g.fillRect(0, 0, w, h); g.strokeStyle = "#fafafa"; g.lineWidth = h * .03; g.strokeRect(w * .33, h * .5, w * .22, h * .47);
-      g.font = `${h * .062}px Anton`; g.textAlign = "left"; ["INSIDE WEEK " + week + ":", ...d.hi.map(x => x.title)].forEach((t, i) => {
+      g.font = `${h * .062}px Anton`; g.textAlign = "left"; ["WEEK " + week + ":", ...d.hi.map(x => x.title)].forEach((t, i) => {
         const y = h * (.58 + i * .095), tw = g.measureText(t).width; g.fillStyle = i === d.hi.length ? "#d8141c" : "#000"; g.fillRect(w * .355, y - h * .058, tw + h * .036, h * .076);
         g.fillStyle = "#fff"; g.fillText(t, w * .355 + h * .018, y); }); },
   })[k]();
 }
-// a mini cover for one high point, in its own story's look
+// one high point's billboard, in its own story's look
 async function posterArt(hp){
   const W = 360, H = 480, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
   const imgs = await Promise.all(hp.who.map(n => photo(cut(n, POSTER_LOOK[hp.t]))));
   const put = (im, x, hh, flip) => { if (!im) return; const h2 = H * hh, w2 = h2 * im.naturalWidth / im.naturalHeight; g.save();
     if (flip){ g.translate(x + w2 / 2, 0); g.scale(-1, 1); g.translate(-(x + w2 / 2), 0); } g.drawImage(im, x - w2 / 2, H - h2, w2, h2); g.restore(); };
-  const mast = (font, size, fill, title) => { g.font = `${size}px "${font}"`; g.textAlign = "center"; const t = title ? "7½ Men" : "7½ MEN";
+  // the story's own word across the top, in that look's face
+  const mast = (font, size, fill, t) => { g.font = `${size}px "${font}"`; g.textAlign = "center"; let sz = size;
+    while (g.measureText(t).width > W - 24 && sz > 20){ sz -= 2; g.font = `${sz}px "${font}"`; }
     g.lineWidth = 6; g.strokeStyle = "#000"; g.strokeText(t, W / 2, 62); g.fillStyle = fill; g.fillText(t, W / 2, 62); };
   const box = (t, x, y, size, bg, fg) => { g.font = `${size}px Anton`; const tw = g.measureText(t).width; g.fillStyle = bg || "#000"; g.fillRect(x, y - size * .92, tw + 14, size * 1.12); g.fillStyle = fg || "#fff"; g.textAlign = "left"; g.fillText(t, x + 7, y); };
   seed = 7 + hp.title.length;
   ({
-    top(){ checks(g, W, H, "#ffd400", "#ffe866", 32); mast("Bungee", 58, "#fb0849"); put(imgs[0], W * .6, .82); box(hp.title, 14, H * .4, 34); box(hp.stat, 14, H * .5, 24, "#fb0849", "#000"); },
-    bench(){ g.fillStyle = "#efe59a"; g.fillRect(0, 0, W, H); hatch(g, W, H, "#1d1a3a", 24, .3); mast("Bungee", 56, "#2a5bd8"); put(imgs[0], W * .32, .82);
+    top(){ checks(g, W, H, "#ffd400", "#ffe866", 32); mast("Bungee", 58, "#fb0849", "TOP SCORE"); put(imgs[0], W * .6, .82); box(hp.title, 14, H * .4, 34); },
+    bench(){ g.fillStyle = "#efe59a"; g.fillRect(0, 0, W, H); hatch(g, W, H, "#1d1a3a", 24, .3); mast("Bungee", 64, "#2a5bd8", "BENCH"); put(imgs[0], W * .32, .82);
       const [a, b] = hp.stat.split("."); g.font = "900 128px Archivo"; g.fillStyle = "#ff3030"; g.textAlign = "right"; g.fillText(a, W - 16, H * .55); g.fillText("." + b, W - 16, H * .78);
       box(hp.title, 14, H - 24, 30); },
     lucky(){ g.fillStyle = "#2a0f45"; g.fillRect(0, 0, W, H); const r = g.createRadialGradient(W * .3, H * .3, 0, W * .3, H * .3, H * .6); r.addColorStop(0, "#ff5cc8"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, W, H);
-      mast("Grenze Gotisch", 70, "#ff4fb0", true); put(imgs[0], W / 2, .62); box(hp.stat + " POINTS", 16, H * .34, 36, "#ff4fb0", "#000"); box(hp.title, 16, H * .45, 30); },
+      mast("Grenze Gotisch", 76, "#ff4fb0", "Lucky"); put(imgs[0], W / 2, .62); box(hp.stat + " POINTS", 16, H * .34, 36, "#ff4fb0", "#000"); box(hp.title, 16, H * .45, 30); },
     mover(){ const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, "#1460d6"); gr.addColorStop(1, "#5fb0ff"); g.fillStyle = gr; g.fillRect(0, 0, W, H);
-      mast("Metal Mania", 62, "#ffd400"); g.font = "92px Italiana"; g.fillStyle = "#fff"; g.textAlign = "center"; g.fillText("MOVER", W / 2, H * .5); put(imgs[0], W * .58, .78); box(hp.title, 14, H - 22, 30); },
-    chase(){ g.fillStyle = "#77767c"; g.fillRect(0, 0, W, H); noise(g, W, H, .5, true); mast("Shrikhand", 62, "#ff7a1a", true); put(imgs[0], W * .45, .8);
+      g.font = "92px Italiana"; g.fillStyle = "#fff"; g.textAlign = "center"; g.fillText("MOVER", W / 2, H * .2); put(imgs[0], W * .58, .78); box(hp.title, 14, H - 22, 30); },
+    chase(){ g.fillStyle = "#77767c"; g.fillRect(0, 0, W, H); noise(g, W, H, .5, true); mast("Shrikhand", 62, "#ff7a1a", "The Chase"); put(imgs[0], W * .45, .8);
       g.font = "64px Yellowtail"; g.fillStyle = "#fff"; g.textAlign = "right"; g.shadowColor = "#000"; g.shadowOffsetX = g.shadowOffsetY = 3; g.fillText("Chase is Real!", W - 12, H * .66); g.shadowColor = "transparent";
       box(hp.stat, 14, H - 22, 26); },
-    gotw(){ g.fillStyle = "#9a98a4"; g.fillRect(0, 0, W, H); noise(g, W, H, .45, true); mast("Bungee", 56, "#d8141c"); put(imgs[0], W * .28, .7); put(imgs[1], W * .72, .74, true);
+    gotw(){ g.fillStyle = "#9a98a4"; g.fillRect(0, 0, W, H); noise(g, W, H, .45, true); mast("Bungee", 40, "#d8141c", "GAME OF THE WEEK"); put(imgs[0], W * .28, .7); put(imgs[1], W * .72, .74, true);
       g.font = "34px \"Permanent Marker\""; g.fillStyle = "#e02a3a"; g.textAlign = "center"; g.fillText(hp.title, W / 2, H * .3); box(hp.stat, 14, H - 22, 26, "#d8141c"); },
   })[hp.t]();
-  // grain + the barcode corner
-  noise(g, W, H, .08, true); g.fillStyle = "#fff"; g.fillRect(W - 78, H - 52, 66, 40); g.fillStyle = "#000"; for (let i = 0; i < 26; i++) if (i % 3) g.fillRect(W - 72 + i * 2.2, H - 46, 1.2, 26);
+  noise(g, W, H, .08, true);   // grain
   return c;
 }
 
@@ -349,7 +344,7 @@ function sprite(tex, w, h){ const s = new THREE.Sprite(new THREE.SpriteMaterial(
 function faceTex(src, ring){ const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d"); const t = new THREE.CanvasTexture(c);
   photo(src).then(img => { if (!img) return; g.fillStyle = ring; g.beginPath(); g.arc(128,128,124,0,7); g.fill(); g.fillStyle = "#000"; g.beginPath(); g.arc(128,128,114,0,7); g.fill();
     g.save(); g.beginPath(); g.arc(128,128,108,0,7); g.clip(); g.drawImage(img,20,20,216,216); g.restore(); t.needsUpdate = true; }); return t; }
-// the towers' labels as cover lines: a black box with the odds, the name on a strip under it
+// the towers' labels: a black box with the odds, the name on a strip under it
 function labelTex(pct, name, s, isStar){ return canvasTex(300, 170, (g, w) => {
   g.fillStyle = isStar ? s.acc : s.boxbg; g.fillRect(20, 6, w - 40, 104); g.font = "92px Anton"; g.textAlign = "center"; g.fillStyle = isStar ? (s.hotfg || "#000") : s.boxfg; g.fillText(pct, w / 2, 96);
   g.fillStyle = isStar ? s.boxbg : s.acc; g.fillRect(48, 114, w - 96, 44); g.fillStyle = isStar ? s.boxfg : (s.hotfg || "#000"); g.font = "900 30px Archivo"; g.fillText(name.toUpperCase(), w / 2, 147); }); }
@@ -403,7 +398,7 @@ async function mount(){
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1), new THREE.MeshBasicMaterial({color:acc, transparent:true, opacity:s.light ? .35 : .22, side:THREE.DoubleSide, depthWrite:false, fog:false}));
   pl.rotation.y = Math.PI / 2; scene.add(pl);
 
-  // the billboards: the week's other high points, each a mini cover on two posts
+  // the billboards: the week's other high points, each on two posts
   const spots = narrow ? [[-4.6, -13, .25], [6.4, -12, -.3], [1.2, -19, 0]] : [[-5.8, -14, .22], [9.2, -12, -.32], [14.5, -20, -.3]];
   const boards = posters.map((cv, i) => { const tx = new THREE.CanvasTexture(cv); tx.anisotropy = 8;
     const grp = new THREE.Group(), w = 4.3, h = 5.73;
@@ -446,7 +441,7 @@ async function mount(){
     const t = still ? 6 : (now - t0) / 1000;
     if (!drag) yaw *= .985;
     const a = Math.sin(t * .18) * .3 + yaw - .12;
-    const R = 15.5 * Math.min(cam.aspect < 1 ? 1.74 : 1.9, Math.max(.7, 1.55 / cam.aspect));   // a portrait phone comes in close and looks up, so the set fills the cover
+    const R = 15.5 * Math.min(cam.aspect < 1 ? 1.74 : 1.9, Math.max(.7, 1.55 / cam.aspect));   // a portrait phone comes in close and looks up, so the set fills the frame
     cam.position.set(Math.sin(a) * R, 4.4 + R * .1 + Math.sin(t * .35) * .25, Math.cos(a) * R); cam.lookAt(cam.aspect > 1.5 ? -1.9 : .2, cam.aspect > 1.5 ? 3.7 : 5.6, -3);
     // the build: billboards go up, the star prints, the towers rise, the playoff line goes in
     boards.forEach((b, i) => { const k = Math.min(1, Math.max(0, (t - .1 - i * .18) / .8)); b.scale.setScalar(Math.max(.001, easeBack(k))); });

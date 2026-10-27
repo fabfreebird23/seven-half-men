@@ -62,7 +62,7 @@ import Foundation
 import Vision
 import CoreImage
 let args = CommandLine.arguments
-guard args.count == 3, let src = CIImage(contentsOf: URL(fileURLWithPath: args[1])) else { exit(2) }
+guard args.count >= 3, let src = CIImage(contentsOf: URL(fileURLWithPath: args[1])) else { exit(2) }
 let req = VNGenerateForegroundInstanceMaskRequest()
 let handler = VNImageRequestHandler(ciImage: src)
 do { try handler.perform([req]) } catch { exit(3) }
@@ -83,7 +83,9 @@ for dy in -12...12 { for dx in -12...12 {
     let v = Int(px[y * row + x]); if v > 0 { counts[v, default: 0] += 1 }
 } }
 CVPixelBufferUnlockBaseAddress(map, .readOnly)
-let keep = counts.max(by: { $0.value < $1.value }).map { IndexSet(integer: $0.key) } ?? obs.allInstances
+// "whole" keeps every subject: a manager photographed carrying people stays whole
+let keep = (args.count > 3 && args[3] == "whole") ? obs.allInstances
+    : counts.max(by: { $0.value < $1.value }).map { IndexSet(integer: $0.key) } ?? obs.allInstances
 guard let buf = try? obs.generateMaskedImage(ofInstances: keep,
                                              from: handler, croppedToInstancesExtent: true) else { exit(5) }
 let out = CIImage(cvPixelBuffer: buf)
@@ -94,14 +96,14 @@ try? data.write(to: URL(fileURLWithPath: args[2]))
 '''
 
 
-def cutout(src: Path) -> Image.Image | None:
+def cutout(src: Path, whole: bool = False) -> Image.Image | None:
     """The subject on a transparent background, via macOS Vision. None if the
     machine can't do it - the app degrades without complaining."""
     with tempfile.TemporaryDirectory() as td:
         swift, png = Path(td) / "cut.swift", Path(td) / "cut.png"
         swift.write_text(_SWIFT)
         try:
-            r = subprocess.run(["swift", str(swift), str(src), str(png)],
+            r = subprocess.run(["swift", str(swift), str(src), str(png)] + (["whole"] if whole else []),
                                capture_output=True, timeout=180)
         except (FileNotFoundError, subprocess.TimeoutExpired) as e:
             print(f"  ! no cutout ({e.__class__.__name__}): skipping the duotones")
@@ -386,6 +388,9 @@ def main() -> None:
     ap.add_argument("--id", dest="oid", help="his Sleeper user id")
     ap.add_argument("--box", help="LEFT,TOP,RIGHT,BOTTOM to crop to one person first")
     ap.add_argument("--body", help="LEFT,TOP,RIGHT,BOTTOM of head and torso, for the weekly cover")
+    ap.add_argument("--whole", action="store_true",
+                    help="with --body: keep everyone in the box, not just the person in the middle "
+                         "(a manager carrying his kids)")
     a = ap.parse_args()
 
     if a.retone:
@@ -411,7 +416,7 @@ def main() -> None:
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td) / "src.png"
             src.save(tmp)
-            cut = cutout(tmp)
+            cut = cutout(tmp, whole=a.whole)
         if cut is None:
             return
         cut = cut.crop(cut.getchannel("A").point(lambda v: 255 if v > 100 else 0).getbbox())
