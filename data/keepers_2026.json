@@ -299,6 +299,58 @@
       "star_pts": "29.7. NOT BAD.",
       "sub": "the week's top score",
       "week": 7
+    },
+    "8": {
+      "feat": "BEAT BRANDON BY 2.3",
+      "feats": [
+        "TOP SCORE: 156.6",
+        "PLAYOFF ODDS 23% \u2192 38%"
+      ],
+      "first": "Isiah",
+      "headline": "Isiah by 2.3",
+      "heat": 19.91999999999996,
+      "kind": "close",
+      "lines": [
+        "LUCKY THAD",
+        "THAD V JOSH",
+        "BRANDON'S BENCH"
+      ],
+      "link": "?p=inseason&g=week&t=live",
+      "loser": "Brandon",
+      "margin": "2.3",
+      "month": "OCT 2026",
+      "others": [
+        {
+          "headline": "Thad's lucky 127.7",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCKY THAD",
+          "sub": "5 teams scored more and he still won"
+        },
+        {
+          "headline": "Thad v Josh",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "THAD V JOSH",
+          "sub": "28 points of playoff odds on the line"
+        },
+        {
+          "headline": "Brandon's bench, 23.6",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "BRANDON'S BENCH",
+          "sub": "points his best lineup would have added"
+        },
+        {
+          "headline": "The hit list",
+          "link": "?p=inseason&g=playoffs&t=playoffs",
+          "short": "THE HIT LIST",
+          "sub": "1 team under 2% to make the playoffs"
+        }
+      ],
+      "owner": "979400432114102272",
+      "pts_l": "154.2",
+      "pts_w": "156.6",
+      "short": "ISIAH BY 2.3",
+      "sub": "156.6 to 154.2 over Brandon, the week's closest game",
+      "week": 8
     }
   },
   "draw": {
