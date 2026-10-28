@@ -365,7 +365,23 @@ def _initials(owner_id: str) -> str:
     return (parts[0][0] + (parts[-1][0] if len(parts) > 1 else parts[0][1:2])).upper() if parts else "?"
 
 
-@st.cache_data(show_spinner=False)
+def _stamp(f: Path) -> int:
+    """A file's mtime: part of the image caches' key, so a new photo shows the
+    moment it's deployed (Streamlit Cloud keeps the process, and its cache,
+    across a push)."""
+    try:
+        return f.stat().st_mtime_ns
+    except OSError:
+        return 0
+
+
+@st.cache_data(show_spinner=False, max_entries=400)
+def _data_uri(path: str, mime: str, stamp: int):
+    import base64
+    f = Path(path)
+    return f"data:{mime};base64," + base64.b64encode(f.read_bytes()).decode() if f.exists() else None
+
+
 def _mgr_photo(owner, tone: str = ""):
     """A manager's photo as a data URI, or None when there isn't one.
 
@@ -375,10 +391,9 @@ def _mgr_photo(owner, tone: str = ""):
     the opponent. Ported from the Kreeper League - the photos are the one
     thing in this port that can't be written, only taken.
     """
-    import base64
     ext, mime = ("webp", "image/webp") if tone else ("jpg", "image/jpeg")
     f = Path(__file__).parent / "assets" / "managers" / f"{owner}{'_' + tone if tone else ''}.{ext}"
-    return f"data:{mime};base64," + base64.b64encode(f.read_bytes()).decode() if f.exists() else None
+    return _data_uri(str(f), mime, _stamp(f))
 
 
 def _mgr_face(owner, cls: str = "") -> str:
@@ -2057,10 +2072,8 @@ def _recap_png(week: int, me: str) -> bytes:
 _NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"]
 
 
-@st.cache_data(show_spinner=False)
 def _mgr_body(owner: str, look: str):
     """(data URI, manifest) for a manager's cover cut-out, or (None, {})."""
-    import base64
     d = Path(__file__).parent / "assets" / "managers"
     f, m = d / f"{owner}_body-{look}.webp", d / f"{owner}_body.json"
     if look.startswith("face-"):          # the framed head-and-shoulders prints
@@ -2068,7 +2081,7 @@ def _mgr_body(owner: str, look: str):
     if not f.exists():
         return None, {}
     man = json.loads(m.read_text()) if m.exists() else {}
-    return "data:image/webp;base64," + base64.b64encode(f.read_bytes()).decode(), man
+    return _data_uri(str(f), "image/webp", _stamp(f)), man
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
