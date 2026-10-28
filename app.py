@@ -3252,6 +3252,8 @@ def render_home(leaf=None):
         has_game = bool(cur and get_week_ctx(cur)["sides"].get(VIEW))
     except Exception:          # noqa: BLE001 - no weekly data: fall back, don't crash Home
         has_game = False
+    # the week's set leads Home: the star, the towers, the week's high points
+    led = render_cover(cur) if has_game else ""
     render_keeper_deadline()
     if has_game:
         _render_home_my_week(VIEW, cur)
@@ -3259,7 +3261,6 @@ def render_home(leaf=None):
         my_card(VIEW)          # before kickoff there's no matchup to lead with
     render_taxi_deadline()
     if has_game:
-        led = render_cover(cur)
         # The Game of the Week is the top row of Around the League rather than
         # a section of its own - unless it is already this week's cover.
         _render_around_league(cur, VIEW, cover=(led != "gotw"))
