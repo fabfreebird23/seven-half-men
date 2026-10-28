@@ -108,17 +108,7 @@ h1{font-weight:900;font-stretch:125%;font-size:clamp(30px,5.2vw,58px);line-heigh
   <div class="mag" id="mag"></div>
 </div>
 
-<section class="wkx">
-  <div>
-    <div class="k" id="is-k"></div>
-    <h3 id="is-h"></h3>
-    <p id="is-p"></p>
-  </div>
-  <div>
-    <div class="k">The week's other high points</div>
-    <ol id="is-ol"></ol>
-  </div>
-</section>
+
 
 <section class="sec">
   <div class="k">How it would run</div>
@@ -208,10 +198,6 @@ function sync(){
   const d = WEEKS[week], sk = skinOver || d.skin;
   weeksEl.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.w === week));
   skinsEl.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.s === sk));
-  document.getElementById("is-k").textContent = `Week ${week} · the star · ${SKINS[sk].name} skin`;
-  document.getElementById("is-h").textContent = d.head;
-  document.getElementById("is-p").textContent = d.sub;
-  document.getElementById("is-ol").innerHTML = d.hi.map(h => `<li><b>${h.title}</b><em>${h.note}</em></li>`).join("");
 }
 weeksEl.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; week = +b.dataset.w; skinOver = null;
   try { localStorage.setItem("cg-week", week); } catch (er) {} sync(); mount(); });

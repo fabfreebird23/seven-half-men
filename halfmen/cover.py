@@ -124,7 +124,7 @@ CSS = """<style>
 /* the Week Grid (Home's 3D set) is a component iframe; a phone gets a portrait one */
 @media (max-width:760px){ iframe[srcdoc*="halfmen-week-grid"]{ height:500px !important; }
   [data-testid="stElementContainer"]:has(> iframe[srcdoc*="halfmen-week-grid"]){ max-height:500px; overflow:hidden; } }
-.wc-in.wg-in{ margin:14px 0 18px; }
+[data-testid="stMarkdownContainer"] a.wc-all.wg-all{ margin:2px 0 18px; }
 /* the issue's other stories, beside the cover */
 .wc-in{ display:grid; gap:10px; min-width:0; }
 .wc-in .wc-k{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--acc); }

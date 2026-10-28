@@ -2470,16 +2470,10 @@ def _render_week_grid(story: dict) -> bool:
         return False
     theme.bar("This week", "week %d &middot; the biggest week anyone had" % story["week"])
     components.html(page, height=560)
-    inside = "".join(
-        f'<li><b>{esc(x["headline"])}</b><em>{_cap(esc(x["sub"]))} &middot; '
-        f'<a href="{x["link"]}{_keep()}" target="_self">read &rarr;</a></em></li>' for x in story.get("others") or [])
+    # the set says it all; the week's other stories are on its ticker
     st.markdown(cover.CSS, unsafe_allow_html=True)
-    st.markdown(
-        f'<div class="wc-in wg-in"><span class="wc-k">Week {story["week"]} &middot; the star</span>'
-        f'<h3>{esc(story["headline"])}</h3><p>{_cap(esc(story["sub"]))}.</p>'
-        + (f'<span class="wc-k" style="margin-top:10px">The week\'s other high points</span><ol>{inside}</ol>' if inside else "")
-        + f'<a class="wc-all" href="?p=inseason&g=league&t=covers{_keep()}" target="_self">Every week this season &rarr;</a>'
-        + '</div>', unsafe_allow_html=True)
+    st.markdown(f'<a class="wc-all wg-all" href="?p=inseason&g=league&t=covers{_keep()}" target="_self">'
+                f'Every week this season &rarr;</a>', unsafe_allow_html=True)
     return True
 
 
