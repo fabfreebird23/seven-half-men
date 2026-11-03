@@ -351,6 +351,57 @@
       "short": "ISIAH BY 2.3",
       "sub": "156.6 to 154.2 over Brandon, the week's closest game",
       "week": 8
+    },
+    "9": {
+      "feats": [
+        "LUCAS'S BENCH",
+        "TOP SCORE: 164.0"
+      ],
+      "first": "Lucas",
+      "headline": "Lucas by 55",
+      "heat": 60.03799999999999,
+      "kind": "blowout",
+      "lines": [
+        "LUCAS'S BENCH",
+        "COREY V JOSH",
+        "DEVIN ON FIRE"
+      ],
+      "link": "?p=inseason&g=week&t=live",
+      "loser": "Isiah",
+      "margin": "55",
+      "month": "NOV 2026",
+      "others": [
+        {
+          "headline": "Lucas's bench, 46.1",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCAS'S BENCH",
+          "sub": "points his best lineup would have added"
+        },
+        {
+          "headline": "Corey v Josh",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "COREY V JOSH",
+          "sub": "39 points of playoff odds on the line"
+        },
+        {
+          "headline": "Devin, 4 straight",
+          "link": "?p=home",
+          "short": "DEVIN ON FIRE",
+          "sub": "4 head-to-head wins in a row"
+        },
+        {
+          "headline": "Josh's lucky 135.8",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCKY JOSH",
+          "sub": "4 teams scored more and he still won"
+        }
+      ],
+      "owner": "980569987930804224",
+      "pts_l": "109.4",
+      "pts_w": "164.0",
+      "short": "LUCAS BY 55",
+      "sub": "164.0 to 109.4 over Isiah",
+      "week": 9
     }
   },
   "draw": {
