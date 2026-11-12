@@ -202,3 +202,10 @@ def test_the_week_grid_template_has_its_slots_and_marker():
     from pathlib import Path
     t = (Path(cover.__file__).parent / "static" / "week_grid.html").read_text()
     assert "__DATA__" in t and "__LABEL__" in t and 'name="halfmen-week-grid"' in t
+
+
+def test_the_week_grid_can_print_two_managers():
+    """The Game of the Week is a two-person story; the set prints both."""
+    from pathlib import Path
+    t = (Path(cover.__file__).parent / "static" / "week_grid.html").read_text()
+    assert "D.star_imgs" in t and "D.star_firsts" in t

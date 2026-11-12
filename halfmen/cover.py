@@ -307,8 +307,6 @@ def deal(kinds: Dict[int, str], seed: str, chosen: Optional[Dict[int, str]] = No
 # The Week Grid (Home's 3D set) prints the star in the skin's own look.
 GRID_LOOK = {"checker": "blue", "concrete": "bw", "sky": "sky", "xerox": "xerox", "holo": "holo",
              "night": "fire", "splat": "pop", "slate": "bw", "paper": "orange", "cyan": "cyan"}
-# The fixed one-person stories, on the Week Grid: their skin and their words.
-GRID_FIXED = {"champion": ("night", "CHAMPION"), "rip": ("slate", "R.I.P."), "issue": ("cyan", "THE WEEK")}
 
 
 def grid_lines(story: Dict) -> list:

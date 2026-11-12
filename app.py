@@ -2423,24 +2423,55 @@ def _cover_html(issue: dict, skin: str = None) -> str:
     return cover.render(story, _mgr_body, skin=skin)
 
 
-_GRID_SKIP = ("gotw", "hitlist", "fights", "field")   # two people or the whole league: the flat cover tells these
+def _grid_story(story: dict) -> tuple:
+    """(stars, big, word, lines) for the Week Grid, for every kind of story:
+    the one-person stories through the cover's own words (cover._slots), the
+    rest - the Game of the Week, the hit list, the four fights, the field,
+    the champion, a team going out, a quiet week - from their own numbers."""
+    k, wk = story.get("kind"), int(story["week"])
+    s = cover._slots(story)
+    if s:
+        return [story["owner"]], s["big"], s["word"], cover.grid_lines(story)
+    feats = list(story.get("feats") or [])
+    if k == "gotw":
+        a, b = _first(story["a"]).upper(), _first(story["b"]).upper()
+        return ([story["a"], story["b"]], "%s PTS" % story["stakes"], "GAME OF THE WEEK",
+                ["%s V %s" % (a, b), "%s PTS OF PLAYOFF ODDS ON THE LINE" % story["stakes"],
+                 "%s V %s" % (str(story.get("team_a", "")).upper(), str(story.get("team_b", "")).upper())])
+    if k == "hitlist":
+        dead = [r for r in story.get("rows") or [] if r[2]]
+        return (list(story.get("owners") or [])[:2], str(len(dead)), "HIT LIST",
+                ["DEAD IN DECEMBER"] + ["%s %s" % (str(r[0]).upper(), r[1]) for r in dead][:2])
+    if k == "fights":
+        return ([story["owners"][0]] if story.get("owners") else [], str(len(story.get("pairs") or [])), "LAST WEEK",
+                ["%s V %s" % tuple(p) for p in (story.get("pairs") or [])][:3])
+    if k == "field":
+        rows_ = story.get("rows") or []
+        return ([rows_[0][0]] if rows_ else [], "THE FIELD", "PLAYOFFS",
+                ["%s · %s" % (r[2], str(r[1]).upper()) for r in rows_[:int(config.league()["playoff_teams"])]][:3])
+    if k == "champion":
+        return [story["owner"]], str(story.get("year", SEASON)), "CHAMPION", [str(story.get("team", "")).upper()] + feats[:2]
+    if k == "rip":
+        return [story["owner"]], "OUT", "R.I.P.", ["%s'S PLAYOFF HOPES" % _first(story["owner"]).upper(),
+                                                   "WEEK 1 – WEEK %s" % story.get("through", wk - 1)]
+    return ([story["owner"]] if story.get("owner") else []), "WEEK %d" % (wk - 1), "THE WEEK", feats[:3] or [story.get("headline", "").upper()]
 
 
 def _week_grid_data(story: dict) -> dict:
-    """What halfmen/static/week_grid.html needs for this week, or {} when the
-    week's story isn't a one-person story (the flat cover runs instead)."""
-    k, owner = story.get("kind"), story.get("owner")
-    if not owner or k in _GRID_SKIP:
-        return {}
+    """What halfmen/static/week_grid.html needs for this week, or {} if a
+    photo is missing (the flat cover runs instead). Every kind of story gets
+    the set; the one-person stories wear the skin cover.deal gave the week,
+    the rest a skin drawn for the week."""
+    import random as _r
     wk = int(story["week"])
+    stars, big, word, lines = _grid_story(story)
+    if not stars:
+        return {}
     skin = _cover_skins({wk: story}).get(wk)
     if skin not in cover.GRID_LOOK:
-        skin = cover.GRID_FIXED.get(k, ("cyan", ""))[0]
-    s = cover._slots(story)
-    big, word = (s["big"], s["word"]) if s else (str(SEASON) if k == "champion" else "WEEK %d" % (wk - 1),
-                                                   cover.GRID_FIXED.get(k, ("", "THE WEEK"))[1])
-    img, _man = _mgr_body(str(owner), cover.GRID_LOOK[skin])
-    if not img:
+        skin = _r.Random("%s-%d-grid" % (SEASON, wk)).choice(list(cover.GRID_LOOK))
+    imgs = [_mgr_body(str(o), cover.GRID_LOOK[skin])[0] for o in stars]
+    if not all(imgs):
         return {}
     rows = season.standings()
     try:
@@ -2453,8 +2484,9 @@ def _week_grid_data(story: dict) -> dict:
     teams = [{"first": _first(r["owner_id"]), "img": _mgr_photo(str(r["owner_id"])) or "",
               "po": int(sim[r["owner_id"]]["playoff_pct"]) if r["owner_id"] in sim else (100 if i < n else 0)}
              for i, r in enumerate(rows)]
-    return {"week": wk, "skin": skin, "star_first": _first(owner), "star_img": img, "head": story["headline"],
-            "big": str(big), "word": str(word), "lines": cover.grid_lines(story),
+    return {"week": wk, "skin": skin, "star_first": _first(stars[0]), "star_img": imgs[0],
+            "star_firsts": [_first(o) for o in stars], "star_imgs": imgs, "head": story["headline"],
+            "big": str(big), "word": str(word), "lines": lines,
             "hi": [{"title": o["short"], "stat": ""} for o in story.get("others") or []][:4],
             "teams": teams, "po": n}
 

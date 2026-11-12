@@ -65,6 +65,7 @@ html,body{ margin:0; height:100%; background:#000; overflow:hidden; }
 <script>
 const D = __DATA__;
 const TEAMS = D.teams, PO = D.po, week = D.week, sk = D.skin;
+const STARS = D.star_firsts || [D.star_first];
 const d = {star:D.star_first, head:D.head, big:D.big, word:D.word, lines:D.lines, hi:D.hi};
 const SKINS = {
   checker: {name:"Checks", look:"blue", acc:"#ffd400", inC:"#2e9bff", outC:"#ff2d6f", boxbg:"#000", boxfg:"#fff", font:"Bungee", size:64, fill:"#fb0849", sig:"badge"},
@@ -88,7 +89,7 @@ function magHTML(d, s){
     badge:`<div class="sig badge"><div><b>${d.big.length > 4 ? d.big.split(".")[0] : d.big}</b>${d.word}</div></div>`,
     script:`<div class="sig script"><small>THE</small><b>${d.word === "SCORING" ? "Big Sunday" : d.word[0] + d.word.slice(1).toLowerCase() + "!"}</b></div>`,
     vert:`<div class="sig vert"><b>${d.big}</b> ${d.word}</div>`,
-    paint:`<div class="sig paint">${d.word}</div>`,
+    paint:`<div class="sig paint" style="font-size:${Math.min(8, 64 / d.word.length).toFixed(2)}cqw">${d.word}</div>`,
     marker:`<div class="sig marker">${d.word}!!!</div>`,
     big:`<div class="sig big">${d.big}</div>`, none:""}[s.sig] || "";
   const ticker = [`WEEK ${week}`, d.head.toUpperCase(), ...d.hi.map(h => h.title + (/^\d/.test(h.stat) ? " " + h.stat : ""))].join(" <em>•</em> ");
@@ -133,25 +134,27 @@ function floorArt(k, g, w, h, s){
     cyan(){ g.fillStyle = "#04141c"; g.fillRect(0, 0, w, h); line("#2fd3ff", 1, 3); },
   })[k]();
 }
+// a font size that keeps `txt` inside `maxW`
+function fitPx(g, txt, px, maxW, face){ g.font = face(px); while (g.measureText(txt).width > maxW && px > 10){ px *= .92; g.font = face(px); } return px; }
 // the giant backdrop, per skin
 function backdropArt(k, g, w, h, d, s){
   ({
     checker(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#0b0d2a"); gr.addColorStop(1, "#5a0620"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
       sun(g, w * .63, h * .62, h * .34, "#fff6c8", "#ffd400", "#fb0849"); },
     concrete(){ g.fillStyle = "#77767c"; g.fillRect(0, 0, w, h); noise(g, w, h, .6, true); noise(g, w, h, .3);
-      g.font = `${h * .5}px Shrikhand`; g.fillStyle = "rgba(255,122,26,.92)"; g.textAlign = "center"; g.save(); g.translate(w * .5, h * .7); g.rotate(-.06);
+      fitPx(g, d.word === "SCORING" ? "Big Sunday" : d.word, h * .5, w * .74, px => `${px}px Shrikhand`); g.fillStyle = "rgba(255,122,26,.92)"; g.textAlign = "center"; g.save(); g.translate(w * .5, h * .7); g.rotate(-.06);
       g.strokeStyle = "#000"; g.lineWidth = 10; g.strokeText(d.word === "SCORING" ? "Big Sunday" : d.word, 0, 0); g.fillText(d.word === "SCORING" ? "Big Sunday" : d.word, 0, 0); g.restore(); },
     sky(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#0c3fa8"); gr.addColorStop(1, "#7cc0ff"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
-      g.font = `${h * .5}px Italiana`; g.fillStyle = "rgba(255,255,255,.9)"; g.textAlign = "center"; g.fillText(d.word.split("").join(" "), w * .48, h * .78); },
+      fitPx(g, d.word.split("").join(" "), h * .5, w * .72, px => `${px}px Italiana`); g.fillStyle = "rgba(255,255,255,.9)"; g.textAlign = "center"; g.fillText(d.word.split("").join(" "), w * .48, h * .78); },
     xerox(){ g.fillStyle = "#efe59a"; g.fillRect(0, 0, w, h); hatch(g, w, h, "#1d1a3a", 40, .3);
       const [a, b] = String(d.big).split("."); g.font = `900 ${h * .62}px Archivo`; g.fillStyle = "#ff3030"; g.textAlign = "right";
-      g.font = `900 ${h * .78}px Archivo`; g.fillText(b !== undefined ? a + "." + b : d.big, w * .86, h * .96); },
+      fitPx(g, String(d.big), h * .78, w * .7, px => `900 ${px}px Archivo`); g.fillText(b !== undefined ? a + "." + b : d.big, w * .86, h * .96); },
     holo(){ g.fillStyle = "#2a0f45"; g.fillRect(0, 0, w, h); const r1 = g.createRadialGradient(w * .3, h * .3, 0, w * .3, h * .3, h * .9); r1.addColorStop(0, "#ff5cc8"); r1.addColorStop(1, "rgba(255,92,200,0)");
       g.fillStyle = r1; g.fillRect(0, 0, w, h); const r2 = g.createRadialGradient(w * .78, h * .7, 0, w * .78, h * .7, h); r2.addColorStop(0, "#6a3bff"); r2.addColorStop(1, "rgba(106,59,255,0)"); g.fillStyle = r2; g.fillRect(0, 0, w, h); },
     night(){ const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#05060c"); gr.addColorStop(1, "#1d2c52"); g.fillStyle = gr; g.fillRect(0, 0, w, h); flames(g, w, h, h * .55); },
     splat(){ g.fillStyle = "#f4efe6"; g.fillRect(0, 0, w, h); seed = 3; blobs(g, w, h, 22); },
     slate(){ g.fillStyle = "#1c1c1c"; g.fillRect(0, 0, w, h); noise(g, w, h, .12);
-      g.font = `900 ${h * .82}px Archivo`; g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 5; g.textAlign = "center"; g.strokeText(d.big, w * .56, h * .98); },
+      fitPx(g, String(d.big), h * .82, w * .72, px => `900 ${px}px Archivo`); g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 5; g.textAlign = "center"; g.strokeText(d.big, w * .56, h * .98); },
     paper(){ g.fillStyle = "#f3ead6"; g.fillRect(0, 0, w, h); noise(g, w, h, .25, true);
       // the standings, written in marker, the dead ones crossed out
       g.font = `${h * .075}px "Permanent Marker"`; g.fillStyle = "#181512"; g.textAlign = "left";
@@ -201,7 +204,7 @@ async function mount(){
   if (kill) kill(); kill = null;
   if (!window.THREE) return;
   const myMount = {}; mount.cur = myMount;
-  const starImg = await photo(D.star_img);
+  const starImgs = (await Promise.all((D.star_imgs || [D.star_img]).map(photo))).filter(Boolean);
 
   seed = 11 + week;
   const el = stage, r = new THREE.WebGLRenderer({antialias:true}); const PR = Math.min(2, devicePixelRatio || 1); r.setPixelRatio(PR);
@@ -219,29 +222,33 @@ async function mount(){
 
   // the towers
   const inC = col(s.inC).getHex(), outC = col(s.outC).getHex(), acc = col(s.acc).getHex();
-  const T = TEAMS.map((t, i) => { const st = t.first === d.star; const b = tower(st ? acc : i < PO ? inC : outC, st ? 1.0 : .82, s.light); b.position.x = X(i); b.scale.y = .001; scene.add(b); return b; });
+  const T = TEAMS.map((t, i) => { const st = STARS.includes(t.first); const b = tower(st ? acc : i < PO ? inC : outC, st ? 1.0 : .82, s.light); b.position.x = X(i); b.scale.y = .001; scene.add(b); return b; });
   const m = narrow ? 1.3 : 1;
-  const F = TEAMS.map(t => { const st = t.first === d.star, ring = st ? s.acc : (s.light ? "#000" : "#fff");
+  const F = TEAMS.map(t => { const st = STARS.includes(t.first), ring = st ? s.acc : (s.light ? "#000" : "#fff");
     const f = sprite(faceTex(t.img, ring), 1.15 * m, 1.15 * m), l = sprite(labelTex(t.po + "%", t.first, s, st), 1.3 * m, .74 * m); over.add(f, l); return {f, l}; });
   // the playoff line: a strip of the week's ink across the floor and up a thin wall
   const gx = (X(PO - 1) + X(PO)) / 2;
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1), new THREE.MeshBasicMaterial({color:acc, transparent:true, opacity:s.light ? .35 : .22, side:THREE.DoubleSide, depthWrite:false, fog:false}));
   pl.rotation.y = Math.PI / 2; scene.add(pl);
 
-  // the star: printed, with a rim in the week's ink, rising out of a slot in the floor
-  let starMat = null, rimMat = null;
-  if (starImg){
-    const tx = new THREE.Texture(starImg); tx.needsUpdate = true; tx.anisotropy = 8;
-    const h = 9.4, w = h * starImg.naturalWidth / starImg.naturalHeight, geo = new THREE.PlaneGeometry(w, h); geo.translate(0, h / 2, 0);
+  // the star (or both managers of the Game of the Week): printed, with a rim in the
+  // week's ink, rising out of a slot in the floor
+  const prints = [];
+  // two prints: staggered in depth (the first further back) so both heads clear the towers and neither hides the other
+  const two = starImgs.length > 1, pos = two ? (narrow ? [[-.6, -15], [3.6, -10.5]] : [[-1.2, -15], [6.2, -10]]) : [[narrow ? 1.4 : 2.6, -8.5]];
+  starImgs.forEach((img, i) => {
+    const tx = new THREE.Texture(img); tx.needsUpdate = true; tx.anisotropy = 8;
+    const h = two && i === 0 ? 10.4 : 9.4, w = h * img.naturalWidth / img.naturalHeight;
+    const geo = new THREE.PlaneGeometry(w, h); geo.translate(0, h / 2, 0);
     const mk = rim => new THREE.ShaderMaterial({transparent:true, depthWrite:false, fog:false,
       uniforms:{map:{value:tx}, reveal:{value:0}, rim:{value:new THREE.Vector3(...col(s.acc).toArray())}, isRim:{value:rim ? 1 : 0}},
       vertexShader:"varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }", fragmentShader:STAR_FRAG});
-    starMat = mk(false); rimMat = mk(true);
-    const grp = new THREE.Group(); grp.position.set(narrow ? 1.4 : 2.6, 0, -8.5); scene.add(grp);
-    const back = new THREE.Mesh(geo, rimMat); back.scale.set(1.05, 1.025, 1); back.position.set(-w * .025, -.02, -.06); grp.add(back);
-    grp.add(new THREE.Mesh(geo, starMat));
+    const sm = mk(false), rm = mk(true); prints.push(sm, rm);
+    const grp = new THREE.Group(); grp.position.set(pos[i][0], 0, pos[i][1]); scene.add(grp);
+    const back = new THREE.Mesh(geo, rm); back.scale.set(1.05, 1.025, 1); back.position.set(-w * .025, -.02, -.06); grp.add(back);
+    grp.add(new THREE.Mesh(geo, sm));
     const slot = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.05, .2), new THREE.MeshBasicMaterial({color:acc, fog:false})); slot.rotation.x = -Math.PI / 2; slot.position.y = .02; grp.add(slot);
-  }
+  });
 
   let comp = null;
   if (!s.light && THREE.EffectComposer && THREE.UnrealBloomPass){
@@ -264,7 +271,7 @@ async function mount(){
     const R = 15.5 * Math.min(cam.aspect < 1 ? 1.88 : 1.9, Math.max(.7, 1.55 / cam.aspect));   // a portrait phone comes in close and looks up, so the set fills the frame
     cam.position.set(Math.sin(a) * R, 4.4 + R * .1 + Math.sin(t * .35) * .25, Math.cos(a) * R); cam.lookAt(cam.aspect > 1.5 ? -1.9 : .2, cam.aspect > 1.5 ? 4.6 : 5.6, -3);   // desktop: aim high so the towers sit below the wordmark
     // the build: the star prints, the towers rise, the playoff line goes in
-    if (starMat){ const k = ease(Math.min(1, Math.max(0, (t - .5) / 1.8))) * 1.02; starMat.uniforms.reveal.value = rimMat.uniforms.reveal.value = k; }
+    { const k = ease(Math.min(1, Math.max(0, (t - .5) / 1.8))) * 1.02; prints.forEach(m => { m.uniforms.reveal.value = k; }); }
     TEAMS.forEach((d2, i) => { const k = Math.min(1, Math.max(0, (t - .9 - i * .1) / 1.1)), h = H(d2) * easeBack(k);
       T[i].scale.y = Math.max(.001, h); F[i].f.position.set(X(i), h + .72 * m, 0); F[i].l.position.set(X(i), h + 1.7 * m, 0); F[i].f.material.opacity = F[i].l.material.opacity = Math.min(1, k * 2); });
     const pk = ease(Math.min(1, Math.max(0, (t - 2) / .8))), ph = 5.2 * pk; pl.scale.y = Math.max(.001, ph); pl.position.set(gx, ph / 2, 0);
