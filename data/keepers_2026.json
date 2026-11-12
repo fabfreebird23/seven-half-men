@@ -25,6 +25,59 @@
       "sub": "the biggest climb on his draft seed",
       "week": 1
     },
+    "10": {
+      "a": "964703051971887104",
+      "b": "979382824706912256",
+      "feats": [],
+      "headline": "Brandon v Corey",
+      "heat": 78.4,
+      "kind": "gotw",
+      "lines": [
+        "CLAYTON'S BENCH",
+        "LUCKY THAD",
+        "THE HIT LIST"
+      ],
+      "link": "?p=inseason&g=week&t=live",
+      "month": "NOV 2026",
+      "others": [
+        {
+          "headline": "Clayton's bench, 45.9",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "CLAYTON'S BENCH",
+          "sub": "points his best lineup would have added"
+        },
+        {
+          "headline": "Thad's lucky 111.0",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCKY THAD",
+          "sub": "6 teams scored more and he still won"
+        },
+        {
+          "headline": "The hit list",
+          "link": "?p=inseason&g=playoffs&t=playoffs",
+          "short": "THE HIT LIST",
+          "sub": "1 team under 2% to make the playoffs"
+        },
+        {
+          "headline": "Corey, 23% to 45%",
+          "link": "?p=inseason&g=playoffs&t=playoffs",
+          "short": "COREY +22%",
+          "sub": "the week's biggest swing in playoff odds"
+        }
+      ],
+      "photo_owners": [
+        "964703051971887104",
+        "979382824706912256",
+        "1001531274030305280"
+      ],
+      "short": "BRANDON V COREY",
+      "side": false,
+      "stakes": 49,
+      "sub": "49 points of playoff odds on the line",
+      "team_a": "Clayton's Kids",
+      "team_b": "The Whig Party",
+      "week": 10
+    },
     "2": {
       "first": "Clayton",
       "headline": "Clayton's bench, 46.2",
