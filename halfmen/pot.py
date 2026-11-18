@@ -271,6 +271,26 @@ def traded_net(league_id: str, weeks: Sequence[int] = None) -> Dict[str, int]:
     return net
 
 
+def faab_owed(league_id: str, weeks: Sequence[int] = None) -> List[dict]:
+    """Cash owed for FAAB traded, netted per pair of managers, biggest first:
+    [{"owes", "to", "amount", "moves"}]. The sender pays the receiver for the
+    budget he handed over - Mike sends Tanner $10 with a player, Mike owes
+    Tanner $10 at season's end. Separate from the pot: the pot still bills
+    whoever actually bids the dollars (see settle)."""
+    net: Dict[tuple, int] = {}
+    moves: Dict[tuple, list] = {}
+    for mv in faab_trades(league_id, weeks):
+        if not (mv["from"] and mv["to"]):
+            continue
+        a, b = sorted((mv["from"], mv["to"]))
+        net[(a, b)] = net.get((a, b), 0) + (mv["amount"] if mv["from"] == a else -mv["amount"])
+        moves.setdefault((a, b), []).append(mv)
+    out = [{"owes": a if n > 0 else b, "to": b if n > 0 else a, "amount": abs(n), "moves": moves[(a, b)]}
+           for (a, b), n in net.items() if n]
+    out.sort(key=lambda x: -x["amount"])
+    return out
+
+
 def spend_from_rosters(league_id: str) -> Dict[str, int]:
     """FAAB actually bid on waiver claims, per owner.
 

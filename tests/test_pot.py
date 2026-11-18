@@ -217,6 +217,18 @@ def test_the_trade_log_reads_sleepers_waiver_budget_array(monkeypatch):
     assert pot.traded_net("x", weeks=range(1, 6)) == {"bob": 25, "alice": -25}
 
 
+def test_traded_faab_is_cash_owed_netted_per_pair(monkeypatch):
+    """Alice sends Bob $10, later Bob sends Alice $4: Alice owes Bob $6."""
+    monkeypatch.setattr(pot.sleeper, "get_rosters", lambda lid: [
+        {"roster_id": 1, "owner_id": "alice"}, {"roster_id": 2, "owner_id": "bob"}])
+    moves = {3: [{"sender": 1, "receiver": 2, "amount": 10}], 5: [{"sender": 2, "receiver": 1, "amount": 4}]}
+    monkeypatch.setattr(pot.sleeper, "get_transactions", lambda lid, wk: (
+        [{"type": "trade", "status": "complete", "waiver_budget": moves[wk]}] if wk in moves else []))
+    owed = pot.faab_owed("x", weeks=range(1, 6))
+    assert [(o["owes"], o["to"], o["amount"]) for o in owed] == [("alice", "bob", 6)]
+    assert len(owed[0]["moves"]) == 2
+
+
 def test_an_incomplete_trade_moves_nothing(monkeypatch):
     monkeypatch.setattr(pot.sleeper, "get_rosters", lambda lid: [
         {"roster_id": 1, "owner_id": "alice"}, {"roster_id": 2, "owner_id": "bob"}])
