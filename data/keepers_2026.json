@@ -78,6 +78,56 @@
       "team_b": "The Whig Party",
       "week": 10
     },
+    "11": {
+      "feats": [
+        "TOP SCORE: 174.2"
+      ],
+      "first": "Devin",
+      "headline": "Devin by 59",
+      "heat": 64.39399999999999,
+      "kind": "blowout",
+      "lines": [
+        "COREY V LUCAS",
+        "LUCKY COREY",
+        "LUCAS ON FIRE"
+      ],
+      "link": "?p=inseason&g=week&t=live",
+      "loser": "Isiah",
+      "margin": "59",
+      "month": "NOV 2026",
+      "others": [
+        {
+          "headline": "Corey v Lucas",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "COREY V LUCAS",
+          "sub": "56 points of playoff odds on the line"
+        },
+        {
+          "headline": "Corey's lucky 124.8",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCKY COREY",
+          "sub": "5 teams scored more and he still won"
+        },
+        {
+          "headline": "Lucas, 4 straight",
+          "link": "?p=home",
+          "short": "LUCAS ON FIRE",
+          "sub": "4 head-to-head wins in a row"
+        },
+        {
+          "headline": "The hit list",
+          "link": "?p=inseason&g=playoffs&t=playoffs",
+          "short": "THE HIT LIST",
+          "sub": "2 teams under 2% to make the playoffs"
+        }
+      ],
+      "owner": "1254567796231114752",
+      "pts_l": "115.6",
+      "pts_w": "174.2",
+      "short": "DEVIN BY 59",
+      "sub": "174.2 to 115.6 over Isiah",
+      "week": 11
+    },
     "2": {
       "first": "Clayton",
       "headline": "Clayton's bench, 46.2",
