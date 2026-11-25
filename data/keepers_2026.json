@@ -128,6 +128,53 @@
       "sub": "174.2 to 115.6 over Isiah",
       "week": 11
     },
+    "12": {
+      "feats": [
+        "THE CHASE"
+      ],
+      "first": "Isiah",
+      "headline": "Isiah is out",
+      "heat": 3000,
+      "kind": "rip",
+      "lines": [
+        "CLAYTON IS IN",
+        "JOSH V LUCAS",
+        "LUCAS BY 71"
+      ],
+      "link": "?p=inseason&g=playoffs&t=playoffs",
+      "month": "NOV 2026",
+      "others": [
+        {
+          "headline": "Clayton clinched",
+          "link": "?p=inseason&g=playoffs&t=playoffs",
+          "short": "CLAYTON IS IN",
+          "sub": "locked into the playoffs"
+        },
+        {
+          "headline": "Josh v Lucas",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "JOSH V LUCAS",
+          "sub": "49 points of playoff odds on the line"
+        },
+        {
+          "headline": "Lucas by 71",
+          "link": "?p=inseason&g=week&t=live",
+          "short": "LUCAS BY 71",
+          "sub": "161.2 to 90.0 over Corey"
+        },
+        {
+          "headline": "Lucas, 5 straight",
+          "link": "?p=home",
+          "short": "LUCAS ON FIRE",
+          "sub": "5 head-to-head wins in a row"
+        }
+      ],
+      "owner": "979400432114102272",
+      "short": "R.I.P. ISIAH",
+      "sub": "mathematically out of the playoffs",
+      "through": 11,
+      "week": 12
+    },
     "2": {
       "first": "Clayton",
       "headline": "Clayton's bench, 46.2",
